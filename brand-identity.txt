@@ -1,0 +1,48 @@
+LORENZ APPS — BRAND IDENTITY
+=============================
+
+COLOURS
+-------
+Primary:    #889542  Kiwi Green    — buttons, CTAs, active states, caption text
+Secondary:  #C2784D  Kiwi Brown    — accents, warmth, "New" badges
+Foreground: #333333  Dark Charcoal — all body text and headings
+Background: #FAFBF6  Off-white     — app/screen background
+Border:     #EFEFEF  Gallery       — dividers, input borders, card edges
+
+Derived:
+Light Green: #f0f2e0 — green badge/pill backgrounds
+Dark Green:  #5a6328 — green text on light green backgrounds
+Light Brown: #f7ede5 — brown badge/pill backgrounds
+Dark Brown:  #8a4e2a — brown text on light brown backgrounds
+
+
+TYPOGRAPHY
+----------
+Display:  28px / weight 700 / letter-spacing -0.02em / color #333333
+          Use for: app name, hero text, splash screens
+
+Heading:  17px / weight 600 / letter-spacing -0.01em / color #333333
+          Use for: screen titles, section headers
+
+Body:     15px / weight 400 / line-height 1.6 / color #333333
+          Use for: descriptions, settings labels, general UI copy
+
+Caption:  12px / weight 500 / letter-spacing +0.06em / UPPERCASE / color #889542
+          Use for: badges, metadata, section labels, timestamps
+
+
+BRAND PERSONALITY
+-----------------
+Simple. Open source. Ad-free. No dark patterns.
+Personal and warm — built by one person, for real people.
+Green theme throughout — consistent with lorenz.kiwi
+
+
+COMPONENTS
+----------
+Primary button:   background #889542 / text #FAFBF6 / border-radius 8px
+Secondary button: background transparent / border 1.5px #889542 / text #889542 / border-radius 8px
+Green badge:      background #f0f2e0 / text #5a6328 / border-radius 20px / padding 3px 9px
+Brown badge:      background #f7ede5 / text #8a4e2a / border-radius 20px / padding 3px 9px
+Card:             background #FAFBF6 / border 0.5px #EFEFEF / border-radius 12px
+App icon corners: border-radius 12px (following Android adaptive icon guidelines)
