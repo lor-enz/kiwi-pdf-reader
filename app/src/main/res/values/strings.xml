@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Kiwi PDF Reader</string>
+
+    <string name="home_tagline">Just use the green one.</string>
+    <string name="open_pdf">Open PDF</string>
+
+    <string name="back">Back</string>
+
+    <string name="error_password_protected">This PDF is password-protected. Opening those isn\'t supported yet.</string>
+    <string name="error_unreadable">This PDF couldn\'t be opened. It may be damaged, or the app that shared it no longer allows access.</string>
+    <string name="open_another">Open another PDF</string>
 </resources>
