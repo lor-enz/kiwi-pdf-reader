@@ -35,9 +35,14 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     var documentState by mutableStateOf<DocumentState>(DocumentState.Empty)
         private set
 
+    /** True when another app handed us the PDF; closing it should return to that app. */
+    var openedFromOtherApp = false
+        private set
+
     private var loadJob: Job? = null
 
-    fun open(uri: Uri) {
+    fun open(uri: Uri, fromOtherApp: Boolean = false) {
+        openedFromOtherApp = fromOtherApp
         closeDocument()
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
@@ -61,6 +66,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     fun close() {
         closeDocument()
         documentState = DocumentState.Empty
+        openedFromOtherApp = false
     }
 
     private fun closeDocument() {
