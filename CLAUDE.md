@@ -55,6 +55,10 @@
   `androidx/kotlin/kotlinx` scope made R8 produce a class extending a
   package-private class in `kotlin.collections` (`IllegalAccessError` at
   startup). R8 now optimizes everything (the default, `**`).
+- Releases: raising `versionCode` in `version.properties` on `main` makes
+  the GitHub Action upload a signed bundle to Play's internal track as a
+  draft (see "Releasing" in the README). Bump it only in its own `🔖`
+  commit, and only when the user asks for a release.
 - Release signing reads the gitignored `keystore.properties` in the project
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
