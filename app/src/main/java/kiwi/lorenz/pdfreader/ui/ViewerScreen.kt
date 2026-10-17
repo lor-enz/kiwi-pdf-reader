@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -129,6 +133,15 @@ fun ViewerScreen(
     var isBarHiddenByScroll by remember(loaded?.document) { mutableStateOf(false) }
     val isBarVisible = searchState.isActive || loaded == null || !isBarHiddenByScroll
 
+    var isToolsSheetOpen by rememberSaveable { mutableStateOf(false) }
+    if (isToolsSheetOpen && loaded != null) {
+        ToolsSheet(
+            isSearchSupported = loaded.isSearchSupported,
+            onDismiss = { isToolsSheetOpen = false },
+            onSearch = onOpenSearch,
+        )
+    }
+
     // The bar is laid over the content, so hiding it doesn't shift the pages.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val contentPadding = PaddingValues(
@@ -212,9 +225,9 @@ fun ViewerScreen(
                             }
                         },
                         actions = {
-                            if (loaded?.isSearchSupported == true) {
-                                IconButton(onClick = onOpenSearch) {
-                                    Icon(painterResource(R.drawable.ic_search), stringResource(R.string.search))
+                            if (loaded != null) {
+                                IconButton(onClick = { isToolsSheetOpen = true }) {
+                                    Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.more_options))
                                 }
                             }
                         },
@@ -229,6 +242,30 @@ fun ViewerScreen(
 /** The status bar is handled separately; the bar itself only avoids side cutouts. */
 private val BarInsets
     @Composable get() = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
+
+/** The document's tools, collected in one place to keep the top bar calm. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ToolsSheet(
+    isSearchSupported: Boolean,
+    onDismiss: () -> Unit,
+    onSearch: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        @Composable
+        fun Tool(icon: Int, label: Int, action: () -> Unit) = ListItem(
+            headlineContent = { Text(stringResource(label)) },
+            leadingContent = { Icon(painterResource(icon), contentDescription = null) },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            modifier = Modifier.clickable {
+                onDismiss()
+                action()
+            },
+        )
+        if (isSearchSupported) Tool(R.drawable.ic_search, R.string.search, onSearch)
+        Spacer(Modifier.height(8.dp))
+    }
+}
 
 @OptIn(ExperimentalPdfApi::class)
 @Composable

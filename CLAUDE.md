@@ -72,6 +72,10 @@
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).
+- The viewer's tools live in a bottom sheet behind the ⋮ button, so the
+  top bar stays calm as tools are added. Presentation mode (one page at a
+  time, swipe left/right) is postponed: `PdfViewer` only scrolls
+  continuously, so it needs its own pager-based view.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
 
