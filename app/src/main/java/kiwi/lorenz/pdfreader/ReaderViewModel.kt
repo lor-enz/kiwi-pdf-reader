@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.pdf.PdfDocument
 import androidx.pdf.PdfFeature
@@ -58,7 +59,10 @@ data class SearchState(
     val currentMatch: SearchMatch? get() = matches.getOrNull(currentIndex)
 }
 
-class ReaderViewModel(application: Application) : AndroidViewModel(application) {
+class ReaderViewModel(
+    application: Application,
+    private val savedState: SavedStateHandle,
+) : AndroidViewModel(application) {
     private val loader = SandboxedPdfLoader(application)
     private val store = RecentFilesStore.get(application)
 
@@ -76,17 +80,31 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         private set
 
     /** True when another app handed us the PDF; closing it should return to that app. */
-    var openedFromOtherApp = false
-        private set
+    var openedFromOtherApp: Boolean
+        get() = savedState[KEY_FROM_OTHER_APP] ?: false
+        private set(value) {
+            savedState[KEY_FROM_OTHER_APP] = value
+        }
 
-    /** The recent entry of the open document. */
-    private var openEntryId: String? = null
+    /** The recent entry of the open document. Saved so it can be reopened after process death. */
+    private var openEntryId: String?
+        get() = savedState[KEY_OPEN_ENTRY]
+        set(value) {
+            savedState[KEY_OPEN_ENTRY] = value
+        }
 
     private var loadJob: Job? = null
     private var searchJob: Job? = null
 
     init {
-        viewModelScope.launch { store.cleanup(openId = null) }
+        val restoreId = openEntryId
+        viewModelScope.launch {
+            val entry = restoreId?.let { store.get(it) }
+            if (entry != null && documentState == DocumentState.Empty) {
+                launchOpen(fromOtherApp = openedFromOtherApp) { Target(entry) }
+            }
+            store.cleanup(openId = restoreId)
+        }
     }
 
     /** A file chosen with the app's own picker. */
@@ -278,5 +296,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L
         const val THUMBNAIL_WIDTH_PX = 240
+        const val KEY_OPEN_ENTRY = "openEntryId"
+        const val KEY_FROM_OTHER_APP = "openedFromOtherApp"
     }
 }
