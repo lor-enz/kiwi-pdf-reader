@@ -17,5 +17,6 @@ val DarkBrown = Color(0xFF8A4E2A)
 // Not part of the brand guide yet: a dark theme derived from it
 val NightBackground = Color(0xFF1B1D16)
 val NightSurface = Color(0xFF24271D)
+val NightContainer = Color(0xFF2E3225)
 val NightText = Color(0xFFE6E8DC)
 val PaleGreen = Color(0xFFB4C26A)

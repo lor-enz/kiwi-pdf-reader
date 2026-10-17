@@ -5,7 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
+// Surface containers (sheets, dialogs, menus) are set too, or they turn Material's default lavender.
 private val LightColorScheme = lightColorScheme(
     primary = KiwiGreen,
     onPrimary = OffWhite,
@@ -22,6 +24,11 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = LightGreen,
     onSurfaceVariant = Charcoal,
     outline = Gallery,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = OffWhite,
+    surfaceContainer = LightGreen,
+    surfaceContainerHigh = LightGreen,
+    surfaceContainerHighest = LightGreen,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -35,6 +42,12 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = NightText,
     surface = NightSurface,
     onSurface = NightText,
+    onSurfaceVariant = NightText,
+    surfaceContainerLowest = NightBackground,
+    surfaceContainerLow = NightSurface,
+    surfaceContainer = NightSurface,
+    surfaceContainerHigh = NightContainer,
+    surfaceContainerHighest = NightContainer,
 )
 
 // No dynamic (wallpaper) colors on purpose: the app is always green.
