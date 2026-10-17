@@ -55,6 +55,9 @@
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
   them itself).
+- The privacy policy for Google Play is `docs/privacy-policy.md`, served by
+  GitHub Pages from `/docs`. Update it whenever the app starts storing,
+  sending or requesting anything new (permissions, network, backups).
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
 
