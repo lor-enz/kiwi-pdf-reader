@@ -3,6 +3,7 @@ package kiwi.lorenz.pdfreader
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -12,10 +13,13 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ReaderViewModel by viewModels()
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity() {
                         onOpenAnother = openPicker,
                         onOpenSearch = viewModel::openSearch,
                         onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
+                        onShare = ::share,
                         onCloseSearch = viewModel::closeSearch,
                         onQueryChange = viewModel::updateQuery,
                         onNextMatch = viewModel::nextMatch,
@@ -68,6 +73,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadedDocument() = viewModel.documentState as? DocumentState.Loaded
+
+    private fun share() {
+        val loaded = loadedDocument() ?: return
+        lifecycleScope.launch {
+            try {
+                sharePdf(loaded.document.uri, loaded.name)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     private fun handleIntent(intent: Intent) {
         val uri: Uri? = when (intent.action) {

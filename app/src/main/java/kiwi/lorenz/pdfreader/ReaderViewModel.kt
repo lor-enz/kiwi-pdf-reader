@@ -124,6 +124,7 @@ class ReaderViewModel(
                 launchOpen(fromOtherApp = openedFromOtherApp) { Target(entry) }
             }
             store.cleanup(openId = restoreId)
+            application.deleteOldSharedCopies()
         }
     }
 

@@ -1,7 +1,10 @@
 package kiwi.lorenz.pdfreader
 
+import android.content.ClipData
+import android.content.ComponentName
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.graphics.Paint
 import android.graphics.RectF
 import android.net.Uri
@@ -17,6 +20,7 @@ import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
 import android.util.Size
+import androidx.core.content.FileProvider
 import androidx.pdf.PdfDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +28,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -44,6 +50,38 @@ fun Context.printPdf(document: PdfDocument, name: String, isProtected: Boolean, 
         PassThroughPrintAdapter(contentResolver, document.uri, pdfFileName(name))
     }
     printManager.print(name, adapter, null)
+}
+
+/** Hands the PDF to the share sheet. Throws if it can't be read anymore. */
+suspend fun Context.sharePdf(uri: Uri, name: String) {
+    // A copy under the real name, so the recipient doesn't see a cryptic one.
+    val file = withContext(Dispatchers.IO) {
+        deleteOldSharedCopies()
+        val dir = File(cacheDir, SHARED_DIR).apply { mkdirs() }
+        // A folder per share, so files with the same name don't overwrite each other.
+        val target = File(File(dir, System.nanoTime().toString()).apply { mkdirs() }, pdfFileName(name))
+        contentResolver.openInputStream(uri)!!.use { input ->
+            target.outputStream().use { input.copyTo(it) }
+        }
+        target
+    }
+    val shared = FileProvider.getUriForFile(this, "$packageName.files", file)
+    val send = Intent(Intent.ACTION_SEND)
+        .setType(PDF_MIME_TYPE)
+        .putExtra(Intent.EXTRA_STREAM, shared)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    // ClipData carries the read grant and lets the share sheet show a preview.
+    send.clipData = ClipData.newRawUri(null, shared)
+    val chooser = Intent.createChooser(send, null)
+        // Sharing it back into this app would only open it a second time.
+        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, MainActivity::class.java)))
+    startActivity(chooser)
+}
+
+/** Recipients may read a shared file later (a mail draft), so copies are kept for a day. */
+suspend fun Context.deleteOldSharedCopies() = withContext(Dispatchers.IO) {
+    val cutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
+    File(cacheDir, SHARED_DIR).listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
 }
 
 /** Passes the PDF through unchanged; the print system renders it itself. */
@@ -197,3 +235,5 @@ private fun pdfFileName(name: String): String {
 /** Sharp enough for text, small enough to keep one page's bitmap in memory (~15 MB on A4). */
 private const val PRINT_DPI = 200f
 private const val POINTS_PER_INCH = 72f
+private const val SHARED_DIR = "shared"
+private const val PDF_MIME_TYPE = "application/pdf"

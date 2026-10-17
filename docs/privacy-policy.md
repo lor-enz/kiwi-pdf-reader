@@ -4,7 +4,7 @@ title: Kiwi PDF Reader – Privacy Policy
 
 # Privacy Policy
 
-**Kiwi PDF Reader** · Last updated: October 17, 2026
+**Kiwi PDF Reader** · Last updated: October 18, 2026
 
 Kiwi PDF Reader is made by Lorenz Burghardt. This policy explains what the
 app does with your data. The short version: **nothing leaves your device.**
@@ -17,6 +17,8 @@ Kiwi PDF Reader does not collect, send or share any personal data.
   permission, so it cannot send anything anywhere.
 - No accounts, no ads, no analytics, no crash reporting, no tracking.
 - No third-party services or SDKs that collect data.
+- Printing and sharing only hand a document to the printer or app you
+  choose yourself.
 
 ## What the app stores on your device
 
@@ -34,6 +36,8 @@ on your device. Other apps can't access it.
 - **Remembered passwords:** if you tick "Remember password", the password is
   encrypted with a key kept in the Android Keystore and stored only on your
   device.
+- **Shared documents:** when you share a PDF, the app hands over a temporary
+  copy with the document's real name. These copies are deleted automatically after a day.
 
 This data is removed automatically. A document leaves the list, together
 with its copy, thumbnail and password, when it hasn't been opened for 30
