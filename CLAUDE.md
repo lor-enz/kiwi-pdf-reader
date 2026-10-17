@@ -62,8 +62,6 @@
   (a copy, deduplicated by SHA-256). Possible fix: hash picked files too.
 
 ## Open
-- [ ] App icon: the user will provide artwork; keep the template icon
-      until then
 - [ ] More UI adjustments (the user will specify)
 
 ## Milestone 4: release (optional)
