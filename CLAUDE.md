@@ -2,6 +2,11 @@
 
 - Commit atomically — one logical change per commit.
 - Use gitmoji for commit messages, following the conventions in [`gitmoji.md`](gitmoji.md).
+- If the emulator or a device misbehaves during testing (hanging installs,
+  very slow responses, unresponsive adb), stop and tell the user instead of
+  waiting or working around it. It usually needs a manual restart.
+- Only test on the emulator unless the user says otherwise; their own
+  phone may be connected via adb too (target with `adb -s <serial>`).
 
 # Product philosophy
 
