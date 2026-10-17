@@ -2,11 +2,28 @@
 
 - Commit atomically — one logical change per commit.
 - Use gitmoji for commit messages, following the conventions in [`gitmoji.md`](gitmoji.md).
+- Commit only when the user asks. Propose the split first; every commit
+  must build and pass the tests on its own.
+- Work in milestones. After each one: build, run the unit tests, test on
+  the emulator, then report to the user, who tests on a real phone.
 - If the emulator or a device misbehaves during testing (hanging installs,
   very slow responses, unresponsive adb), stop and tell the user instead of
   waiting or working around it. It usually needs a manual restart.
 - Only test on the emulator unless the user says otherwise; their own
   phone may be connected via adb too (target with `adb -s <serial>`).
+- Record decisions and findings in this file as they come up.
+
+# Testing
+
+- Use emulators available to you.
+- "Open from another app": push the PDF to `/sdcard/Download`, run the
+  media scanner, look up its id in `content://media/external/file`, then
+  `am start -a android.intent.action.VIEW -t application/pdf -d
+  content://media/external/file/<id> --grant-read-uri-permission`.
+- `am start` calls stack activity instances; force-stop between scenarios.
+- Process death: `am kill` doesn't work. Press home, then
+  `run-as kiwi.lorenz.pdfreader kill -9 <pid>`.
+- Fast swipes fling to the end of the document; use slow ones.
 
 # Product philosophy
 
@@ -21,69 +38,34 @@
 
 # Project notes
 
-- PDF rendering uses `androidx.pdf` (beta) with the Compose `PdfViewer`,
-  which is still `@ExperimentalPdfApi`. Fallback if it misbehaves: host
+- Keep the app free of Google Play Services (open source, F-Droid).
+- `androidx.pdf` is beta, and the Compose `PdfViewer` is still
+  `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.
 - Devices without SDK extension 13 get a compat renderer: viewing works,
-  search/selection don't. Check `PdfFeature` support instead of blocking.
-- `PdfView` draws search highlights with a MULTIPLY blend, so highlight
-  colors must be opaque and light.
-- Keep the app free of Google Play Services (open source, F-Droid).
-
-# Recent files and private copies
-
-Files opened from other apps (WhatsApp, mail, share sheet) usually lose
-their access permission once we close them. So that they can still be
-reopened from the recent files list, the app keeps a private copy.
-Files picked with the app's own file picker keep a persistable
-permission instead and are not copied.
-
-Fixed rules, not configurable:
-- A copy is deleted 30 days after it was last opened (not after it was
-  copied), so files the user keeps returning to never expire.
-- All copies together may use at most 250 MB. Above that, the least
-  recently opened copies are deleted first.
-- The currently open document is never deleted, even if it alone is
-  larger than 250 MB. It is cleaned up on a later run once it is closed.
-- Copies live in the app's files directory, not the cache, so Android
-  cannot delete them behind the list's back.
-- Copies are excluded from Android backup (`data_extraction_rules.xml`,
-  `backup_rules.xml`), so other people's PDFs don't end up in the user's
-  cloud backup.
-- When a copy is deleted, its recent files entry is removed too, so the
-  list never shows a file that cannot be opened.
-- The recent files list shows at most about 20 entries, to keep the home
-  screen short. This only limits the list, not the storage.
-- Each entry shows a thumbnail of the first page.
+  but search, selection and encrypted PDFs don't (not even with the right
+  password). Check `PdfFeature` support instead of blocking the app.
+- `PdfViewer` applies `contentPadding` only when its view is created,
+  which is why the top bar is laid over the document.
+- Files opened from other apps lose their permission once closed, so the
+  app keeps private copies for the recent files list. The limits (30 days
+  since last opened, 250 MB in total, 20 entries) are deliberate and not
+  configurable.
+- "Remember password" is ticked by default. Protected documents get no
+  thumbnail unless their password is remembered (privacy).
 
 # TODO
 
 ## Known issues (not fixed on purpose, for now)
-- The same PDF can appear twice in the recent files list: once when picked
-  with the file picker (opened in place) and once when opened from another
-  app (private copy). Copies are deduplicated by SHA-256, picked files only
-  by URI. Possible fix: hash picked files too, at the cost of reading each
-  picked file once when it's opened.
+- The same PDF can appear twice in the recent files list: once picked with
+  the file picker (deduplicated by URI) and once opened from another app
+  (a copy, deduplicated by SHA-256). Possible fix: hash picked files too.
 
-## Milestone 3: edge cases & branding
-- [ ] Password-protected PDFs: ask for the password (currently shows
-      "not supported yet")
-- [ ] Top bar takes too much space in landscape (hide or auto-hide it)
-- [ ] Fast-scroll page number indicator is black and invisible on dark
-      pages: style it via `FastScrollConfiguration`
-- [ ] Full styling from `brand-identity.txt` (typography, components)
-- [ ] App icon
-- [ ] Test on a device without SDK extension 13 (search icon hidden?)
+## Open
+- [ ] App icon: the user will provide artwork; keep the template icon
+      until then
+- [ ] More UI adjustments (the user will specify)
 
 ## Milestone 4: release (optional)
 - [ ] Release signing, check the R8 release build on a device
 - [ ] Play Store screenshots and listing text from the README
-
-## Done
-- [x] Milestone 1: viewer spike. Tested on a real phone with a 26 MB,
-      28-page image-heavy PDF: opening from WhatsApp, file manager and
-      share sheet, and rotation all work.
-- [x] Milestone 2: usable app. Recent files list with first-page
-      thumbnails, private copies with cleanup rules, persisted picker
-      permissions, last page per document, restore after process death.
-      Tested on the emulator and on a real phone.
