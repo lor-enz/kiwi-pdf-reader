@@ -115,6 +115,7 @@ fun ViewerScreen(
     onBack: () -> Unit,
     onOpenAnother: () -> Unit,
     onOpenSearch: () -> Unit,
+    onPrint: () -> Unit,
     onCloseSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onNextMatch: () -> Unit,
@@ -139,6 +140,7 @@ fun ViewerScreen(
             isSearchSupported = loaded.isSearchSupported,
             onDismiss = { isToolsSheetOpen = false },
             onSearch = onOpenSearch,
+            onPrint = onPrint,
         )
     }
 
@@ -250,6 +252,7 @@ private fun ToolsSheet(
     isSearchSupported: Boolean,
     onDismiss: () -> Unit,
     onSearch: () -> Unit,
+    onPrint: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         @Composable
@@ -263,6 +266,7 @@ private fun ToolsSheet(
             },
         )
         if (isSearchSupported) Tool(R.drawable.ic_search, R.string.search, onSearch)
+        Tool(R.drawable.ic_print, R.string.print, onPrint)
         Spacer(Modifier.height(8.dp))
     }
 }

@@ -12,6 +12,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
+import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenAnother = openPicker,
                         onOpenSearch = viewModel::openSearch,
+                        onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
                         onCloseSearch = viewModel::closeSearch,
                         onQueryChange = viewModel::updateQuery,
                         onNextMatch = viewModel::nextMatch,
@@ -64,6 +66,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun loadedDocument() = viewModel.documentState as? DocumentState.Loaded
 
     private fun handleIntent(intent: Intent) {
         val uri: Uri? = when (intent.action) {

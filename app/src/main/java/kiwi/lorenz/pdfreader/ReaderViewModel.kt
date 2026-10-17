@@ -43,6 +43,8 @@ sealed interface DocumentState {
         val document: PdfDocument,
         val name: String,
         val isSearchSupported: Boolean,
+        /** Opened with a password; other apps can't read the file on their own. */
+        val isProtected: Boolean,
     ) : DocumentState
     /** [isWrongPassword] is true after the user entered a password that didn't work. */
     data class NeedsPassword(
@@ -260,6 +262,7 @@ class ReaderViewModel(
                 document = document,
                 name = target.name,
                 isSearchSupported = document.isFeatureSupported(PdfFeature.SEARCH),
+                isProtected = password != null,
             )
         } catch (e: CancellationException) {
             throw e

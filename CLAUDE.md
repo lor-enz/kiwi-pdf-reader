@@ -76,6 +76,9 @@
   top bar stays calm as tools are added. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
+- Print passes the file through to the print system unchanged, except for
+  password-protected documents: the print system can't open those, so
+  their pages are rendered as images (200 dpi) from the open document.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
 
