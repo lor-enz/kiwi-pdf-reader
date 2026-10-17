@@ -15,8 +15,12 @@ android {
         applicationId = "kiwi.lorenz.pdfreader"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        // A higher versionCode pushed to main triggers a release; see the README
+        val versionProperties = Properties().apply {
+            rootProject.file("version.properties").inputStream().use { load(it) }
+        }
+        versionCode = versionProperties.getProperty("versionCode").toInt()
+        versionName = versionProperties.getProperty("versionName")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
