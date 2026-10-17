@@ -58,14 +58,12 @@ Fixed rules, not configurable:
 
 # TODO
 
-## Milestone 2: usable app
-- [ ] Recent files list with first-page thumbnails on the home screen
-- [ ] Private copies of files opened from other apps, with the cleanup
-      rules above
-- [ ] Persistable permissions for files from the file picker; handle
-      deleted or moved files
-- [ ] Remember the last page per document
-- [ ] Restore the open document after process death
+## Known issues (not fixed on purpose, for now)
+- The same PDF can appear twice in the recent files list: once when picked
+  with the file picker (opened in place) and once when opened from another
+  app (private copy). Copies are deduplicated by SHA-256, picked files only
+  by URI. Possible fix: hash picked files too, at the cost of reading each
+  picked file once when it's opened.
 
 ## Milestone 3: edge cases & branding
 - [ ] Password-protected PDFs: ask for the password (currently shows
@@ -85,3 +83,7 @@ Fixed rules, not configurable:
 - [x] Milestone 1: viewer spike. Tested on a real phone with a 26 MB,
       28-page image-heavy PDF: opening from WhatsApp, file manager and
       share sheet, and rotation all work.
+- [x] Milestone 2: usable app. Recent files list with first-page
+      thumbnails, private copies with cleanup rules, persisted picker
+      permissions, last page per document, restore after process death.
+      Tested on the emulator and on a real phone.
