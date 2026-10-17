@@ -250,6 +250,7 @@ private fun Failure(
                 when (reason) {
                     FailureReason.PASSWORD_PROTECTED -> R.string.error_password_protected
                     FailureReason.UNREADABLE -> R.string.error_unreadable
+                    FailureReason.UNAVAILABLE -> R.string.error_unavailable
                 }
             ),
             style = MaterialTheme.typography.bodyLarge,

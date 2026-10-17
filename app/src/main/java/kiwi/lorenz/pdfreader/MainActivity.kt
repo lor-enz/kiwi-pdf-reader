@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import kiwi.lorenz.pdfreader.ui.HomeScreen
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
@@ -29,11 +31,17 @@ class MainActivity : ComponentActivity() {
             KiwiPDFReaderTheme {
                 val pickPdf = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument()
-                ) { uri -> uri?.let { viewModel.open(it) } }
+                ) { uri -> uri?.let { viewModel.openPicked(it) } }
                 val openPicker = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) }
 
                 if (viewModel.documentState == DocumentState.Empty) {
-                    HomeScreen(onOpenPdf = openPicker)
+                    val recentFiles by viewModel.recentFiles.collectAsState()
+                    HomeScreen(
+                        recentFiles = recentFiles,
+                        thumbnailFile = viewModel::thumbnailFile,
+                        onOpenPdf = openPicker,
+                        onOpenRecent = viewModel::openRecent,
+                    )
                 } else {
                     ViewerScreen(
                         documentState = viewModel.documentState,
@@ -59,7 +67,7 @@ class MainActivity : ComponentActivity() {
             Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
             else -> null
         }
-        uri?.let { viewModel.open(it, fromOtherApp = true) }
+        uri?.let { viewModel.openFromOtherApp(it) }
     }
 
     private companion object {
