@@ -51,6 +51,10 @@
   app keeps private copies for the recent files list. The limits (30 days
   since last opened, 250 MB in total, 20 entries) are deliberate and not
   configurable.
+- Don't set `optimization.packageScope` in the release build. The template's
+  `androidx/kotlin/kotlinx` scope made R8 produce a class extending a
+  package-private class in `kotlin.collections` (`IllegalAccessError` at
+  startup). R8 now optimizes everything (the default, `**`).
 - Release signing reads the gitignored `keystore.properties` in the project
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
