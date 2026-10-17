@@ -1,19 +1,29 @@
 package kiwi.lorenz.pdfreader.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -28,11 +38,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +58,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -73,6 +84,7 @@ import kiwi.lorenz.pdfreader.SearchState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.math.abs
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
 // pale tints of the brand green / brown that keep the text underneath readable.
@@ -80,6 +92,12 @@ private const val MATCH_COLOR = 0xFFDCE3A6.toInt()
 private const val CURRENT_MATCH_COLOR = 0xFFF2B48C.toInt()
 
 private const val PAGE_SAVE_DELAY_MS = 500L
+
+/** Material 3 small top app bar height. */
+private val TopBarHeight = 64.dp
+
+/** How far the user has to scroll in one direction before the top bar hides or shows. */
+private val BarToggleDistance = 32.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,41 +125,22 @@ fun ViewerScreen(
         else -> ""
     }
 
-    Scaffold(
-        topBar = {
-            if (searchState.isActive) {
-                SearchBar(
-                    searchState = searchState,
-                    onClose = onCloseSearch,
-                    onQueryChange = onQueryChange,
-                    onNext = onNextMatch,
-                    onPrevious = onPreviousMatch,
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                        }
-                    },
-                    actions = {
-                        if (loaded?.isSearchSupported == true) {
-                            IconButton(onClick = onOpenSearch) {
-                                Icon(painterResource(R.drawable.ic_search), stringResource(R.string.search))
-                            }
-                        }
-                    },
-                )
-            }
-        },
-    ) { innerPadding ->
+    // The bar slides away while scrolling down through a document and returns when scrolling up.
+    var isBarHiddenByScroll by remember(loaded?.document) { mutableStateOf(false) }
+    val isBarVisible = searchState.isActive || loaded == null || !isBarHiddenByScroll
+
+    // The bar is laid over the content, so hiding it doesn't shift the pages.
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val contentPadding = PaddingValues(
+        top = statusBarHeight + TopBarHeight,
+        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
         when (documentState) {
             is DocumentState.Loaded -> Document(
                 documentState = documentState,
@@ -149,7 +148,8 @@ fun ViewerScreen(
                 pendingRestorePage = pendingRestorePage,
                 onPageRestored = onPageRestored,
                 onPageChanged = onPageChanged,
-                innerPadding = innerPadding,
+                contentPadding = contentPadding,
+                onBarHiddenChange = { isBarHiddenByScroll = it },
             )
 
             is DocumentState.NeedsPassword -> PasswordPrompt(
@@ -157,27 +157,78 @@ fun ViewerScreen(
                 onSubmit = onSubmitPassword,
                 // The keyboard inset includes the navigation bar, which is already padded.
                 modifier = Modifier
-                    .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding),
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
             )
 
             is DocumentState.Failed -> Failure(
                 reason = documentState.reason,
                 onOpenAnother = onOpenAnother,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier.padding(contentPadding),
             )
 
             DocumentState.Loading, DocumentState.Empty -> Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(contentPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
         }
+
+        Column(Modifier.fillMaxWidth()) {
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(statusBarHeight)
+                    .background(MaterialTheme.colorScheme.surface)
+            )
+            AnimatedVisibility(
+                visible = isBarVisible,
+                enter = expandVertically(expandFrom = Alignment.Top),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top),
+            ) {
+                if (searchState.isActive) {
+                    SearchBar(
+                        searchState = searchState,
+                        onClose = onCloseSearch,
+                        onQueryChange = onQueryChange,
+                        onNext = onNextMatch,
+                        onPrevious = onPreviousMatch,
+                    )
+                } else {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                text = title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
+                            }
+                        },
+                        actions = {
+                            if (loaded?.isSearchSupported == true) {
+                                IconButton(onClick = onOpenSearch) {
+                                    Icon(painterResource(R.drawable.ic_search), stringResource(R.string.search))
+                                }
+                            }
+                        },
+                        windowInsets = BarInsets,
+                    )
+                }
+            }
+        }
     }
 }
+
+/** The status bar is handled separately; the bar itself only avoids side cutouts. */
+private val BarInsets
+    @Composable get() = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
 
 @OptIn(ExperimentalPdfApi::class)
 @Composable
@@ -187,11 +238,15 @@ private fun Document(
     pendingRestorePage: Int?,
     onPageRestored: () -> Unit,
     onPageChanged: (Int) -> Unit,
-    innerPadding: PaddingValues,
+    contentPadding: PaddingValues,
+    onBarHiddenChange: (Boolean) -> Unit,
 ) {
     val viewerState = rememberPdfViewerState()
     var isContentLoaded by remember { mutableStateOf(false) }
     var viewportHeight by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val topPaddingPx = with(density) { contentPadding.calculateTopPadding().toPx() }
+    val toggleDistancePx = with(density) { BarToggleDistance.toPx() }
 
     LaunchedEffect(viewerState, searchState.matches, searchState.currentIndex) {
         showMatches(viewerState, searchState)
@@ -213,15 +268,43 @@ private fun Document(
             }
     }
 
+    LaunchedEffect(viewerState) {
+        var previous: Pair<Int, Float>? = null
+        var travelled = 0f
+        snapshotFlow { viewerState.firstVisiblePage to viewerState.firstVisiblePageOffset.y }
+            .collect { (page, top) ->
+                val last = previous
+                previous = page to top
+                if (page == 0 && top >= topPaddingPx - 1) {
+                    // Back at the start of the document.
+                    travelled = 0f
+                    onBarHiddenChange(false)
+                    return@collect
+                }
+                // Only the user's own scrolling counts, not jumps to search matches or saved pages.
+                if (last == null || viewerState.gestureState == PdfViewerState.GESTURE_STATE_IDLE) {
+                    return@collect
+                }
+                // Positive when scrolling down through the document.
+                val delta = when {
+                    page > last.first -> toggleDistancePx
+                    page < last.first -> -toggleDistancePx
+                    else -> last.second - top
+                }
+                if (delta * travelled < 0) travelled = 0f
+                travelled += delta
+                if (abs(travelled) >= toggleDistancePx) onBarHiddenChange(travelled > 0)
+            }
+    }
+
     PdfViewer(
         pdfDocument = documentState.document,
         state = viewerState,
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = innerPadding.calculateTopPadding())
             .onSizeChanged { viewportHeight = it.height },
-        // Let pages scroll behind the navigation bar instead of stopping above it.
-        contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+        // Pages start below the bar and scroll behind it and the navigation bar.
+        contentPadding = contentPadding,
         onFirstContentLoad = { isContentLoaded = true },
     )
 }
@@ -312,6 +395,7 @@ private fun SearchBar(
                 Icon(painterResource(R.drawable.ic_arrow_down), stringResource(R.string.next_match))
             }
         },
+        windowInsets = BarInsets,
     )
 }
 
