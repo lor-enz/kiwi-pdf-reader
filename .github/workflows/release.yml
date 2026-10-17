@@ -1,0 +1,81 @@
+# Publishes a release when version.properties changes on main and its versionCode hasn't been
+# released yet. Builds a signed bundle, uploads it to the internal testing track in Google Play
+# as a draft and tags the commit as v<versionCode>. Promote the release in the Play Console.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [version.properties]
+
+permissions:
+  # Pushing the release tag
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tag check makes reruns and pushes with several commits safe: each versionCode is
+      # released once, no matter how often the workflow runs
+      - name: Check if this version was released
+        id: version
+        run: |
+          code=$(grep '^versionCode=' version.properties | cut -d= -f2)
+          echo "tag=v$code" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$code" > /dev/null; then
+            echo "versionCode $code was already released, nothing to do"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.version.outputs.released != 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.version.outputs.released != 'true'
+
+      - name: Write signing config
+        if: steps.version.outputs.released != 'true'
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          cat > keystore.properties <<PROPS
+          storeFile=$RUNNER_TEMP/upload.jks
+          storePassword=$UPLOAD_KEYSTORE_PASSWORD
+          keyAlias=$UPLOAD_KEY_ALIAS
+          keyPassword=$UPLOAD_KEY_PASSWORD
+          PROPS
+
+      - name: Build release bundle
+        if: steps.version.outputs.released != 'true'
+        run: ./gradlew :app:bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        if: steps.version.outputs.released != 'true'
+        with:
+          name: app-release-${{ steps.version.outputs.tag }}
+          path: app/build/outputs/bundle/release/app-release.aab
+
+      - uses: r0adkll/upload-google-play@v1
+        if: steps.version.outputs.released != 'true'
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: kiwi.lorenz.pdfreader
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
+
+      - name: Tag the release
+        if: steps.version.outputs.released != 'true'
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"

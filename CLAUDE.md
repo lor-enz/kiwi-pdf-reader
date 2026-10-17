@@ -76,5 +76,7 @@
 - [ ] More UI adjustments (the user will specify)
 
 ## Milestone 4: release (optional)
-- [ ] Release signing, check the R8 release build on a device
+- [x] Release signing, check the R8 release build on a device
+- [x] Publish to Google Play from GitHub Actions (see "Releasing" in the
+  README); versionCode 1 was uploaded by hand
 - [ ] Play Store screenshots and listing text from the README
