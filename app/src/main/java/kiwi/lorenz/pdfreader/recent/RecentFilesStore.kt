@@ -97,6 +97,8 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     suspend fun setPageCount(id: String, pageCount: Int) = update(id) { it.copy(pageCount = pageCount) }
 
+    suspend fun setLastPage(id: String, page: Int) = update(id) { it.copy(lastPage = page) }
+
     fun thumbnailFile(id: String) = File(thumbnailsDir, "$id.webp")
 
     suspend fun saveThumbnail(id: String, bitmap: Bitmap) {
@@ -224,6 +226,7 @@ private fun RecentFile.toJson() = JSONObject()
     .put("sizeBytes", sizeBytes)
     .put("lastOpenedMillis", lastOpenedMillis)
     .put("pageCount", pageCount)
+    .put("lastPage", lastPage)
     .put("hasThumbnail", hasThumbnail)
 
 private fun JSONObject.toRecentFile() = RecentFile(
@@ -235,5 +238,6 @@ private fun JSONObject.toRecentFile() = RecentFile(
     sizeBytes = optLong("sizeBytes"),
     lastOpenedMillis = getLong("lastOpenedMillis"),
     pageCount = optInt("pageCount"),
+    lastPage = optInt("lastPage"),
     hasThumbnail = optBoolean("hasThumbnail"),
 )

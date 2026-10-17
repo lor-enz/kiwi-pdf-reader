@@ -71,6 +71,10 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     var searchState by mutableStateOf(SearchState())
         private set
 
+    /** The page to scroll to once the document is shown, or null. Consumed by the viewer. */
+    var pendingRestorePage by mutableStateOf<Int?>(null)
+        private set
+
     /** True when another app handed us the PDF; closing it should return to that app. */
     var openedFromOtherApp = false
         private set
@@ -107,10 +111,20 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         documentState = DocumentState.Empty
         openedFromOtherApp = false
         openEntryId = null
+        pendingRestorePage = null
         viewModelScope.launch { store.cleanup(openId = null) }
     }
 
     fun thumbnailFile(entry: RecentFile): File = store.thumbnailFile(entry.id)
+
+    fun onPageRestored() {
+        pendingRestorePage = null
+    }
+
+    fun onPageChanged(page: Int) {
+        val id = openEntryId ?: return
+        viewModelScope.launch { store.setLastPage(id, page) }
+    }
 
     fun openSearch() {
         searchState = searchState.copy(isActive = true)
@@ -172,6 +186,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         closeDocument()
         openedFromOtherApp = fromOtherApp
         openEntryId = null
+        pendingRestorePage = null
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
             val target = resolve()
@@ -203,6 +218,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun onOpened(entry: RecentFile, document: PdfDocument) {
         openEntryId = entry.id
+        pendingRestorePage = entry.lastPage.takeIf { it in 1 until document.pageCount }
         viewModelScope.launch {
             store.setPageCount(entry.id, document.pageCount)
             if (!entry.hasThumbnail) renderThumbnail(entry.id, document)

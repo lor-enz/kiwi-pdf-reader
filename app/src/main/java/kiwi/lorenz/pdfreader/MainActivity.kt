@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
                     ViewerScreen(
                         documentState = viewModel.documentState,
                         searchState = viewModel.searchState,
+                        pendingRestorePage = viewModel.pendingRestorePage,
+                        onPageRestored = viewModel::onPageRestored,
+                        onPageChanged = viewModel::onPageChanged,
                         onBack = {
                             if (viewModel.openedFromOtherApp) finish() else viewModel.close()
                         },

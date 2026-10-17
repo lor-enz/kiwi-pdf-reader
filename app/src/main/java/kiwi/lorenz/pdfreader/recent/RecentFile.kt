@@ -19,6 +19,7 @@ data class RecentFile(
     val lastOpenedMillis: Long,
     /** 0 until the document has been opened successfully once. */
     val pageCount: Int = 0,
+    val lastPage: Int = 0,
     val hasThumbnail: Boolean = false,
 )
 

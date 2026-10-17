@@ -25,12 +25,18 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,17 +55,25 @@ import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.FailureReason
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
 // pale tints of the brand green / brown that keep the text underneath readable.
 private const val MATCH_COLOR = 0xFFDCE3A6.toInt()
 private const val CURRENT_MATCH_COLOR = 0xFFF2B48C.toInt()
 
+private const val PAGE_SAVE_DELAY_MS = 500L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewerScreen(
     documentState: DocumentState,
     searchState: SearchState,
+    pendingRestorePage: Int?,
+    onPageRestored: () -> Unit,
+    onPageChanged: (Int) -> Unit,
     onBack: () -> Unit,
     onOpenAnother: () -> Unit,
     onOpenSearch: () -> Unit,
@@ -111,6 +125,9 @@ fun ViewerScreen(
             is DocumentState.Loaded -> Document(
                 documentState = documentState,
                 searchState = searchState,
+                pendingRestorePage = pendingRestorePage,
+                onPageRestored = onPageRestored,
+                onPageChanged = onPageChanged,
                 innerPadding = innerPadding,
             )
 
@@ -137,12 +154,33 @@ fun ViewerScreen(
 private fun Document(
     documentState: DocumentState.Loaded,
     searchState: SearchState,
+    pendingRestorePage: Int?,
+    onPageRestored: () -> Unit,
+    onPageChanged: (Int) -> Unit,
     innerPadding: PaddingValues,
 ) {
     val viewerState = rememberPdfViewerState()
+    var isContentLoaded by remember { mutableStateOf(false) }
+    var viewportHeight by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(viewerState, searchState.matches, searchState.currentIndex) {
         showMatches(viewerState, searchState)
+    }
+
+    LaunchedEffect(viewerState, isContentLoaded, pendingRestorePage) {
+        if (!isContentLoaded) return@LaunchedEffect
+        if (pendingRestorePage != null) {
+            viewerState.scrollToPage(pendingRestorePage)
+            onPageRestored()
+            return@LaunchedEffect
+        }
+        // Only track after restoring, or the initial page 0 would overwrite the saved page.
+        snapshotFlow { viewerState.centerPage(viewportHeight) }
+            .distinctUntilChanged()
+            .collectLatest { page ->
+                delay(PAGE_SAVE_DELAY_MS)
+                onPageChanged(page)
+            }
     }
 
     PdfViewer(
@@ -150,10 +188,25 @@ private fun Document(
         state = viewerState,
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = innerPadding.calculateTopPadding()),
+            .padding(top = innerPadding.calculateTopPadding())
+            .onSizeChanged { viewportHeight = it.height },
         // Let pages scroll behind the navigation bar instead of stopping above it.
         contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+        onFirstContentLoad = { isContentLoaded = true },
     )
+}
+
+/** The page covering the middle of the viewport: what the user is reading. */
+@OptIn(ExperimentalPdfApi::class)
+private fun PdfViewerState.centerPage(viewportHeight: Int): Int {
+    // Read on every scroll, so snapshotFlow re-evaluates while scrolling within a page.
+    firstVisiblePageOffset
+    var page = firstVisiblePage
+    for (candidate in firstVisiblePage until firstVisiblePage + visiblePagesCount) {
+        val top = getVisiblePageOffset(candidate)?.y ?: continue
+        if (top <= viewportHeight / 2f) page = candidate
+    }
+    return page
 }
 
 @OptIn(ExperimentalPdfApi::class)

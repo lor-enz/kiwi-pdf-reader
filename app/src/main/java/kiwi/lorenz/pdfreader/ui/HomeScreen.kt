@@ -207,7 +207,9 @@ private fun details(entry: RecentFile): String {
             entry.lastOpenedMillis, now, DateUtils.MINUTE_IN_MILLIS
         ).toString()
     }
-    return opened
+    if (entry.pageCount == 0) return opened
+    val page = stringResource(R.string.page_of, entry.lastPage + 1, entry.pageCount)
+    return stringResource(R.string.recent_details, page, opened)
 }
 
 @Preview(showBackground = true)
@@ -226,7 +228,7 @@ private fun HomeScreenRecentPreview() {
         HomeScreen(
             recentFiles = listOf(
                 RecentFile("1", "", "Electricity bill March.pdf", false, lastOpenedMillis = now, pageCount = 3),
-                RecentFile("2", "", "Manual.pdf", true, lastOpenedMillis = now - 86_400_000, pageCount = 28),
+                RecentFile("2", "", "Manual.pdf", true, lastOpenedMillis = now - 86_400_000, pageCount = 28, lastPage = 11),
             ),
             thumbnailFile = { File("") },
             onOpenPdf = {},

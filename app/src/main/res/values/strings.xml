@@ -5,6 +5,9 @@
     <string name="open_pdf">Open PDF</string>
     <string name="recent_files">Recent</string>
     <string name="just_now">Just now</string>
+    <string name="page_of">Page %1$d of %2$d</string>
+    <!-- e.g. "Page 3 of 28 · 2 hours ago" -->
+    <string name="recent_details">%1$s · %2$s</string>
 
     <string name="back">Back</string>
     <string name="search">Search</string>
