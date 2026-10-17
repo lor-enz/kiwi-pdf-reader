@@ -21,6 +21,9 @@ data class RecentFile(
     val pageCount: Int = 0,
     val lastPage: Int = 0,
     val hasThumbnail: Boolean = false,
+    val isPasswordProtected: Boolean = false,
+    /** Set when the user chose to remember the password; see [PasswordCipher]. */
+    val encryptedPassword: String? = null,
 )
 
 object CleanupRules {

@@ -7,6 +7,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.RectF
 import android.net.Uri
+import android.os.Build
+import android.os.ext.SdkExtensions
 import android.provider.OpenableColumns
 import android.util.Size
 import androidx.compose.runtime.getValue
@@ -21,6 +23,7 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfFeature
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
+import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.CancellationException
@@ -41,10 +44,22 @@ sealed interface DocumentState {
         val name: String,
         val isSearchSupported: Boolean,
     ) : DocumentState
+    /** [isWrongPassword] is true after the user entered a password that didn't work. */
+    data class NeedsPassword(
+        val name: String,
+        val isWrongPassword: Boolean,
+        val isChecking: Boolean = false,
+    ) : DocumentState
     data class Failed(val reason: FailureReason) : DocumentState
 }
 
-enum class FailureReason { PASSWORD_PROTECTED, UNREADABLE, UNAVAILABLE }
+enum class FailureReason { UNREADABLE, UNAVAILABLE, PASSWORD_UNSUPPORTED }
+
+/**
+ * Without SDK extension 13 (a Google Play system update), androidx.pdf falls back to the old
+ * platform renderer, which can't open encrypted PDFs even with the right password.
+ */
+private val canOpenProtectedPdfs = SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13
 
 /** A single search hit. A match spanning several lines has one rect per line. */
 data class SearchMatch(val pageNum: Int, val bounds: List<RectF>)
@@ -96,6 +111,9 @@ class ReaderViewModel(
     private var loadJob: Job? = null
     private var searchJob: Job? = null
 
+    /** The document waiting for a password, see [DocumentState.NeedsPassword]. */
+    private var passwordTarget: Target? = null
+
     init {
         val restoreId = openEntryId
         viewModelScope.launch {
@@ -130,6 +148,7 @@ class ReaderViewModel(
         openedFromOtherApp = false
         openEntryId = null
         pendingRestorePage = null
+        passwordTarget = null
         viewModelScope.launch { store.cleanup(openId = null) }
     }
 
@@ -205,41 +224,75 @@ class ReaderViewModel(
         openedFromOtherApp = fromOtherApp
         openEntryId = null
         pendingRestorePage = null
+        passwordTarget = null
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
             val target = resolve()
-            val entry = target.entry
-            documentState = try {
-                val document = loader.openDocument(target.uri)
-                if (entry != null) onOpened(entry, document)
-                DocumentState.Loaded(
-                    document = document,
-                    name = target.name,
-                    isSearchSupported = document.isFeatureSupported(PdfFeature.SEARCH),
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Never list a file that can't be opened.
-                entry?.let { store.remove(it.id) }
-                DocumentState.Failed(
-                    when {
-                        e is PdfPasswordException -> FailureReason.PASSWORD_PROTECTED
-                        // It opened before, so it was moved, deleted or its permission revoked.
-                        entry != null && entry.pageCount > 0 -> FailureReason.UNAVAILABLE
-                        else -> FailureReason.UNREADABLE
-                    }
-                )
-            }
+            val remembered = target.entry?.encryptedPassword?.let(PasswordCipher::decrypt)
+            documentState = open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
         }
     }
 
-    private fun onOpened(entry: RecentFile, document: PdfDocument) {
+    /** Retries the document that asked for a password. */
+    fun submitPassword(password: String, remember: Boolean) {
+        val target = passwordTarget ?: return
+        val prompt = documentState as? DocumentState.NeedsPassword ?: return
+        loadJob?.cancel()
+        // Keep the prompt on screen while checking, so typed text and checkbox survive.
+        documentState = prompt.copy(isChecking = true)
+        loadJob = viewModelScope.launch {
+            documentState = open(target, password, remember, isTypedByUser = true)
+        }
+    }
+
+    private suspend fun open(
+        target: Target,
+        password: String?,
+        rememberPassword: Boolean,
+        isTypedByUser: Boolean,
+    ): DocumentState {
+        val entry = target.entry
+        return try {
+            val document = loader.openDocument(target.uri, password)
+            passwordTarget = null
+            if (entry != null) onOpened(entry, document, password, rememberPassword)
+            DocumentState.Loaded(
+                document = document,
+                name = target.name,
+                isSearchSupported = document.isFeatureSupported(PdfFeature.SEARCH),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: PdfPasswordException) {
+            if (!canOpenProtectedPdfs) {
+                entry?.let { store.remove(it.id) }
+                return DocumentState.Failed(FailureReason.PASSWORD_UNSUPPORTED)
+            }
+            // A remembered password that stopped working is forgotten; the user is asked instead.
+            if (!isTypedByUser && password != null && entry != null) store.setPassword(entry.id, null)
+            passwordTarget = target
+            DocumentState.NeedsPassword(target.name, isWrongPassword = isTypedByUser)
+        } catch (_: Exception) {
+            // Never list a file that can't be opened.
+            entry?.let { store.remove(it.id) }
+            DocumentState.Failed(
+                // It opened before, so it was moved, deleted or its permission revoked.
+                if (entry != null && entry.pageCount > 0) FailureReason.UNAVAILABLE else FailureReason.UNREADABLE
+            )
+        }
+    }
+
+    private fun onOpened(entry: RecentFile, document: PdfDocument, password: String?, rememberPassword: Boolean) {
         openEntryId = entry.id
         pendingRestorePage = entry.lastPage.takeIf { it in 1 until document.pageCount }
         viewModelScope.launch {
             store.setPageCount(entry.id, document.pageCount)
-            if (!entry.hasThumbnail) renderThumbnail(entry.id, document)
+            if (password != null) {
+                store.setPassword(entry.id, if (rememberPassword) PasswordCipher.encrypt(password) else null)
+            }
+            // Thumbnails of protected documents only when the password is remembered.
+            val showsThumbnail = password == null || rememberPassword
+            if (showsThumbnail && !entry.hasThumbnail) renderThumbnail(entry.id, document)
             store.cleanup(openId = entry.id)
         }
     }

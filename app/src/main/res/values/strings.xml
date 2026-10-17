@@ -18,8 +18,16 @@
     <string name="match_counter">%1$d / %2$d</string>
     <string name="no_matches">0 / 0</string>
 
-    <string name="error_password_protected">This PDF is password-protected. Opening those isn\'t supported yet.</string>
+    <string name="password_title">This PDF is protected with a password.</string>
+    <string name="password">Password</string>
+    <string name="wrong_password">Wrong password. Please try again.</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="remember_password">Remember password</string>
+    <string name="open">Open</string>
+
     <string name="error_unreadable">This PDF couldn\'t be opened. It may be damaged, or the app that shared it no longer allows access.</string>
+    <string name="error_password_unsupported">This PDF is protected with a password. Opening it needs a newer system update on this phone.</string>
     <string name="error_unavailable">This PDF is no longer available. It may have been moved or deleted.</string>
     <string name="open_another">Open another PDF</string>
 </resources>

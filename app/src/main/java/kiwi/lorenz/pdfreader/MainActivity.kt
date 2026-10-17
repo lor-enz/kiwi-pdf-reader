@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
                         pendingRestorePage = viewModel.pendingRestorePage,
                         onPageRestored = viewModel::onPageRestored,
                         onPageChanged = viewModel::onPageChanged,
+                        onSubmitPassword = viewModel::submitPassword,
                         onBack = {
                             if (viewModel.openedFromOtherApp) finish() else viewModel.close()
                         },
