@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.KiwiPDFReader" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/kiwi_night_background</item>
+        <!-- See values/themes.xml -->
+        <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
+        <item name="colorOnSurface">@color/kiwi_off_white</item>
+        <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
+    </style>
+</resources>

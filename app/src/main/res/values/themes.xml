@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.KiwiPDFReader" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.KiwiPDFReader" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/kiwi_background</item>
+        <!--
+          The PDF viewer's fast scroller (page number pill and scroll thumb) reads
+          these Material attributes. Without them the page number is black on a
+          transparent background and invisible on dark pages.
+        -->
+        <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
+        <item name="colorOnSurface">@color/kiwi_off_white</item>
+        <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
+    </style>
 </resources>
