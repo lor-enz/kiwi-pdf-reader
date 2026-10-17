@@ -47,6 +47,12 @@
   password). Check `PdfFeature` support instead of blocking the app.
 - `PdfViewer` applies `contentPadding` only when its view is created,
   which is why the top bar is laid over the document.
+- `PdfView` keeps the fast scroller always visible whenever any
+  accessibility service runs (password managers etc.), not only screen
+  readers. `FastScrollAutoHide` switches it back to fading out (library
+  default: 1.3 s + 0.2 s fade) unless touch exploration is on, via the
+  restricted `fastScrollVisibility`. Drop it once `androidx.pdf` fixes this.
+  To reproduce on the emulator, install a dummy accessibility service.
 - Files opened from other apps lose their permission once closed, so the
   app keeps private copies for the recent files list. The limits (30 days
   since last opened, 250 MB in total, 20 entries) are deliberate and not

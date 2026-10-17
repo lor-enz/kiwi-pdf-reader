@@ -297,6 +297,8 @@ private fun Document(
             }
     }
 
+    FastScrollAutoHide(contentLoaded = isContentLoaded)
+
     PdfViewer(
         pdfDocument = documentState.document,
         state = viewerState,
