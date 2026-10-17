@@ -37,10 +37,16 @@ class MainActivity : ComponentActivity() {
                 } else {
                     ViewerScreen(
                         documentState = viewModel.documentState,
+                        searchState = viewModel.searchState,
                         onBack = {
                             if (viewModel.openedFromOtherApp) finish() else viewModel.close()
                         },
                         onOpenAnother = openPicker,
+                        onOpenSearch = viewModel::openSearch,
+                        onCloseSearch = viewModel::closeSearch,
+                        onQueryChange = viewModel::updateQuery,
+                        onNextMatch = viewModel::nextMatch,
+                        onPreviousMatch = viewModel::previousMatch,
                     )
                 }
             }
