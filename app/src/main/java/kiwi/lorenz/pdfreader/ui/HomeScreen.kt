@@ -35,11 +35,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
@@ -83,9 +81,7 @@ fun HomeScreen(
                     Text(
                         text = stringResource(R.string.recent_files).uppercase(),
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.72.sp, // +0.06em, the brand's caption style
+                        style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 24.dp, bottom = 4.dp, start = 4.dp),
@@ -108,8 +104,7 @@ private fun Header(onOpenPdf: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.app_name),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.displaySmall,
         )
         Spacer(Modifier.height(8.dp))
         Text(
@@ -118,8 +113,8 @@ private fun Header(onOpenPdf: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onOpenPdf) {
-            Text(stringResource(R.string.open_pdf), fontSize = 17.sp)
+        Button(onClick = onOpenPdf, shape = MaterialTheme.shapes.small) {
+            Text(stringResource(R.string.open_pdf))
         }
     }
 }
@@ -130,7 +125,7 @@ private fun RecentFileRow(
     thumbnailFile: (RecentFile) -> File,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = MaterialTheme.shapes.medium
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,8 +184,7 @@ private fun Thumbnail(entry: RecentFile, thumbnailFile: (RecentFile) -> File) {
         } else {
             Text(
                 text = "PDF",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }

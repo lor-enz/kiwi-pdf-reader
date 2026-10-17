@@ -470,7 +470,7 @@ private fun PasswordPrompt(
             Text(stringResource(R.string.remember_password), style = MaterialTheme.typography.bodyLarge)
         }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = submit, enabled = canSubmit) {
+        Button(onClick = submit, enabled = canSubmit, shape = MaterialTheme.shapes.small) {
             if (state.isChecking) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
@@ -509,7 +509,7 @@ private fun Failure(
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onOpenAnother) {
+        Button(onClick = onOpenAnother, shape = MaterialTheme.shapes.small) {
             Text(stringResource(R.string.open_another))
         }
     }
