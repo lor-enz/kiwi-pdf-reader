@@ -15,7 +15,7 @@
 
 # Testing
 
-- Use emulators available to you.
+- Use only already running emulators. If none are running or they are misbehaving, tell the user.
 - "Open from another app": push the PDF to `/sdcard/Download`, run the
   media scanner, look up its id in `content://media/external/file`, then
   `am start -a android.intent.action.VIEW -t application/pdf -d
