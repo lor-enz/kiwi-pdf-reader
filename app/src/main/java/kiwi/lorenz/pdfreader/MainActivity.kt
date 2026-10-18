@@ -103,8 +103,4 @@ class MainActivity : ComponentActivity() {
         }
         uri?.let { viewModel.openFromOtherApp(it) }
     }
-
-    private companion object {
-        const val PDF_MIME_TYPE = "application/pdf"
-    }
 }

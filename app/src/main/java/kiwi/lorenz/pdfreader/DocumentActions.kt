@@ -254,4 +254,4 @@ private fun pdfFileName(name: String): String {
 private const val PRINT_DPI = 200f
 private const val POINTS_PER_INCH = 72f
 private const val SHARED_DIR = "shared"
-private const val PDF_MIME_TYPE = "application/pdf"
+const val PDF_MIME_TYPE = "application/pdf"
