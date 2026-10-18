@@ -7,12 +7,16 @@
 #   tap <target>       taps the first element whose tag, text or description is <target>
 #   hold <target>      long-presses it
 #   text <target>      prints the text of that element
+#   type <target> <s>  taps the element (a text field) and types <s>
 #   wait <target> [s]  waits until it's shown (default 10 s)
+#   back               presses back
+#   home               opens the app like its launcher icon: the main task as it was
 #   shot <file.png>    saves a screenshot
-# Pick the device with ANDROID_SERIAL (e.g. ANDROID_SERIAL=emulator-5554).
+# Uses the running emulator, or the device in ANDROID_SERIAL.
 set -euo pipefail
+source "$(dirname "$0")/device.sh"
 
-usage() { sed -n 's/^# \{0,1\}//; 2,12p' "$0"; exit 1; }
+usage() { sed -n 's/^# \{0,1\}//; 2,15p' "$0"; exit 1; }
 
 # Fails with adb's own message (e.g. "device not found") instead of an empty screen.
 adb get-state >/dev/null
@@ -57,6 +61,18 @@ case "${1:-}" in
         match=$(find "$2")
         [ -n "$match" ] || { echo "Not on screen: $2" >&2; exit 1; }
         cut -f2 <<<"$match"
+        ;;
+    type)
+        [ $# -eq 3 ] || usage
+        "$0" tap "$2"
+        # `input text` takes %s for spaces; quoted again for the device's shell.
+        text=${3// /%s}
+        adb shell input text "'${text//\'/\'\\\'\'}'"
+        ;;
+    back) adb shell input keyevent BACK ;;
+    home)
+        adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER \
+            -n $PACKAGE/.MainActivity >/dev/null 2>&1
         ;;
     wait)
         [ $# -ge 2 ] || usage

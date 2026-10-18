@@ -18,32 +18,36 @@
 # Testing
 
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
-- Helpers in `scripts/test/` (set `ANDROID_SERIAL` to pick the device):
+- Helpers in `scripts/test/` use the running emulator, never a connected
+  phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
+  `./gradlew installDebug`, which installs on every connected device.
   - `make-test-pdfs.py` writes test files to `build/test-pdfs/`: links,
     long (60 pages), protected (password `kiwi`), scanned, form, and
     broken ones (damaged, truncated, empty, not a PDF).
+  - `prepare-device.sh` turns animations off, which keeps screenshots
+    stable. Run it before testing; an emulator booted from an older
+    snapshot has them on again.
   - `open-pdf.sh [--fresh] [--no-grant] <file>` opens a file the way
     another app would (push to Download, media store URI, VIEW intent),
     in a card of its own. `--fresh` stops the app and clears its data: a
     file opened before otherwise reopens at its last page, and one that's
     still open switches to its card.
-  - `ui.sh list|tap|text|wait|shot` reads and drives the screen through
-    `uiautomator`, finding elements by test tag, text or description.
+  - `ui.sh list|tap|hold|text|type|wait|back|home|shot` reads and drives
+    the screen through `uiautomator`, finding elements by test tag, text
+    or description. `home` opens the app like its launcher icon; a plain
+    `am start -n` would stack a second home screen.
+  - `app.sh cards|focus|top|kill` lists the cards with the document each
+    shows, switches between them, and simulates process death (`am kill`
+    doesn't work, and force-stop removes the document cards).
+  - `store.sh show|age` lists the recent files list and makes an entry
+    older, e.g. to test cleanup. Cleanup runs when the home screen is
+    created, after a document opens and when a viewer closes.
 - Test tags (`ui/TestTags.kt`) show up as resource ids because the root
   sets `testTagsAsResourceId`. Popups and sheets are windows of their own
   and need it set again (see the tools sheet).
 - Page content is a single accessibility node, so links in a document are
   tapped by coordinates.
-- Run `scripts/test/prepare-device.sh` before testing: it turns animations
-  off, which keeps screenshots stable. An emulator booted from an older
-  snapshot has them on again.
-- Return to the main task with the launcher's intent (`am start -a
-  android.intent.action.MAIN -c android.intent.category.LAUNCHER -n
-  kiwi.lorenz.pdfreader/.MainActivity`); a plain `am start -n` stacks a
-  second home screen. Switch to a card with `cmd activity task focus <id>`;
-  `dumpsys activity recents` lists the cards.
-- Process death: `am kill` doesn't work. Press home, then
-  `run-as kiwi.lorenz.pdfreader kill -9 <pid>`.
+- With a text field focused, the first back only closes the keyboard.
 - Fast swipes fling to the end of the document; use slow ones.
 
 # Product philosophy

@@ -6,8 +6,9 @@
 #   --fresh     stop the app and clear its data first; otherwise a file opened before reopens at
 #               its last page, and one that's still open switches to its card
 #   --no-grant  leave out the read permission, like a sender that forgets to grant it
-# Pick the device with ANDROID_SERIAL (e.g. ANDROID_SERIAL=emulator-5554).
+# Uses the running emulator, or the device in ANDROID_SERIAL.
 set -euo pipefail
+source "$(dirname "$0")/device.sh"
 
 grant=--grant-read-uri-permission
 fresh=
