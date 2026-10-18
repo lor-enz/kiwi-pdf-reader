@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader
 
 import android.app.Application
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,6 +22,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Removed from the list, but its files are kept while the removal can be undone. */
     var pendingRemoval by mutableStateOf<RecentFile?>(null)
+        private set
+
+    /** A short message for the home screen's snackbar (a string resource), cleared once shown. */
+    var message by mutableStateOf<Int?>(null)
         private set
 
     init {
@@ -52,5 +57,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** The thumbnail goes too, as it shows protected content. */
     fun forgetPassword(entry: RecentFile) {
         viewModelScope.launch { store.setPassword(entry.id, null) }
+    }
+
+    fun showMessage(@StringRes message: Int) {
+        this.message = message
+    }
+
+    fun onMessageShown() {
+        message = null
     }
 }

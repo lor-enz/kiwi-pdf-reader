@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +54,7 @@ import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -68,6 +70,8 @@ fun HomeScreen(
     onRemoveRecent: (RecentFile) -> Unit,
     onUndoRemoval: (RecentFile) -> Unit,
     onRemovalDone: (RecentFile) -> Unit,
+    message: Int?,
+    onMessageShown: () -> Unit,
 ) {
     // Long-pressing an entry opens its sheet; kept by id, as the entry itself changes.
     var sheetEntryId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -95,6 +99,17 @@ fun HomeScreen(
             // Also when leaving the screen: the files are only deleted once undo is impossible.
             if (isUndone) onUndoRemoval(entry) else onRemovalDone(entry)
         }
+    }
+
+    val scope = rememberCoroutineScope()
+    val messageText = message?.let { stringResource(it) }
+    LaunchedEffect(messageText) {
+        messageText ?: return@LaunchedEffect
+        // Cleared right away, so the same message can come again; that restarts this effect,
+        // so the snackbar is shown in the screen's scope. It waits for an undo snackbar instead
+        // of dismissing it, which would end the undo.
+        onMessageShown()
+        scope.launch { snackbarHostState.showSnackbar(messageText) }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
@@ -311,6 +326,8 @@ private fun HomeScreenEmptyPreview() {
             onRemoveRecent = {},
             onUndoRemoval = {},
             onRemovalDone = {},
+            message = null,
+            onMessageShown = {},
         )
     }
 }
@@ -334,6 +351,8 @@ private fun HomeScreenRecentPreview() {
             onRemoveRecent = {},
             onUndoRemoval = {},
             onRemovalDone = {},
+            message = null,
+            onMessageShown = {},
         )
     }
 }

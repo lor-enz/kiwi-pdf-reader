@@ -2,7 +2,6 @@ package kiwi.lorenz.pdfreader
 
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
@@ -44,6 +43,8 @@ class MainActivity : ComponentActivity() {
                 onRemoveRecent = viewModel::removeRecent,
                 onUndoRemoval = viewModel::undoRemoval,
                 onRemovalDone = viewModel::finishRemoval,
+                message = viewModel.message,
+                onMessageShown = viewModel::onMessageShown,
             )
         }
     }
@@ -51,7 +52,7 @@ class MainActivity : ComponentActivity() {
     private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
             runCatchingCancellable { sharePdf(uri, name) }.onFailure {
-                Toast.makeText(this@MainActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
+                viewModel.showMessage(R.string.share_failed)
             }
         }
     }
