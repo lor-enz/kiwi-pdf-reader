@@ -48,11 +48,11 @@ open class ViewerActivity : ComponentActivity() {
         override fun pageRestored() = viewModel.onPageRestored()
         override fun pageChanged(page: Int) = viewModel.onPageChanged(page)
         override fun formEdited(edit: FormEditInfo) = viewModel.applyFormEdit(edit)
-        override fun openSearch() = viewModel.openSearch()
-        override fun closeSearch() = viewModel.closeSearch()
-        override fun changeQuery(query: String) = viewModel.updateQuery(query)
-        override fun nextMatch() = viewModel.nextMatch()
-        override fun previousMatch() = viewModel.previousMatch()
+        override fun openSearch() = viewModel.search.open()
+        override fun closeSearch() = viewModel.search.close()
+        override fun changeQuery(query: String) = viewModel.search.changeQuery(query)
+        override fun nextMatch() = viewModel.search.next()
+        override fun previousMatch() = viewModel.search.previous()
         override fun print() = this@ViewerActivity.print()
         override fun share() = this@ViewerActivity.share()
         override fun saveCopy() {
@@ -96,7 +96,7 @@ open class ViewerActivity : ComponentActivity() {
 
                     ViewerScreen(
                         documentState = viewModel.documentState,
-                        searchState = viewModel.searchState,
+                        searchState = viewModel.search.state,
                         pendingRestorePage = viewModel.pendingRestorePage,
                         isFilledIn = viewModel.isFilledIn,
                         message = viewModel.message,
