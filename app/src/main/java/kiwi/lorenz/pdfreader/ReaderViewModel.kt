@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
+import androidx.core.util.size
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -225,20 +226,13 @@ class ReaderViewModel(
         searchState = searchState.copy(query = query, isSearching = true)
         searchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS)
-            val results = try {
+            val results = runCatchingCancellable {
                 document.searchDocument(query.trim(), 0 until document.pageCount)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
-            }
-            val matches = buildList {
-                // SparseArray keys are sorted, so matches come out in reading order.
-                for (i in 0 until (results?.size() ?: 0)) {
-                    val pageNum = results!!.keyAt(i)
-                    results.valueAt(i).forEach { add(SearchMatch(pageNum, it.bounds)) }
-                }
-            }
+            }.getOrNull()
+            // SparseArray keys are sorted, so matches come out in reading order.
+            val matches = results?.let { pages ->
+                (0 until pages.size).flatMap { i -> pages.valueAt(i).map { SearchMatch(pages.keyAt(i), it.bounds) } }
+            }.orEmpty()
             val hasNoText = matches.isEmpty() && results != null && !hasText(document)
             searchState = searchState.copy(
                 matches = matches,
@@ -252,16 +246,14 @@ class ReaderViewModel(
     /** Stops at the first page with text, so only documents without any are read completely. */
     private suspend fun hasText(document: PdfDocument): Boolean {
         documentHasText?.let { return it }
-        return try {
+        return runCatchingCancellable {
             (0 until document.pageCount).any { page ->
                 document.getPageContent(page)?.textContents.orEmpty().any { it.text.isNotBlank() }
-            }.also { documentHasText = it }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            // Unknown; "no matches" is never wrong.
-            true
+            }
         }
+            .onSuccess { documentHasText = it }
+            // Unknown; "no matches" is never wrong.
+            .getOrDefault(true)
     }
 
     fun nextMatch() = moveMatch(+1)
@@ -359,8 +351,9 @@ class ReaderViewModel(
         if (!entry.isCopy) viewModelScope.launch { store.hashPicked(entry.id) }
     }
 
+    /** No thumbnail is fine if this fails; the list shows a placeholder. */
     private suspend fun renderThumbnail(id: String, document: PdfDocument) {
-        try {
+        runCatchingCancellable {
             val page = document.getPageInfo(0)
             val width = THUMBNAIL_WIDTH_PX
             val height = (width * page.height.toFloat() / page.width).roundToInt().coerceIn(1, 3 * width)
@@ -372,10 +365,6 @@ class ReaderViewModel(
                 drawBitmap(rendered, null, android.graphics.Rect(0, 0, width, height), null)
             }
             store.saveThumbnail(id, thumbnail)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            // No thumbnail is fine; the list shows a placeholder.
         }
     }
 

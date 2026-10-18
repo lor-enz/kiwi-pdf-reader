@@ -23,7 +23,6 @@ import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -90,11 +89,7 @@ class MainActivity : ComponentActivity() {
 
     private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
-            try {
-                sharePdf(uri, name)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
+            runCatchingCancellable { sharePdf(uri, name) }.onFailure {
                 Toast.makeText(this@MainActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
             }
         }

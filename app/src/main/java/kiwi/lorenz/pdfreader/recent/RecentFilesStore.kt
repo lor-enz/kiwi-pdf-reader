@@ -10,7 +10,7 @@ import android.util.AtomicFile
 import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
-import kotlinx.coroutines.CancellationException
+import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -292,23 +292,20 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     /** Null if the file can't be read. Stops when cancelled, as large files take a while. */
     private suspend fun hash(uri: Uri): String? = withContext(Dispatchers.IO) {
-        val digest = MessageDigest.getInstance("SHA-256")
-        try {
-            context.contentResolver.openInputStream(uri)?.use { input ->
+        runCatchingCancellable {
+            val digest = MessageDigest.getInstance("SHA-256")
+            val input = context.contentResolver.openInputStream(uri) ?: error("Cannot read $uri")
+            input.use {
                 val buffer = ByteArray(HASH_BUFFER_BYTES)
                 while (true) {
                     ensureActive()
-                    val read = input.read(buffer)
+                    val read = it.read(buffer)
                     if (read < 0) break
                     digest.update(buffer, 0, read)
                 }
-            } ?: return@withContext null
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            return@withContext null
-        }
-        digest.digest().toHex()
+            }
+            digest.digest().toHex()
+        }.getOrNull()
     }
 
     /** Size and modification time as the provider reports them; null where unknown. */
