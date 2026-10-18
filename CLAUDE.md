@@ -104,6 +104,13 @@
   tablet side panel could only show page thumbnails.
 - No OCR for scanned PDFs: the usual engine (ML Kit) needs Google Play
   Services, and Tesseract is too large.
+- Web, mail and phone links go through `onUrlLinkClicked`: only http(s),
+  mailto and tel are opened (the library's default would open any scheme),
+  and a snackbar says so when no app can open one. In-document links are
+  handled by `PdfView` itself: it centers the target in the viewport (so it
+  never hides under the top bar), and links with a bare `/Dest` array do
+  nothing; only `/GoTo` actions work, including named destinations (LaTeX,
+  Word). Nothing to hook into for either, as of beta01.
 
 # Planned changes
 
@@ -115,7 +122,7 @@
 ## Upcoming features
 
 ### Milestone 5: robustness
-- [ ] Links: test web, mailto, tel and in-document links (with the top
+- [x] Links: test web, mailto, tel and in-document links (with the top
   bar overlaid); don't crash when no app handles a link
 - [ ] Broken files: tell apart damaged, not-a-PDF and lost permission,
   with advice (download it again, ask the sender for a new copy)

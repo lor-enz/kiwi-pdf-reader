@@ -42,6 +42,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -53,6 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -62,6 +65,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -85,9 +89,11 @@ import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.FailureReason
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
+import kiwi.lorenz.pdfreader.openLink
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
@@ -146,6 +152,10 @@ fun ViewerScreen(
         )
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val linkFailedMessage = stringResource(R.string.link_failed)
+
     // The bar is laid over the content, so hiding it doesn't shift the pages.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val contentPadding = PaddingValues(
@@ -167,6 +177,12 @@ fun ViewerScreen(
                 onPageChanged = onPageChanged,
                 contentPadding = contentPadding,
                 onBarHiddenChange = { isBarHiddenByScroll = it },
+                onLinkFailed = {
+                    scope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar(linkFailedMessage)
+                    }
+                },
             )
 
             is DocumentState.NeedsPassword -> PasswordPrompt(
@@ -240,6 +256,13 @@ fun ViewerScreen(
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = contentPadding.calculateBottomPadding()),
+        )
     }
 }
 
@@ -285,7 +308,9 @@ private fun Document(
     onPageChanged: (Int) -> Unit,
     contentPadding: PaddingValues,
     onBarHiddenChange: (Boolean) -> Unit,
+    onLinkFailed: () -> Unit,
 ) {
+    val context = LocalContext.current
     val viewerState = rememberPdfViewerState()
     var isContentLoaded by remember { mutableStateOf(false) }
     var viewportHeight by remember { mutableIntStateOf(0) }
@@ -353,6 +378,11 @@ private fun Document(
         // Pages start below the bar and scroll behind it and the navigation bar.
         contentPadding = contentPadding,
         onFirstContentLoad = { isContentLoaded = true },
+        // Handled here, so links with no app to open them don't fail silently.
+        onUrlLinkClicked = { uri ->
+            if (!context.openLink(uri)) onLinkFailed()
+            true
+        },
     )
 }
 

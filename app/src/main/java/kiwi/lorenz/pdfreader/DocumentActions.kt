@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ComponentName
 import android.content.ContentResolver
@@ -21,6 +22,7 @@ import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
 import android.util.Size
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.pdf.PdfDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +36,22 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.math.min
 import kotlin.math.roundToInt
+
+/** The schemes a document's links may open; others (`intent:`, `content:`, …) could reach into other apps. */
+private val LINK_SCHEMES = setOf("http", "https", "mailto", "tel")
+
+/** Opens a link from a document. False if its scheme isn't allowed or no app can handle it. */
+fun Context.openLink(uri: Uri): Boolean {
+    // Links like "www.example.com" come without a scheme.
+    val link = if (uri.scheme.isNullOrEmpty()) "http://$uri".toUri() else uri
+    if (link.scheme?.lowercase() !in LINK_SCHEMES) return false
+    return try {
+        startActivity(Intent(Intent.ACTION_VIEW, link))
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    }
+}
 
 /**
  * Opens the system print dialog for the PDF. Needs an activity context.
