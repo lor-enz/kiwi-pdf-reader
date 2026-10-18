@@ -127,6 +127,9 @@
   content gets one entry: the picked one wins and other entries, copies
   included, go. A file from another app that matches an unchanged picked
   entry opens through that entry, and its temporary copy is dropped.
+- Files from other apps are accepted only as `content://` URIs. A
+  `file://` URI would be read with the app's own rights, which reach its
+  private files; it gets the "not given access" error instead.
 - Only documents opened from other apps get their own task (card in the
   app switcher); the app's own list and picker open in the main task.
 - `androidx.pdf` can't read a PDF's outline (table of contents), so a

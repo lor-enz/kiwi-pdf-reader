@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader
 
 import android.app.Application
+import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -149,9 +150,17 @@ class ReaderViewModel(
     }
 
     /** A file handed over by another app; it is copied so it can be reopened later. */
-    fun openFromOtherApp(uri: Uri) = launchOpen(fromOtherApp = true) {
-        val name = displayName(uri)
-        store.importCopy(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
+    fun openFromOtherApp(uri: Uri) {
+        // A file URI would be read with this app's own rights, which reach its private files.
+        if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
+            resetForOpen(fromOtherApp = true)
+            documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
+            return
+        }
+        launchOpen(fromOtherApp = true) {
+            val name = displayName(uri)
+            store.importCopy(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
+        }
     }
 
     fun openRecent(entry: RecentFile) = launchOpen(fromOtherApp = false) {
@@ -281,12 +290,16 @@ class ReaderViewModel(
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
 
-    private fun launchOpen(fromOtherApp: Boolean, resolve: suspend () -> Target) {
+    private fun resetForOpen(fromOtherApp: Boolean) {
         closeDocument()
         openedFromOtherApp = fromOtherApp
         openEntryId = null
         pendingRestorePage = null
         passwordTarget = null
+    }
+
+    private fun launchOpen(fromOtherApp: Boolean, resolve: suspend () -> Target) {
+        resetForOpen(fromOtherApp)
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
             val target = resolve()
