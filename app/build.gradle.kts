@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "kiwi.lorenz.pdfreader"
-        minSdk = 31
+        minSdk = 35
         targetSdk = 37
         // A higher versionCode pushed to main triggers a release; see the README
         val versionProperties = Properties().apply {

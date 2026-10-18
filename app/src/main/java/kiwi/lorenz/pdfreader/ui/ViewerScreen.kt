@@ -147,7 +147,6 @@ fun ViewerScreen(
     var isToolsSheetOpen by rememberSaveable { mutableStateOf(false) }
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
-            isSearchSupported = loaded.isSearchSupported,
             onDismiss = { isToolsSheetOpen = false },
             onSearch = onOpenSearch,
             onPrint = onPrint,
@@ -283,7 +282,6 @@ private val BarInsets
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ToolsSheet(
-    isSearchSupported: Boolean,
     onDismiss: () -> Unit,
     onSearch: () -> Unit,
     onPrint: () -> Unit,
@@ -303,9 +301,7 @@ private fun ToolsSheet(
                 }
                 .testTag(tag),
         )
-        if (isSearchSupported) {
-            Tool(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
-        }
+        Tool(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
         Tool(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
         Tool(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
         Spacer(Modifier.height(8.dp))
@@ -632,7 +628,6 @@ private fun Failure(
                     FailureReason.NOT_PDF -> R.string.error_not_pdf
                     FailureReason.NO_PERMISSION -> R.string.error_no_permission
                     FailureReason.UNAVAILABLE -> R.string.error_unavailable
-                    FailureReason.PASSWORD_UNSUPPORTED -> R.string.error_password_unsupported
                 }
             ),
             style = MaterialTheme.typography.bodyLarge,

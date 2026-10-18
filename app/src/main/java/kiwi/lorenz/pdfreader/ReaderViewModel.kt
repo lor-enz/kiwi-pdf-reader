@@ -7,8 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.RectF
 import android.net.Uri
-import android.os.Build
-import android.os.ext.SdkExtensions
 import android.provider.OpenableColumns
 import android.util.Size
 import androidx.compose.runtime.getValue
@@ -20,7 +18,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.pdf.PdfDocument
-import androidx.pdf.PdfFeature
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
@@ -42,7 +39,6 @@ sealed interface DocumentState {
     data class Loaded(
         val document: PdfDocument,
         val name: String,
-        val isSearchSupported: Boolean,
         /** Opened with a password; other apps can't read the file on their own. */
         val isProtected: Boolean,
     ) : DocumentState
@@ -64,14 +60,7 @@ enum class FailureReason {
     NO_PERMISSION,
     /** Moved or deleted. */
     UNAVAILABLE,
-    PASSWORD_UNSUPPORTED,
 }
-
-/**
- * Without SDK extension 13 (a Google Play system update), androidx.pdf falls back to the old
- * platform renderer, which can't open encrypted PDFs even with the right password.
- */
-private val canOpenProtectedPdfs = SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13
 
 /** A single search hit. A match spanning several lines has one rect per line. */
 data class SearchMatch(val pageNum: Int, val bounds: List<RectF>)
@@ -334,16 +323,11 @@ class ReaderViewModel(
             DocumentState.Loaded(
                 document = document,
                 name = target.name,
-                isSearchSupported = document.isFeatureSupported(PdfFeature.SEARCH),
                 isProtected = password != null,
             )
         } catch (e: CancellationException) {
             throw e
         } catch (_: PdfPasswordException) {
-            if (!canOpenProtectedPdfs) {
-                entry?.let { store.remove(it.id) }
-                return DocumentState.Failed(FailureReason.PASSWORD_UNSUPPORTED)
-            }
             // A remembered password that stopped working is forgotten; the user is asked instead.
             if (!isTypedByUser && password != null && entry != null) store.setPassword(entry.id, null)
             passwordTarget = target

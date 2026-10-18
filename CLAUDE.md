@@ -60,9 +60,12 @@
 - `androidx.pdf` is beta, and the Compose `PdfViewer` is still
   `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.
-- Devices without SDK extension 13 get a compat renderer: viewing works,
-  but search, selection and encrypted PDFs don't (not even with the right
-  password). Check `PdfFeature` support instead of blocking the app.
+- minSdk is 35 (Android 15). Older phones without SDK extension 13 got a
+  compat renderer without search, selection, encrypted PDFs or form
+  filling. Supporting that reduced mode meant a second code path for every
+  feature and the restricted `PdfFeature` API, which wasn't worth it for a
+  hobby app. With minSdk 35 every feature is always available: don't add
+  feature checks.
 - `PdfViewer` applies `contentPadding` only when its view is created,
   which is why the top bar is laid over the document.
 - `PdfView` keeps the fast scroller always visible whenever any
@@ -103,9 +106,6 @@
   drafts) may read them later.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
-- Phones without SDK extension 13 stay supported (minSdk 31). Raising
-  minSdk to 35 would be the only way to require it and would exclude most
-  Android 12–14 phones, which mostly have the extension anyway.
 - Form edits are autosaved about 1 s after the last edit and when the app
   goes to the background, as a full filled-in PDF in private storage,
   keyed by the SHA-256 of the original. They survive closing the document
@@ -114,8 +114,7 @@
   "Clear filled-in fields" in the tools sheet starts over. Share, Print
   and Save a copy use the filled-in version, and the sheet says so next to
   them. Filled-in versions count toward the copies' limits (30 days,
-  250 MB). Where `PdfFeature.FORM_FILLING` is missing, fields stay
-  read-only.
+  250 MB).
 - Removing an entry from the recent files list hides it in the store and
   deletes its files (or releases its permission) only when the Undo
   snackbar is gone, also when the screen is left. After process death the

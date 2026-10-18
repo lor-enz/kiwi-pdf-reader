@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-   Backup rules for Android 11 and lower. Not used while minSdk is 31,
-   kept in sync with data_extraction_rules.xml.
-   See https://developer.android.com/guide/topics/data/autobackup
--->
-<full-backup-content>
-    <exclude domain="file" path="recent/" />
-</full-backup-content>
