@@ -51,6 +51,8 @@
   only when no single default can work for most users.
 - Before adding a feature, ask: does the user have to do or understand
   anything new? If yes, look for a way that works without it.
+- Use standard Android and Compose behavior (e.g. `animateItem()` for list
+  changes) instead of custom implementations, so the app feels native.
 
 # Project notes
 

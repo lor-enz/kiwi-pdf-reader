@@ -2,6 +2,7 @@ package kiwi.lorenz.pdfreader.ui
 
 import android.graphics.BitmapFactory
 import android.text.format.DateUtils
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,47 +108,52 @@ fun HomeScreen(
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
-        if (recentFiles.isEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Header(onOpenPdf)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = innerPadding.calculateTopPadding() + 32.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                item { Header(onOpenPdf) }
-                item {
-                    Text(
-                        text = stringResource(R.string.recent_files).uppercase(),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp, bottom = 4.dp, start = 4.dp),
-                    )
+        // Removing the last entry switches to the centered layout; fade instead of jumping.
+        Crossfade(targetState = recentFiles.isEmpty(), label = "recent files") { isEmpty ->
+            if (isEmpty) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Header(onOpenPdf)
                 }
-                items(recentFiles, key = { it.id }) { entry ->
-                    RecentFileRow(
-                        entry = entry,
-                        thumbnailFile = thumbnailFile,
-                        onClick = { onOpenRecent(entry) },
-                        onLongClick = { sheetEntryId = entry.id },
-                    )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = innerPadding.calculateTopPadding() + 32.dp,
+                        bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    item { Header(onOpenPdf) }
+                    item {
+                        Text(
+                            text = stringResource(R.string.recent_files).uppercase(),
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp, bottom = 4.dp, start = 4.dp),
+                        )
+                    }
+                    items(recentFiles, key = { it.id }) { entry ->
+                        RecentFileRow(
+                            entry = entry,
+                            thumbnailFile = thumbnailFile,
+                            onClick = { onOpenRecent(entry) },
+                            onLongClick = { sheetEntryId = entry.id },
+                            // Removed entries fade out and the rest moves up, reordered ones slide.
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
                 }
             }
         }
@@ -184,10 +190,11 @@ private fun RecentFileRow(
     thumbnailFile: (RecentFile) -> File,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shape = MaterialTheme.shapes.medium
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .border(0.5.dp, MaterialTheme.colorScheme.outline, shape)
