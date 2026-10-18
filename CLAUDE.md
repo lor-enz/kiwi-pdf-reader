@@ -11,10 +11,12 @@
   waiting or working around it. It usually needs a manual restart.
 - Only test on the emulator unless the user says otherwise; their own
   phone may be connected via adb too (target with `adb -s <serial>`).
-- Record decisions and findings in this file as they come up.
 - Give new UI elements a test tag (`ui/TestTags.kt`) in the same change
   that adds them, so they can be driven by adb (see Testing).
-- Try to update claude.md and the readme with the relevant commit. E.g. when updating the milestones instead of a separate commit just for the claude.md/readme changes.
+- Record decisions and findings in this file as they come up, and update it
+  and the readme in the commit they belong to (e.g. the milestones), not in a
+  separate one.
+
 # Testing
 
 - Unit tests run on the JVM. `RecentFilesStoreTest` uses Robolectric (simulating
@@ -25,10 +27,8 @@
 - Helpers in `scripts/test/` use the running emulator, never a connected
   phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
   `./gradlew installDebug`, which installs on every connected device.
-  - `make-test-pdfs.py` writes test files to `build/test-pdfs/`: links,
-    long (60 pages), protected (password `kiwi`), scanned, form,
-    form-protected (password `kiwi`), and broken ones (damaged, truncated,
-    empty, not a PDF).
+  - `make-test-pdfs.py` writes test files to `build/test-pdfs/` (the
+    protected ones use password `kiwi`).
   - `prepare-device.sh` turns animations off, which keeps screenshots
     stable. Run it before testing; an emulator booted from an older
     snapshot has them on again.
@@ -83,12 +83,9 @@
 - `androidx.pdf` is beta, and the Compose `PdfViewer` is still
   `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.
-- minSdk is 35 (Android 15). Older phones without SDK extension 13 got a
-  compat renderer without search, selection, encrypted PDFs or form
-  filling. Supporting that reduced mode meant a second code path for every
-  feature and the restricted `PdfFeature` API, which wasn't worth it for a
-  hobby app. With minSdk 35 every feature is always available: don't add
-  feature checks.
+- minSdk is 35 (Android 15), so every feature is always available: don't
+  add feature checks. A reduced mode for older phones would need a second
+  code path for every feature.
 - `PdfViewer` applies `contentPadding` only when its view is created,
   which is why the top bar is laid over the document.
 - `PdfView` keeps the fast scroller always visible whenever any
@@ -123,31 +120,19 @@
   top bar stays calm as tools are added. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
-- Save a copy writes to a file the user creates with the system's "Save
-  to" dialog (`CreateDocument`), and deletes it again if writing fails.
-  The viewer reports results (saved, couldn't share) in its snackbar.
-- Print passes the file through to the print system unchanged, except for
-  password-protected documents: the print system can't open those, so
-  their pages are rendered as images (200 dpi) from the open document.
-- Share copies the file to `cache/shared/` under its real name and hands
-  it out via `FileProvider`. Copies are deleted after a day (checked at
-  startup and on each share), not right away, because recipients (mail
-  drafts) may read them later.
+- Print renders password-protected documents as images, as the print
+  system can't open them.
+- Shared copies are deleted after a day, not right away, because
+  recipients (mail drafts) may read them later.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
-- Form edits are autosaved (`FormAutosave`) about 1 s after the last edit,
-  when the app goes to the background and when the viewer closes, as a full
-  filled-in PDF in `files/recent/filled/<entry id>.pdf`. The entry records
-  the hash of the original it was filled in from (`filledFromHash`); when
-  the original changes, the filled-in version is dropped. Reopening the
-  original opens the filled-in version without asking; "Clear filled-in
-  fields" in the tools sheet (confirmed in a dialog) starts over. Share,
-  Print and Save a copy use the filled-in version, and the sheet says so
-  next to them. Filled-in versions count toward the copies' limits (30 days,
-  250 MB); a picked file then only loses its filled-in version. Writing
-  keeps password protection: a filled-in protected form needs the same
-  password. Edits to a document without a recent entry stay in memory and
-  are written to `cache/unsaved-forms/` only to share or print them.
+- Form edits are autosaved (`FormAutosave`) as a full filled-in PDF. When
+  the original changes (hash), the filled-in version is dropped; otherwise
+  reopening the original opens it without asking. Share, Print and Save a
+  copy use it. It counts toward the copies' limits, and a picked file then
+  only loses its filled-in version. A filled-in protected form needs the
+  same password. Edits to a document without a recent entry only live in
+  memory, and are written out just to share or print them.
 - `androidx.pdf` form filling, as of beta01: the app applies each edit
   (`EditablePdfDocument.applyEdit`), the viewer only reports it.
   `PdfViewer` sets the document before enabling form filling, so the first
@@ -157,17 +142,14 @@
   closed. Drop-down fields open a Material Components dialog, which crashes
   without a Material theme: the XML theme is based on Material 3 (Compose
   doesn't need it) and colors that dialog via `materialAlertDialogTheme`.
-- Removing an entry from the recent files list hides it in the store and
-  deletes its files (or releases its permission) only when the Undo
-  snackbar is gone, also when the screen is left. After process death the
-  startup cleanup removes what's left, including persisted permissions no
-  entry uses. Snackbars with an action default to indefinite in Material 3,
-  so it uses `SnackbarDuration.Long`.
-- Picked files are hashed (SHA-256) after they open, in the background,
-  and again only when their size or modification time changed. The same
-  content gets one entry: the picked one wins and other entries, copies
-  included, go. A file from another app that matches an unchanged picked
-  entry opens through that entry, and its temporary copy is dropped.
+- Removing an entry hides it in the store and deletes its files only when
+  the Undo snackbar is gone (also when the screen is left); after process
+  death the startup cleanup finishes the job. Snackbars with an action
+  default to indefinite in Material 3, so it uses `SnackbarDuration.Long`.
+- The same content gets one entry (SHA-256, computed in the background
+  after opening): the picked file wins and other entries, copies included,
+  go. A file from another app that matches an unchanged picked entry opens
+  through that entry.
 - Files from other apps are accepted only as `content://` URIs. A
   `file://` URI would be read with the app's own rights, which reach its
   private files; it gets the "not given access" error instead.
@@ -180,22 +162,18 @@
   the app that opened it. A document is open in one viewer only: opening it
   again, from anywhere, switches to the viewer that has it (forms in two
   viewers would overwrite each other).
-- The store records which entry each task shows (`files/recent/open.json`,
-  by task id), so cleanup spares every document with a card, also after
-  process death, and a card can reopen its copy after its intent's
-  permission is gone. Tasks no longer in `ActivityManager.appTasks` (card
-  swiped away) drop out. Returning to a card counts as opening the
-  document. An app update or force-stop removes the document cards.
-- `androidx.pdf` can't read a PDF's outline (table of contents), so a
-  tablet side panel could only show page thumbnails.
+- The store records which entry each task shows, so cleanup spares every
+  open document, also after process death, and a card can reopen its copy
+  after its intent's permission is gone. Returning to a card counts as
+  opening the document. An app update or force-stop removes the cards.
 - No OCR for scanned PDFs: the usual engine (ML Kit) needs Google Play
   Services, and Tesseract is too large. (`PdfViewer` does take an
   `ocrProvider`, should a suitable engine turn up.) Searching a document
   without any text says so instead of "0 / 0"; the check reads pages until
   the first one with text and runs once per document.
 - Web, mail and phone links go through `onUrlLinkClicked`: only http(s),
-  mailto and tel are opened (the library's default would open any scheme),
-  and a snackbar says so when no app can open one. In-document links are
+  mailto and tel are opened (the library's default would open any scheme).
+  In-document links are
   handled by `PdfView` itself: it centers the target in the viewport (so it
   never hides under the top bar), and links with a bare `/Dest` array do
   nothing; only `/GoTo` actions work, including named destinations (LaTeX,
@@ -212,38 +190,6 @@
 # Planned changes
 
 ## Upcoming features
-
-### Milestone 5: robustness
-- [x] Links: test web, mailto, tel and in-document links (with the top
-  bar overlaid); don't crash when no app handles a link
-- [x] Broken files: tell apart damaged, not-a-PDF and lost permission,
-  with advice (download it again, ask the sender for a new copy)
-- [x] Search in a document without text (scanned): say so instead of
-  "No matches"
-
-### Milestone 6: recent files sheet
-- [x] Long-press an entry: sheet with its file name at the top
-- [x] Remove from list, with an Undo snackbar (delete files only once the
-  snackbar is gone)
-- [x] Share without opening the document
-- [x] Forget password (only when one is remembered), also deletes the
-  thumbnail
-- [x] Hash picked files too, fixing the duplicate entries
-
-### Milestone 7: documents from other apps in their own task
-- [x] Split home and viewer into separate activities, each with its own
-  view model; reopening the same document returns to its card; back and
-  process death per task
-- [x] Cleanup protects every open document (every card), not just the one
-  of the window that runs it, also after process death; returning to a
-  card counts as opening it
-
-### Milestone 8: save and forms
-- [x] Save a copy ("Save to…" via the system file picker)
-- [x] Form filling with autosave and restore (see Project notes)
-- [x] Check whether the filled-in file of a password-protected PDF stays
-  encrypted (it does, with the same password)
-- [x] Update the privacy policy (filled-in forms are stored locally)
 
 ### Milestone 9: polish (needs discussion first)
 - [ ] Opening a recent file reorders the list (it counts as opened) while
@@ -262,4 +208,5 @@
 
 ### Later
 - [ ] Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
-  side panel
+  side panel (`androidx.pdf` can't read a PDF's outline, so no table of
+  contents)
