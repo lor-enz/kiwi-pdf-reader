@@ -9,6 +9,7 @@ object TestTags {
     const val RECENT_FILE = "recent_file"
     const val RECENT_SHEET_TITLE = "recent_sheet_title"
     const val SHARE_RECENT = "share_recent"
+    const val FORGET_PASSWORD = "forget_password"
     const val REMOVE_RECENT = "remove_recent"
 
     const val BACK = "back"

@@ -72,6 +72,7 @@ fun HomeScreen(
     onOpenPdf: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
     onShareRecent: (RecentFile) -> Unit,
+    onForgetPassword: (RecentFile) -> Unit,
     pendingRemoval: RecentFile?,
     onRemoveRecent: (RecentFile) -> Unit,
     onUndoRemoval: (RecentFile) -> Unit,
@@ -84,6 +85,7 @@ fun HomeScreen(
             entry = entry,
             onDismiss = { sheetEntryId = null },
             onShare = { onShareRecent(entry) },
+            onForgetPassword = { onForgetPassword(entry) },
             onRemove = { onRemoveRecent(entry) },
         )
     }
@@ -224,6 +226,7 @@ private fun RecentFileSheet(
     entry: RecentFile,
     onDismiss: () -> Unit,
     onShare: () -> Unit,
+    onForgetPassword: () -> Unit,
     onRemove: () -> Unit,
 ) {
     // The sheet is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
@@ -252,6 +255,9 @@ private fun RecentFileSheet(
                 .testTag(tag),
         )
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onShare)
+        if (entry.encryptedPassword != null) {
+            Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onForgetPassword)
+        }
         Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onRemove)
         Spacer(Modifier.height(8.dp))
     }
@@ -319,6 +325,7 @@ private fun HomeScreenEmptyPreview() {
             onOpenPdf = {},
             onOpenRecent = {},
             onShareRecent = {},
+            onForgetPassword = {},
             pendingRemoval = null,
             onRemoveRecent = {},
             onUndoRemoval = {},
@@ -341,6 +348,7 @@ private fun HomeScreenRecentPreview() {
             onOpenPdf = {},
             onOpenRecent = {},
             onShareRecent = {},
+            onForgetPassword = {},
             pendingRemoval = null,
             onRemoveRecent = {},
             onUndoRemoval = {},

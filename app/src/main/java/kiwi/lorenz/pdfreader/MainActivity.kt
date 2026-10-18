@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                             onOpenRecent = viewModel::openRecent,
                             pendingRemoval = viewModel.pendingRemoval,
                             onShareRecent = { share(it.uri.toUri(), it.name) },
+                            onForgetPassword = viewModel::forgetPassword,
                             onRemoveRecent = viewModel::removeRecent,
                             onUndoRemoval = viewModel::undoRemoval,
                             onRemovalDone = viewModel::finishRemoval,

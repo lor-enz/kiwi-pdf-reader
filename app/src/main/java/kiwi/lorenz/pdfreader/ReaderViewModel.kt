@@ -187,6 +187,11 @@ class ReaderViewModel(
         viewModelScope.launch { store.restore(entry) }
     }
 
+    /** The thumbnail goes too, as it shows protected content. */
+    fun forgetPassword(entry: RecentFile) {
+        viewModelScope.launch { store.setPassword(entry.id, null) }
+    }
+
     fun finishRemoval(entry: RecentFile) {
         if (pendingRemoval == entry) pendingRemoval = null
         store.discard(entry)

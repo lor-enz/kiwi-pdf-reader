@@ -164,7 +164,7 @@
 - [x] Remove from list, with an Undo snackbar (delete files only once the
   snackbar is gone)
 - [x] Share without opening the document
-- [ ] Forget password (only when one is remembered), also deletes the
+- [x] Forget password (only when one is remembered), also deletes the
   thumbnail
 - [ ] Hash picked files too, fixing the duplicate entries (known issue)
 
