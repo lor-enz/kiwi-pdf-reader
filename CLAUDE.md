@@ -215,7 +215,18 @@
   encrypted; if not, ask the user before storing it
 - [ ] Update the privacy policy (filled-in forms are stored locally)
 
-### Milestone 9: presentation mode
+### Milestone 9: polish (needs discussion first)
+- [ ] Opening a recent file reorders the list (it counts as opened) while
+  the viewer slides in; the change shouldn't be visible. Compare clean
+  options before choosing
+- [ ] Error screen: icon, title, sentence, action; rethink the texts. A
+  file that failed only for now (kept in the list) should say "try again",
+  not "damaged, download it again"
+- [ ] Password screen: less basic, still simple (lock icon, file name)
+- [ ] Short unlock animation after the password is accepted (under 0.5 s,
+  even if opening is faster); none when the password is remembered
+
+### Milestone 10: presentation mode
 - [ ] Fullscreen (hide system bars) first
 - [ ] One page at a time, swipe left/right, pinch-zoom (own pager view)
 
