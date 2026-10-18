@@ -25,6 +25,7 @@ object TestTags {
     const val BACK = "back"
     const val MORE_OPTIONS = "more_options"
     const val DOCUMENT = "document"
+    const val TOOLS_SHEET_TITLE = "tools_sheet_title"
     const val TOOL_SEARCH = "tool_search"
     const val TOOL_PRINT = "tool_print"
     const val TOOL_SHARE = "tool_share"

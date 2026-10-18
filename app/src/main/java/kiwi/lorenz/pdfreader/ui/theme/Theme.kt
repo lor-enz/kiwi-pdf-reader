@@ -60,8 +60,9 @@ private val DarkColorScheme = darkColorScheme(
     inverseSurface = NightText,
     inverseOnSurface = Charcoal,
     inversePrimary = DarkGreen,
-    surfaceContainerLowest = NightBackground,
-    surfaceContainerLow = NightSurface,
+    // Bottom sheets (surfaceContainerLow) sit darker than the background.
+    surfaceContainerLowest = NightSheet,
+    surfaceContainerLow = NightSheet,
     surfaceContainer = NightSurface,
     surfaceContainerHigh = NightContainer,
     surfaceContainerHighest = NightContainer,

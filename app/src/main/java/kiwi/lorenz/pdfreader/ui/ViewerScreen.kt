@@ -108,6 +108,7 @@ fun ViewerScreen(
     var isClearDialogOpen by rememberSaveable { mutableStateOf(false) }
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
+            name = loaded.name,
             onDismiss = { isToolsSheetOpen = false },
             onSearch = actions::openSearch,
             onPrint = actions::print,
@@ -268,6 +269,7 @@ internal val BarInsets
 /** The document's tools, collected in one place to keep the top bar calm. */
 @Composable
 private fun ToolsSheet(
+    name: String,
     onDismiss: () -> Unit,
     onSearch: () -> Unit,
     onPrint: () -> Unit,
@@ -279,6 +281,7 @@ private fun ToolsSheet(
     // Says that the filled-in fields come along, so nobody wonders whether they do.
     val note = R.string.with_filled_in_fields.takeIf { isFilledIn }
     ActionSheet(onDismiss) {
+        Heading(name, TestTags.TOOLS_SHEET_TITLE)
         Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onClick = onSearch)
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)

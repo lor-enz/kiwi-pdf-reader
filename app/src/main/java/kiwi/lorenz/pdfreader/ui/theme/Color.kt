@@ -19,6 +19,7 @@ val NightBackground = Color(0xFF1B1D16)
 val NightSurface = Color(0xFF24271D)
 val NightContainer = Color(0xFF2E3225)
 val NightText = Color(0xFFE6E8DC)
+val NightSheet = Color(0xFF131510)
 
 // Not part of the brand guide yet: secondary text and borders that need contrast (at least
 // 4.5:1 for text, 3:1 for field borders)

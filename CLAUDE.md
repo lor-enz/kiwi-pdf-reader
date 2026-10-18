@@ -118,7 +118,9 @@
   a green bright enough for text glares as a filled area. Every color role
   a component may use is set, or it falls back to Material's lavender
   (snackbars use the inverse colors). `outline` is for field borders (3:1),
-  `outlineVariant` for cards.
+  `outlineVariant` for cards. In dark mode bottom sheets are darker than the
+  background (`NightSheet` as `surfaceContainerLow`), in light mode they
+  keep the background color.
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).

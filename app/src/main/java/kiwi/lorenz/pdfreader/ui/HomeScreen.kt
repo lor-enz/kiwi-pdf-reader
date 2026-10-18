@@ -240,16 +240,7 @@ private fun RecentFileSheet(
     onRemove: () -> Unit,
 ) {
     ActionSheet(onDismiss) {
-        Text(
-            text = entry.name,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 8.dp)
-                .testTag(TestTags.RECENT_SHEET_TITLE),
-        )
+        Heading(entry.name, TestTags.RECENT_SHEET_TITLE)
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onClick = onShare)
         if (entry.encryptedPassword != null) {
             Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onClick = onForgetPassword)
