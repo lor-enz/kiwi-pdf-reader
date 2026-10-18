@@ -1,0 +1,22 @@
+# Monthly pull requests that update the dependencies, one per ecosystem. CI runs on each.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      gradle:
+        patterns: ["*"]
+    commit-message:
+      prefix: "⬆️ (deps):"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "⬆️ (ci):"
