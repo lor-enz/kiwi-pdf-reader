@@ -67,5 +67,6 @@ dependencies {
     implementation(libs.androidx.pdf.compose)
     implementation(libs.androidx.pdf.document.service)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -17,6 +17,10 @@
 - Try to update claude.md and the readme with the relevant commit. E.g. when updating the milestones instead of a separate commit just for the claude.md/readme changes.
 # Testing
 
+- Unit tests run on the JVM. `RecentFilesStoreTest` uses Robolectric (simulating
+  Android 15, see `src/test/resources/robolectric.properties`) and a fake
+  documents provider (`TestFilesProvider`), so store logic is tested without a
+  device; add a test there when changing the store.
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
 - Helpers in `scripts/test/` use the running emulator, never a connected
   phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not

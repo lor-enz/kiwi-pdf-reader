@@ -29,6 +29,12 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      # The Android version Robolectric simulates, downloaded on first use (~150 MB)
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml', 'app/src/test/resources/robolectric.properties') }}
+
       - name: Unit tests and lint
         run: ./gradlew testDebugUnitTest lintDebug
 

@@ -9,6 +9,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.AtomicFile
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
@@ -38,7 +39,7 @@ import java.util.UUID
  * Process-wide singleton: several viewers (one per card in the app switcher) must not write the
  * index concurrently.
  */
-class RecentFilesStore private constructor(private val context: Context) {
+class RecentFilesStore @VisibleForTesting internal constructor(private val context: Context) {
     private val root = File(context.filesDir, "recent")
     private val copiesDir = File(root, "copies")
     private val thumbnailsDir = File(root, "thumbnails")
