@@ -4,10 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import androidx.core.net.toUri
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,6 +92,14 @@ class RecentFilesStore private constructor(private val context: Context) {
             return@withContext null
         }
         edit { entries ->
+            // The same file picked before: its entry opens the original, the copy isn't needed.
+            val picked = entries.find { !it.isCopy && it.contentHash == hash }
+            val isPickedUnchanged = picked != null &&
+                stat(picked.uri.toUri()).let { (size, modified) -> picked.isHashCurrent(size, modified) }
+            if (picked != null && isPickedUnchanged) {
+                temp.delete()
+                return@edit picked.copy(lastOpenedMillis = now()).also { entries.upsert(it) }
+            }
             val existing = entries.find { it.isCopy && it.contentHash == hash }
             if (existing != null) {
                 temp.delete()
@@ -108,6 +120,27 @@ class RecentFilesStore private constructor(private val context: Context) {
                 sizeBytes = file.length(),
                 lastOpenedMillis = now(),
             ).also { entries.upsert(it) }
+        }
+    }
+
+    /**
+     * Hashes a picked file, so the same PDF opened from another app shares its entry; copies of
+     * it are removed. Skipped while the file's size and modification time are unchanged. Reads
+     * the whole file, so it runs after the document has opened.
+     */
+    suspend fun hashPicked(id: String) {
+        val entry = get(id)?.takeIf { !it.isCopy } ?: return
+        val uri = entry.uri.toUri()
+        val (size, modified) = withContext(Dispatchers.IO) { stat(uri) }
+        if (entry.isHashCurrent(size, modified)) return
+        val hash = hash(uri) ?: return
+        edit { entries ->
+            val current = entries.find { it.id == id } ?: return@edit
+            entries.upsert(current.copy(contentHash = hash, sizeBytes = size ?: 0, modifiedMillis = modified))
+            entries.filter { it.id != id && it.contentHash == hash }.forEach {
+                entries.remove(it)
+                deleteFiles(it, entries)
+            }
         }
     }
 
@@ -247,8 +280,45 @@ class RecentFilesStore private constructor(private val context: Context) {
         DigestInputStream(input, digest).use { hashing ->
             target.outputStream().use { hashing.copyTo(it) }
         }
-        return digest.digest().joinToString("") { "%02x".format(it) }
+        return digest.digest().toHex()
     }
+
+    /** Null if the file can't be read. Stops when cancelled, as large files take a while. */
+    private suspend fun hash(uri: Uri): String? = withContext(Dispatchers.IO) {
+        val digest = MessageDigest.getInstance("SHA-256")
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                val buffer = ByteArray(HASH_BUFFER_BYTES)
+                while (true) {
+                    ensureActive()
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    digest.update(buffer, 0, read)
+                }
+            } ?: return@withContext null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return@withContext null
+        }
+        digest.digest().toHex()
+    }
+
+    /** Size and modification time as the provider reports them; null where unknown. */
+    private fun stat(uri: Uri): Pair<Long?, Long?> = try {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use null
+            fun long(column: String) = cursor.getColumnIndex(column)
+                .takeIf { it >= 0 && !cursor.isNull(it) }
+                ?.let(cursor::getLong)
+            long(OpenableColumns.SIZE) to long(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+        } ?: (null to null)
+    } catch (_: Exception) {
+        // E.g. the permission is gone.
+        null to null
+    }
+
+    private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
 
     private fun load(): List<RecentFile> = try {
         val array = JSONArray(indexFile.readText())
@@ -270,6 +340,7 @@ class RecentFilesStore private constructor(private val context: Context) {
     companion object {
         private const val THUMBNAIL_QUALITY = 80
         private const val STALE_IMPORT_MILLIS = 60L * 60 * 1000
+        private const val HASH_BUFFER_BYTES = 64 * 1024
 
         @Volatile
         private var instance: RecentFilesStore? = null
@@ -287,6 +358,7 @@ private fun RecentFile.toJson() = JSONObject()
     .put("isCopy", isCopy)
     .put("contentHash", contentHash)
     .put("sizeBytes", sizeBytes)
+    .put("modifiedMillis", modifiedMillis)
     .put("lastOpenedMillis", lastOpenedMillis)
     .put("pageCount", pageCount)
     .put("lastPage", lastPage)
@@ -301,6 +373,7 @@ private fun JSONObject.toRecentFile() = RecentFile(
     isCopy = getBoolean("isCopy"),
     contentHash = optString("contentHash").ifEmpty { null },
     sizeBytes = optLong("sizeBytes"),
+    modifiedMillis = if (has("modifiedMillis")) getLong("modifiedMillis") else null,
     lastOpenedMillis = getLong("lastOpenedMillis"),
     pageCount = optInt("pageCount"),
     lastPage = optInt("lastPage"),

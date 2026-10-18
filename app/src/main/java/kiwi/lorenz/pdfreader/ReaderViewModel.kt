@@ -359,6 +359,8 @@ class ReaderViewModel(
             if (showsThumbnail && !entry.hasThumbnail) renderThumbnail(entry.id, document)
             store.cleanup(openId = entry.id)
         }
+        // On its own, as hashing a large file takes a while.
+        if (!entry.isCopy) viewModelScope.launch { store.hashPicked(entry.id) }
     }
 
     private suspend fun renderThumbnail(id: String, document: PdfDocument) {

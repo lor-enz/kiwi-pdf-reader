@@ -13,9 +13,15 @@ data class RecentFile(
     val uri: String,
     val name: String,
     val isCopy: Boolean,
-    /** SHA-256 of a copy's content, so sharing the same PDF twice reuses one copy. */
+    /**
+     * SHA-256 of the content, so the same PDF gets one entry however it was opened. For picked
+     * files it's computed after opening and is only valid while [sizeBytes] and [modifiedMillis]
+     * match the original, see [isHashCurrent].
+     */
     val contentHash: String? = null,
     val sizeBytes: Long = 0,
+    /** A picked file's modification time when it was hashed, if its provider reports one. */
+    val modifiedMillis: Long? = null,
     val lastOpenedMillis: Long,
     /** 0 until the document has been opened successfully once. */
     val pageCount: Int = 0,
@@ -24,7 +30,11 @@ data class RecentFile(
     val isPasswordProtected: Boolean = false,
     /** Set when the user chose to remember the password; see [PasswordCipher]. */
     val encryptedPassword: String? = null,
-)
+) {
+    /** Whether [contentHash] still describes a picked file that now has [size] and [modified]. */
+    fun isHashCurrent(size: Long?, modified: Long?): Boolean =
+        contentHash != null && size != null && size == sizeBytes && modified == modifiedMillis
+}
 
 object CleanupRules {
     const val COPY_MAX_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000

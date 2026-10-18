@@ -120,6 +120,11 @@
   startup cleanup removes what's left, including persisted permissions no
   entry uses. Snackbars with an action default to indefinite in Material 3,
   so it uses `SnackbarDuration.Long`.
+- Picked files are hashed (SHA-256) after they open, in the background,
+  and again only when their size or modification time changed. The same
+  content gets one entry: the picked one wins and other entries, copies
+  included, go. A file from another app that matches an unchanged picked
+  entry opens through that entry, and its temporary copy is dropped.
 - Only documents opened from other apps get their own task (card in the
   app switcher); the app's own list and picker open in the main task.
 - `androidx.pdf` can't read a PDF's outline (table of contents), so a
@@ -144,11 +149,6 @@
 
 # Planned changes
 
-## Known issues
-- The same PDF can appear twice in the recent files list: once picked with
-  the file picker (deduplicated by URI) and once opened from another app
-  (a copy, deduplicated by SHA-256). Possible fix: hash picked files too.
-
 ## Upcoming features
 
 ### Milestone 5: robustness
@@ -166,7 +166,7 @@
 - [x] Share without opening the document
 - [x] Forget password (only when one is remembered), also deletes the
   thumbnail
-- [ ] Hash picked files too, fixing the duplicate entries (known issue)
+- [x] Hash picked files too, fixing the duplicate entries
 
 ### Milestone 7: save and forms
 - [ ] Save a copy ("Save to…" via the system file picker)
