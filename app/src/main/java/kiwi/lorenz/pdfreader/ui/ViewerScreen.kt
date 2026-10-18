@@ -427,53 +427,70 @@ private fun SearchBar(
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-    TopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onClose) {
-                Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_search))
-            }
-        },
-        title = {
-            TextField(
-                value = searchState.query,
-                onValueChange = onQueryChange,
-                placeholder = { Text(stringResource(R.string.search_hint), maxLines = 1) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
+    Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
+        TopAppBar(
+            navigationIcon = {
+                IconButton(onClick = onClose) {
+                    Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_search))
+                }
+            },
+            title = {
+                TextField(
+                    value = searchState.query,
+                    onValueChange = onQueryChange,
+                    placeholder = { Text(stringResource(R.string.search_hint), maxLines = 1) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                )
+            },
+            actions = {
+                if (searchState.query.isNotBlank() && !searchState.isSearching && !searchState.hasNoText) {
+                    Text(
+                        text = if (searchState.matches.isEmpty()) {
+                            stringResource(R.string.no_matches)
+                        } else {
+                            stringResource(
+                                R.string.match_counter,
+                                searchState.currentIndex + 1,
+                                searchState.matches.size,
+                            )
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+                val hasMatches = searchState.matches.isNotEmpty()
+                IconButton(onClick = onPrevious, enabled = hasMatches) {
+                    Icon(painterResource(R.drawable.ic_arrow_up), stringResource(R.string.previous_match))
+                }
+                IconButton(onClick = onNext, enabled = hasMatches) {
+                    Icon(painterResource(R.drawable.ic_arrow_down), stringResource(R.string.next_match))
+                }
+            },
+            windowInsets = BarInsets,
+        )
+        // Below the bar: too long for the counter's place, and it explains why nothing is found.
+        if (searchState.hasNoText && !searchState.isSearching) {
+            Text(
+                text = stringResource(R.string.no_text_to_search),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
             )
-        },
-        actions = {
-            if (searchState.query.isNotBlank() && !searchState.isSearching) {
-                Text(
-                    text = if (searchState.matches.isEmpty()) {
-                        stringResource(R.string.no_matches)
-                    } else {
-                        stringResource(R.string.match_counter, searchState.currentIndex + 1, searchState.matches.size)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-            }
-            val hasMatches = searchState.matches.isNotEmpty()
-            IconButton(onClick = onPrevious, enabled = hasMatches) {
-                Icon(painterResource(R.drawable.ic_arrow_up), stringResource(R.string.previous_match))
-            }
-            IconButton(onClick = onNext, enabled = hasMatches) {
-                Icon(painterResource(R.drawable.ic_arrow_down), stringResource(R.string.next_match))
-            }
-        },
-        windowInsets = BarInsets,
-    )
+        }
+    }
 }
 
 @Composable

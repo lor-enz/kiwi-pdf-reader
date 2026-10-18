@@ -103,7 +103,10 @@
 - `androidx.pdf` can't read a PDF's outline (table of contents), so a
   tablet side panel could only show page thumbnails.
 - No OCR for scanned PDFs: the usual engine (ML Kit) needs Google Play
-  Services, and Tesseract is too large.
+  Services, and Tesseract is too large. (`PdfViewer` does take an
+  `ocrProvider`, should a suitable engine turn up.) Searching a document
+  without any text says so instead of "0 / 0"; the check reads pages until
+  the first one with text and runs once per document.
 - Web, mail and phone links go through `onUrlLinkClicked`: only http(s),
   mailto and tel are opened (the library's default would open any scheme),
   and a snackbar says so when no app can open one. In-document links are
@@ -131,7 +134,7 @@
   bar overlaid); don't crash when no app handles a link
 - [x] Broken files: tell apart damaged, not-a-PDF and lost permission,
   with advice (download it again, ask the sender for a new copy)
-- [ ] Search in a document without text (scanned): say so instead of
+- [x] Search in a document without text (scanned): say so instead of
   "No matches"
 
 ### Milestone 6: recent files sheet

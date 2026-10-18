@@ -82,6 +82,8 @@ data class SearchState(
     val matches: List<SearchMatch> = emptyList(),
     val currentIndex: Int = -1,
     val isSearching: Boolean = false,
+    /** Nothing found because the document has no text at all, e.g. a scan. */
+    val hasNoText: Boolean = false,
 ) {
     val currentMatch: SearchMatch? get() = matches.getOrNull(currentIndex)
 }
@@ -122,6 +124,9 @@ class ReaderViewModel(
 
     private var loadJob: Job? = null
     private var searchJob: Job? = null
+
+    /** Whether the open document has any text; found out on the first search without matches. */
+    private var documentHasText: Boolean? = null
 
     /** The document waiting for a password, see [DocumentState.NeedsPassword]. */
     private var passwordTarget: Target? = null
@@ -189,7 +194,9 @@ class ReaderViewModel(
         val document = (documentState as? DocumentState.Loaded)?.document ?: return
         searchJob?.cancel()
         if (query.isBlank()) {
-            searchState = searchState.copy(query = query, matches = emptyList(), currentIndex = -1, isSearching = false)
+            searchState = searchState.copy(
+                query = query, matches = emptyList(), currentIndex = -1, isSearching = false, hasNoText = false,
+            )
             return
         }
         searchState = searchState.copy(query = query, isSearching = true)
@@ -209,11 +216,28 @@ class ReaderViewModel(
                     results.valueAt(i).forEach { add(SearchMatch(pageNum, it.bounds)) }
                 }
             }
+            val hasNoText = matches.isEmpty() && results != null && !hasText(document)
             searchState = searchState.copy(
                 matches = matches,
                 currentIndex = if (matches.isEmpty()) -1 else 0,
                 isSearching = false,
+                hasNoText = hasNoText,
             )
+        }
+    }
+
+    /** Stops at the first page with text, so only documents without any are read completely. */
+    private suspend fun hasText(document: PdfDocument): Boolean {
+        documentHasText?.let { return it }
+        return try {
+            (0 until document.pageCount).any { page ->
+                document.getPageContent(page)?.textContents.orEmpty().any { it.text.isNotBlank() }
+            }.also { documentHasText = it }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Unknown; "no matches" is never wrong.
+            true
         }
     }
 
@@ -343,6 +367,7 @@ class ReaderViewModel(
     private fun closeDocument() {
         loadJob?.cancel()
         closeSearch()
+        documentHasText = null
         (documentState as? DocumentState.Loaded)?.document?.close()
     }
 
