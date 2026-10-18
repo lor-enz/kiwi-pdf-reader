@@ -86,6 +86,9 @@
   the GitHub Action upload a signed bundle to Play's internal track as a
   draft (see "Releasing" in the README). Bump it only in its own `🔖`
   commit, and only when the user asks for a release.
+- The workflows use `gradle/actions/setup-gradle@v6`, whose caching is a
+  proprietary component under Gradle's Terms of Use. Accepted on purpose:
+  the app's own code has to be open source, not every CI tool.
 - Release signing reads the gitignored `keystore.properties` in the project
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
