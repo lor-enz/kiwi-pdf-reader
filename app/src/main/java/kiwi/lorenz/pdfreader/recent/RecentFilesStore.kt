@@ -158,14 +158,13 @@ class RecentFilesStore private constructor(private val context: Context) {
     suspend fun setLastPage(id: String, page: Int) = update(id) { it.copy(lastPage = page) }
 
     /**
-     * Records that a document needed a password. Without a remembered password, the thumbnail is
+     * Remembers or forgets a document's password. Without a remembered password, the thumbnail is
      * dropped too: it would show protected content in the list.
      */
     suspend fun setPassword(id: String, encryptedPassword: String?) {
         if (encryptedPassword == null) withContext(Dispatchers.IO) { thumbnailFile(id).delete() }
         update(id) {
             it.copy(
-                isPasswordProtected = true,
                 encryptedPassword = encryptedPassword,
                 hasThumbnail = it.hasThumbnail && encryptedPassword != null,
             )
@@ -383,7 +382,6 @@ private fun RecentFile.toJson() = JSONObject()
     .put("pageCount", pageCount)
     .put("lastPage", lastPage)
     .put("hasThumbnail", hasThumbnail)
-    .put("isPasswordProtected", isPasswordProtected)
     .put("encryptedPassword", encryptedPassword)
 
 private fun JSONObject.toRecentFile() = RecentFile(
@@ -398,6 +396,5 @@ private fun JSONObject.toRecentFile() = RecentFile(
     pageCount = optInt("pageCount"),
     lastPage = optInt("lastPage"),
     hasThumbnail = optBoolean("hasThumbnail"),
-    isPasswordProtected = optBoolean("isPasswordProtected"),
     encryptedPassword = optString("encryptedPassword").ifEmpty { null },
 )
