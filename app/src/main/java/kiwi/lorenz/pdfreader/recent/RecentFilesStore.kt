@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader.recent
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -353,6 +354,8 @@ class RecentFilesStore private constructor(private val context: Context) {
         private const val STALE_IMPORT_MILLIS = 60L * 60 * 1000
         private const val HASH_BUFFER_BYTES = 64 * 1024
 
+        // Holds only the application context, which lives as long as the process anyway.
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var instance: RecentFilesStore? = null
 
