@@ -19,7 +19,9 @@ import androidx.core.util.size
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.pdf.EditablePdfDocument
 import androidx.pdf.PdfDocument
+import androidx.pdf.models.FormEditInfo
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
@@ -31,6 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.math.roundToInt
 
 sealed interface DocumentState {
@@ -112,10 +115,61 @@ class ViewerViewModel(
 
     /** Writes the document to [to], a file the user created with the system's "Save to" dialog. */
     fun saveCopy(to: Uri) {
-        val loaded = documentState as? DocumentState.Loaded ?: return
         viewModelScope.launch {
-            val saved = runCatchingCancellable { getApplication<Application>().savePdfCopy(loaded.document.uri, to) }
+            val saved = runCatchingCancellable {
+                getApplication<Application>().savePdfCopy(checkNotNull(currentFile()), to)
+            }
             message = if (saved.isSuccess) R.string.copy_saved else R.string.save_failed
+        }
+    }
+
+    /**
+     * True when the document shows filled-in form fields: stored ones it was opened with, or
+     * edits since. Share, print and save a copy then use them, and they can be cleared.
+     */
+    var isFilledIn by mutableStateOf(false)
+        private set
+
+    private var form: FormAutosave? = null
+
+    /** The viewer reports edits to form fields; the document only changes once they're applied. */
+    fun applyFormEdit(edit: FormEditInfo) {
+        val form = form ?: return
+        form.apply(edit)
+        isFilledIn = true
+    }
+
+    /** Going to the background: the app may be killed there, so the form is stored now. */
+    fun onBackground() {
+        viewModelScope.launch { form?.save() }
+    }
+
+    /**
+     * The file that has the document as shown, filled-in fields included: the original, the
+     * stored filled-in version, or a temporary file when edits can't be stored with an entry.
+     */
+    suspend fun currentFile(): Uri? {
+        val loaded = documentState as? DocumentState.Loaded ?: return null
+        val form = form
+        if (form == null || !isFilledIn) return loaded.document.uri
+        // Also once autosaved: the document may have been opened from the original.
+        val id = openEntryId
+        if (id != null && form.save()) return Uri.fromFile(store.filledFile(id))
+        val app = getApplication<Application>()
+        val file = File(File(app.cacheDir, UNSAVED_FORMS_DIR).apply { mkdirs() }, "$taskId.pdf")
+        form.writeTo(file)
+        return Uri.fromFile(file)
+    }
+
+    /** Back to the form as it was before anything was filled in. */
+    fun clearFilledFields() {
+        val id = openEntryId ?: return
+        val form = form ?: return
+        form.discard()
+        launchOpen {
+            form.awaitIdle()
+            store.clearFilled(id)
+            store.get(id)?.let { Target(it) }
         }
     }
 
@@ -257,12 +311,13 @@ class ViewerViewModel(
     }
 
     /** What to open: a recent entry, or a bare URI when it couldn't be added to the list. */
-    private class Target(val entry: RecentFile?, val uri: Uri, val name: String) {
+    private class Target(val entry: RecentFile?, val uri: Uri, val name: String, val isFilledIn: Boolean = false) {
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
 
     private fun resetForOpen() {
         closeDocument()
+        isFilledIn = false
         openEntryId = null
         pendingRestorePage = null
         passwordTarget = null
@@ -290,7 +345,16 @@ class ViewerViewModel(
             val remembered = target.entry?.encryptedPassword?.let {
                 withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) }
             }
-            documentState = open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
+            // A form filled in before opens as it was left.
+            val filled = target.entry?.let { store.filledVersion(it.id) }
+                ?.let { Target(target.entry, Uri.fromFile(it), target.name, isFilledIn = true) }
+            var state = open(filled ?: target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
+            if (filled != null && state is DocumentState.Failed) {
+                // Our own file, so it's damaged; the original still opens, without the edits.
+                store.clearFilled(target.entry.id)
+                state = open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
+            }
+            documentState = state
         }
     }
 
@@ -317,6 +381,8 @@ class ViewerViewModel(
             val document = loader.openDocument(target.uri, password)
             passwordTarget = null
             if (entry != null) onOpened(entry, document, password, rememberPassword)
+            form = (document as? EditablePdfDocument)?.let { FormAutosave(it, entry?.id, store, viewModelScope) }
+            isFilledIn = target.isFilledIn
             DocumentState.Loaded(
                 document = document,
                 name = target.name,
@@ -334,7 +400,8 @@ class ViewerViewModel(
             val reason = withContext(Dispatchers.IO) {
                 getApplication<Application>().contentResolver.diagnoseFailure(target.uri, openedBefore)
             }
-            if (entry != null && !reason.keepsEntry(openedBefore)) store.remove(entry.id)
+            // A failing filled-in version says nothing about the original, see launchOpen.
+            if (entry != null && !target.isFilledIn && !reason.keepsEntry(openedBefore)) store.remove(entry.id)
             DocumentState.Failed(reason)
         }
     }
@@ -378,7 +445,18 @@ class ViewerViewModel(
         loadJob?.cancel()
         closeSearch()
         documentHasText = null
-        (documentState as? DocumentState.Loaded)?.document?.close()
+        val document = (documentState as? DocumentState.Loaded)?.document ?: return
+        val form = form
+        this.form = null
+        if (form?.hasUnsavedEdits == true) {
+            // The last edits are stored before the document goes, even when the viewer is closed.
+            AppScope.launch {
+                form.save()
+                document.close()
+            }
+        } else {
+            document.close()
+        }
     }
 
     private suspend fun displayName(uri: Uri): String = withContext(Dispatchers.IO) {

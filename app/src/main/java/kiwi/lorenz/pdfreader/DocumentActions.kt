@@ -55,18 +55,19 @@ fun Context.openLink(uri: Uri): Boolean {
 }
 
 /**
- * Opens the system print dialog for the PDF. Needs an activity context.
+ * Opens the system print dialog for the PDF in [file], the open [document] as shown. Needs an
+ * activity context.
  *
  * The print system reads the file itself, which fails for password-protected ones, so their
  * pages are rendered here instead (as images, which is why other files are passed through).
  * That happens in [scope], which should live as long as the document, not the activity.
  */
-fun Context.printPdf(document: PdfDocument, name: String, isProtected: Boolean, scope: CoroutineScope) {
+fun Context.printPdf(document: PdfDocument, file: Uri, name: String, isProtected: Boolean, scope: CoroutineScope) {
     val printManager = getSystemService(PrintManager::class.java)
     val adapter = if (isProtected) {
         RenderedPrintAdapter(this, document, pdfFileName(name), scope)
     } else {
-        PassThroughPrintAdapter(contentResolver, document.uri, pdfFileName(name))
+        PassThroughPrintAdapter(contentResolver, file, pdfFileName(name))
     }
     printManager.print(name, adapter, null)
 }
@@ -116,7 +117,10 @@ suspend fun Context.savePdfCopy(from: Uri, to: Uri) = withContext(Dispatchers.IO
 /** Recipients may read a shared file later (a mail draft), so copies are kept for a day. */
 suspend fun Context.deleteOldSharedCopies() = withContext(Dispatchers.IO) {
     val cutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
-    File(cacheDir, SHARED_DIR).listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+    // The filled-in forms written for that, too, see ViewerViewModel.currentFile.
+    listOf(SHARED_DIR, UNSAVED_FORMS_DIR).forEach { dir ->
+        File(cacheDir, dir).listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+    }
 }
 
 /** Passes the PDF through unchanged; the print system renders it itself. */
@@ -271,4 +275,7 @@ fun pdfFileName(name: String): String {
 private const val PRINT_DPI = 200f
 private const val POINTS_PER_INCH = 72f
 private const val SHARED_DIR = "shared"
+
+/** Filled-in forms of documents not in the recent files list, written to share or print them. */
+const val UNSAVED_FORMS_DIR = "unsaved-forms"
 const val PDF_MIME_TYPE = "application/pdf"

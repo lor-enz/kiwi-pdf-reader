@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.KiwiPDFReader" parent="android:Theme.Material.NoActionBar">
+    <!-- See values/themes.xml -->
+    <style name="Theme.KiwiPDFReader" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/kiwi_night_background</item>
-        <!-- See values/themes.xml -->
         <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
         <item name="colorOnSurface">@color/kiwi_off_white</item>
         <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
+        <item name="colorPrimary">@color/kiwi_pale_green</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.KiwiPDFReader.Dialog</item>
+    </style>
+
+    <style name="ThemeOverlay.KiwiPDFReader.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/kiwi_pale_green</item>
+        <item name="colorOnPrimary">@color/kiwi_night_background</item>
+        <item name="colorSurface">@color/kiwi_night_background</item>
+        <item name="colorSurfaceContainerHigh">@color/kiwi_night_container</item>
+        <item name="colorOnSurface">@color/kiwi_night_text</item>
+        <item name="colorOnSurfaceVariant">@color/kiwi_night_text</item>
     </style>
 </resources>

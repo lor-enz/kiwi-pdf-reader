@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.KiwiPDFReader" parent="android:Theme.Material.Light.NoActionBar">
+    <!--
+      Material 3, not the plain platform theme: the PDF viewer opens Material dialogs itself (the
+      choices of a form's drop-down field), which crash without it. Compose screens use their own
+      theme (ui/theme), so this only styles what the viewer draws itself.
+    -->
+    <style name="Theme.KiwiPDFReader" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowBackground">@color/kiwi_background</item>
         <!--
           The PDF viewer's fast scroller (page number pill and scroll thumb) reads
@@ -11,5 +16,17 @@
         <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
         <item name="colorOnSurface">@color/kiwi_off_white</item>
         <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
+        <item name="colorPrimary">@color/kiwi_green</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.KiwiPDFReader.Dialog</item>
+    </style>
+
+    <!-- The viewer's own dialogs, colored like the app's Compose dialogs. -->
+    <style name="ThemeOverlay.KiwiPDFReader.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/kiwi_green</item>
+        <item name="colorOnPrimary">@color/kiwi_off_white</item>
+        <item name="colorSurface">@color/kiwi_background</item>
+        <item name="colorSurfaceContainerHigh">@color/kiwi_light_green</item>
+        <item name="colorOnSurface">@color/kiwi_charcoal</item>
+        <item name="colorOnSurfaceVariant">@color/kiwi_charcoal</item>
     </style>
 </resources>

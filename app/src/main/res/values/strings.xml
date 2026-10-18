@@ -21,6 +21,12 @@
     <string name="save_copy">Save a copy</string>
     <string name="copy_saved">Copy saved</string>
     <string name="save_failed">The copy couldn\'t be saved.</string>
+    <string name="with_filled_in_fields">With your filled-in fields</string>
+    <string name="clear_filled_in">Clear filled-in fields</string>
+    <string name="clear_filled_in_title">Clear filled-in fields?</string>
+    <string name="clear_filled_in_text">Everything you entered in this form is removed. This can\'t be undone.</string>
+    <string name="clear">Clear</string>
+    <string name="cancel">Cancel</string>
     <string name="search">Search</string>
     <string name="search_hint">Search in document</string>
     <string name="close_search">Close search</string>

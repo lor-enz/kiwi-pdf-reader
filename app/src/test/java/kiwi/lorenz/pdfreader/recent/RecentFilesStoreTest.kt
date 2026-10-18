@@ -33,6 +33,7 @@ class RecentFilesStoreTest {
     private val root = File(context.filesDir, "recent")
     private val copiesDir = File(root, "copies")
     private val thumbnailsDir = File(root, "thumbnails")
+    private val filledDir = File(root, "filled")
     private val index = AtomicFile(File(root, "index.json"))
 
     @Before
@@ -224,6 +225,83 @@ class RecentFilesStoreTest {
 
         assertEquals(emptyList<Uri>(), persistedUris())
         assertEquals(emptyList<RecentFile>(), listed())
+    }
+
+    @Test
+    fun `a filled-in version is stored and opened instead of the original`() = runBlocking {
+        val entry = store.importCopy(provide("form.pdf", "form"), "form.pdf")!!
+
+        assertTrue(store.saveFilled(entry.id) { it.writeText("filled in") })
+
+        assertEquals("filled in", store.filledVersion(entry.id)!!.readText())
+        assertEquals("filled in".length.toLong(), store.get(entry.id)!!.filledBytes)
+        restart()
+        assertNotNull(store.filledVersion(entry.id))
+    }
+
+    @Test
+    fun `a failed save stores nothing`() = runBlocking {
+        val entry = store.importCopy(provide("form.pdf", "form"), "form.pdf")!!
+
+        assertFalse(store.saveFilled(entry.id) { error("storage full") })
+
+        assertNull(store.filledVersion(entry.id))
+        assertEquals(emptyList<File>(), filledDir.listFiles().orEmpty().toList())
+    }
+
+    @Test
+    fun `a form filled in from a changed original is dropped`() = runBlocking {
+        val uri = provide("form.pdf", "form")
+        val entry = store.addPicked(uri, "form.pdf")!!
+        store.saveFilled(entry.id) { it.writeText("filled in") }
+
+        // A newer download replaced the file.
+        File(TestFilesProvider.dir, "form.pdf").apply {
+            writeText("new form")
+            setLastModified(lastModified() + 1000)
+        }
+
+        assertNull(store.filledVersion(entry.id))
+        assertFalse(store.get(entry.id)!!.hasFilledVersion)
+        assertFalse(File(filledDir, "${entry.id}.pdf").exists())
+    }
+
+    @Test
+    fun `clearing and removing drop the filled-in version`() = runBlocking {
+        val cleared = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        val removed = store.importCopy(provide("b.pdf", "b"), "b.pdf")!!
+        store.saveFilled(cleared.id) { it.writeText("filled in") }
+        store.saveFilled(removed.id) { it.writeText("filled in") }
+
+        store.clearFilled(cleared.id)
+        store.remove(removed.id)
+
+        assertNull(store.filledVersion(cleared.id))
+        assertEquals(emptyList<File>(), filledDir.listFiles().orEmpty().toList())
+    }
+
+    @Test
+    fun `an expired filled-in version goes, the picked file stays`() = runBlocking {
+        val entry = store.addPicked(provide("form.pdf", "form"), "form.pdf")!!
+        store.saveFilled(entry.id) { it.writeText("filled in") }
+        age(entry.id, days = 31)
+
+        store.cleanup()
+
+        assertEquals(listOf(entry.id), listed().map { it.id })
+        assertNull(store.filledVersion(entry.id))
+    }
+
+    @Test
+    fun `a form filled in through a copy moves to the picked file`() = runBlocking {
+        val copy = store.importCopy(provide("attachment.pdf", "same"), "attachment.pdf")!!
+        store.saveFilled(copy.id) { it.writeText("filled in") }
+        val picked = store.addPicked(provide("picked.pdf", "same"), "picked.pdf")!!
+
+        store.hashPicked(picked.id)
+
+        assertEquals(listOf(picked.id), listed().map { it.id })
+        assertEquals("filled in", store.filledVersion(picked.id)!!.readText())
     }
 
     /** The entries, after loading them if the store hasn't yet. */

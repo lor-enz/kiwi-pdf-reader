@@ -5,4 +5,10 @@
     <color name="kiwi_night_background">#FF1B1D16</color>
     <color name="kiwi_dark_green">#FF5A6328</color>
     <color name="kiwi_off_white">#FFFAFBF6</color>
+    <color name="kiwi_green">#FF889542</color>
+    <color name="kiwi_light_green">#FFF0F2E0</color>
+    <color name="kiwi_charcoal">#FF333333</color>
+    <color name="kiwi_pale_green">#FFB4C26A</color>
+    <color name="kiwi_night_container">#FF2E3225</color>
+    <color name="kiwi_night_text">#FFE6E8DC</color>
 </resources>

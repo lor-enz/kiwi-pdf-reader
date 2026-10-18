@@ -30,6 +30,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +42,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -68,6 +70,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -82,6 +86,7 @@ import androidx.pdf.PdfRect
 import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.compose.rememberPdfViewerState
+import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.FailureReason
 import kiwi.lorenz.pdfreader.R
@@ -121,6 +126,10 @@ fun ViewerScreen(
     onPrint: () -> Unit,
     onShare: () -> Unit,
     onSaveCopy: () -> Unit,
+    onFormEdit: (FormEditInfo) -> Unit,
+    /** The document shows filled-in form fields; see [onClearFilled]. */
+    isFilledIn: Boolean,
+    onClearFilled: () -> Unit,
     /** A string resource to show in the snackbar, see [onMessageShown]. */
     message: Int?,
     onMessageShown: () -> Unit,
@@ -143,6 +152,7 @@ fun ViewerScreen(
     val isBarVisible = searchState.isActive || loaded == null || !isBarHiddenByScroll
 
     var isToolsSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var isClearDialogOpen by rememberSaveable { mutableStateOf(false) }
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
             onDismiss = { isToolsSheetOpen = false },
@@ -150,6 +160,18 @@ fun ViewerScreen(
             onPrint = onPrint,
             onShare = onShare,
             onSaveCopy = onSaveCopy,
+            isFilledIn = isFilledIn,
+            onClearFilled = { isClearDialogOpen = true },
+        )
+    }
+
+    if (isClearDialogOpen) {
+        ClearFilledDialog(
+            onConfirm = {
+                isClearDialogOpen = false
+                onClearFilled()
+            },
+            onDismiss = { isClearDialogOpen = false },
         )
     }
 
@@ -189,6 +211,7 @@ fun ViewerScreen(
                 onPageChanged = onPageChanged,
                 contentPadding = contentPadding,
                 onBarHiddenChange = { isBarHiddenByScroll = it },
+                onFormEdit = onFormEdit,
                 onLinkFailed = {
                     scope.launch {
                         snackbarHostState.currentSnackbarData?.dismiss()
@@ -296,13 +319,40 @@ private fun ToolsSheet(
     onPrint: () -> Unit,
     onShare: () -> Unit,
     onSaveCopy: () -> Unit,
+    isFilledIn: Boolean,
+    onClearFilled: () -> Unit,
 ) {
+    // Says that the filled-in fields come along, so nobody wonders whether they do.
+    val note = R.string.with_filled_in_fields.takeIf { isFilledIn }
     ActionSheet(onDismiss) {
-        Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
-        Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
-        Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
-        Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, onSaveCopy)
+        Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onClick = onSearch)
+        Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
+        Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)
+        Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, note, onSaveCopy)
+        if (isFilledIn) {
+            Action(R.drawable.ic_restart, R.string.clear_filled_in, TestTags.TOOL_CLEAR_FILLED, onClick = onClearFilled)
+        }
     }
+}
+
+/** Clearing throws away what was typed into the form, so it's confirmed first. */
+@Composable
+private fun ClearFilledDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.clear_filled_in_title)) },
+        text = { Text(stringResource(R.string.clear_filled_in_text)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag(TestTags.CONFIRM_CLEAR_FILLED)) {
+                Text(stringResource(R.string.clear))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+        // A dialog is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
+        modifier = Modifier.semantics { testTagsAsResourceId = true },
+    )
 }
 
 @OptIn(ExperimentalPdfApi::class)
@@ -315,6 +365,7 @@ private fun Document(
     onPageChanged: (Int) -> Unit,
     contentPadding: PaddingValues,
     onBarHiddenChange: (Boolean) -> Unit,
+    onFormEdit: (FormEditInfo) -> Unit,
     onLinkFailed: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -386,6 +437,11 @@ private fun Document(
         // Pages start below the bar and scroll behind it and the navigation bar.
         contentPadding = contentPadding,
         onFirstContentLoad = { isContentLoaded = true },
+        // Not from the start: PdfViewer sets the document before enabling form filling, so the
+        // first pages load without their form fields, and taps on them do nothing (beta01).
+        // Enabling it once they're loaded makes the view fetch their fields again.
+        isFormFillingEnabled = isContentLoaded,
+        onFormWidgetInfoUpdated = onFormEdit,
         // Handled here, so links with no app to open them don't fail silently.
         onUrlLinkClicked = { uri ->
             if (!context.openLink(uri)) onLinkFailed()

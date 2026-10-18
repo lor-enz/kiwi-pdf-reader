@@ -236,11 +236,11 @@ private fun RecentFileSheet(
                 .padding(bottom = 8.dp)
                 .testTag(TestTags.RECENT_SHEET_TITLE),
         )
-        Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onShare)
+        Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onClick = onShare)
         if (entry.encryptedPassword != null) {
-            Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onForgetPassword)
+            Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onClick = onForgetPassword)
         }
-        Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onRemove)
+        Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onClick = onRemove)
     }
 }
 

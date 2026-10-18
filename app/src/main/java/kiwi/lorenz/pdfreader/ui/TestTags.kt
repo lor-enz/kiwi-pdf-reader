@@ -19,6 +19,8 @@ object TestTags {
     const val TOOL_PRINT = "tool_print"
     const val TOOL_SHARE = "tool_share"
     const val TOOL_SAVE_COPY = "tool_save_copy"
+    const val TOOL_CLEAR_FILLED = "tool_clear_filled"
+    const val CONFIRM_CLEAR_FILLED = "confirm_clear_filled"
 
     const val SEARCH_FIELD = "search_field"
     const val CLOSE_SEARCH = "close_search"

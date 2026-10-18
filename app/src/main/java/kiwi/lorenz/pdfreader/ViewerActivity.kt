@@ -81,8 +81,11 @@ open class ViewerActivity : ComponentActivity() {
                         onBack = ::close,
                         onOpenAnother = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
                         onOpenSearch = viewModel::openSearch,
-                        onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
-                        onShare = { loadedDocument()?.let { share(it.document.uri, it.name) } },
+                        onPrint = ::print,
+                        onShare = ::share,
+                        isFilledIn = viewModel.isFilledIn,
+                        onClearFilled = viewModel::clearFilledFields,
+                        onFormEdit = viewModel::applyFormEdit,
                         onSaveCopy = { loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) } },
                         message = viewModel.message,
                         onMessageShown = viewModel::onMessageShown,
@@ -94,6 +97,11 @@ open class ViewerActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.onBackground()
     }
 
     override fun onRestart() {
@@ -116,11 +124,21 @@ open class ViewerActivity : ComponentActivity() {
         close()
     }
 
-    private fun share(uri: Uri, name: String) {
+    /** Filled-in form fields included, as with print and save a copy. */
+    private fun share() {
+        val name = loadedDocument()?.name ?: return
         lifecycleScope.launch {
-            runCatchingCancellable { sharePdf(uri, name) }.onFailure {
+            runCatchingCancellable { sharePdf(checkNotNull(viewModel.currentFile()), name) }.onFailure {
                 viewModel.showMessage(R.string.share_failed)
             }
+        }
+    }
+
+    private fun print() {
+        val loaded = loadedDocument() ?: return
+        lifecycleScope.launch {
+            val file = viewModel.currentFile() ?: return@launch
+            printPdf(loaded.document, file, loaded.name, loaded.isProtected, viewModel.viewModelScope)
         }
     }
 

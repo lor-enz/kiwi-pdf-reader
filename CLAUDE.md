@@ -125,15 +125,28 @@
   drafts) may read them later.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
-- Form edits are autosaved about 1 s after the last edit and when the app
-  goes to the background, as a full filled-in PDF in private storage,
-  keyed by the SHA-256 of the original. They survive closing the document
-  and process death, whether the file is picked or opened from another
-  app. Reopening the original opens the filled-in version without asking;
-  "Clear filled-in fields" in the tools sheet starts over. Share, Print
-  and Save a copy use the filled-in version, and the sheet says so next to
-  them. Filled-in versions count toward the copies' limits (30 days,
-  250 MB).
+- Form edits are autosaved (`FormAutosave`) about 1 s after the last edit,
+  when the app goes to the background and when the viewer closes, as a full
+  filled-in PDF in `files/recent/filled/<entry id>.pdf`. The entry records
+  the hash of the original it was filled in from (`filledFromHash`); when
+  the original changes, the filled-in version is dropped. Reopening the
+  original opens the filled-in version without asking; "Clear filled-in
+  fields" in the tools sheet (confirmed in a dialog) starts over. Share,
+  Print and Save a copy use the filled-in version, and the sheet says so
+  next to them. Filled-in versions count toward the copies' limits (30 days,
+  250 MB); a picked file then only loses its filled-in version. Writing
+  keeps password protection: a filled-in protected form needs the same
+  password. Edits to a document without a recent entry stay in memory and
+  are written to `cache/unsaved-forms/` only to share or print them.
+- `androidx.pdf` form filling, as of beta01: the app applies each edit
+  (`EditablePdfDocument.applyEdit`), the viewer only reports it.
+  `PdfViewer` sets the document before enabling form filling, so the first
+  pages load without their fields and taps on them do nothing; the viewer
+  enables it once the first content has loaded, which reloads the fields.
+  Closing a `PdfWriteHandle` closes the whole document, so it's never
+  closed. Drop-down fields open a Material Components dialog, which crashes
+  without a Material theme: the XML theme is based on Material 3 (Compose
+  doesn't need it) and colors that dialog via `materialAlertDialogTheme`.
 - Removing an entry from the recent files list hides it in the store and
   deletes its files (or releases its permission) only when the Undo
   snackbar is gone, also when the screen is left. After process death the
@@ -217,10 +230,10 @@
 
 ### Milestone 8: save and forms
 - [x] Save a copy ("Save to…" via the system file picker)
-- [ ] Form filling with autosave and restore (see Project notes)
-- [ ] Check whether the filled-in file of a password-protected PDF stays
-  encrypted; if not, ask the user before storing it
-- [ ] Update the privacy policy (filled-in forms are stored locally)
+- [x] Form filling with autosave and restore (see Project notes)
+- [x] Check whether the filled-in file of a password-protected PDF stays
+  encrypted (it does, with the same password)
+- [x] Update the privacy policy (filled-in forms are stored locally)
 
 ### Milestone 9: polish (needs discussion first)
 - [ ] Opening a recent file reorders the list (it counts as opened) while

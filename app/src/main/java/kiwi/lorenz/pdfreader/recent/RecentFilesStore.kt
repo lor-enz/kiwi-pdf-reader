@@ -33,7 +33,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * Persists the recent files list, the private copies and their thumbnails under
+ * Persists the recent files list, the private copies, filled-in forms and thumbnails under
  * `files/recent/`, which is excluded from backups.
  *
  * Process-wide singleton: several viewers (one per card in the app switcher) must not write the
@@ -43,6 +43,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     private val root = File(context.filesDir, "recent")
     private val copiesDir = File(root, "copies")
     private val thumbnailsDir = File(root, "thumbnails")
+    private val filledDir = File(root, "filled")
     private val index = AtomicFile(File(root, "index.json"))
     private val openIndex = AtomicFile(File(root, "open.json"))
 
@@ -153,6 +154,11 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
             val openIds = liveOpenByTask().values
             entries.filter { it.id != id && it.contentHash == hash && it.id !in openIds }.forEach {
                 entries.remove(it)
+                // A form filled in through the duplicate is kept, unless this one has its own.
+                val picked = entries.first { e -> e.id == id }
+                if (it.hasFilledVersion && !picked.hasFilledVersion && filledFile(it.id).renameTo(filledFile(id))) {
+                    entries.upsert(picked.copy(filledFromHash = it.filledFromHash, filledBytes = it.filledBytes))
+                }
                 deleteFiles(it, entries)
             }
         }
@@ -217,6 +223,56 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         update(id) { it.copy(hasThumbnail = true) }
     }
 
+    fun filledFile(id: String) = File(filledDir, "$id.pdf")
+
+    /**
+     * Stores the filled-in version of entry [id]'s form; [write] writes the whole document to the
+     * file it's given. False if it couldn't be stored, e.g. storage full or the entry is gone.
+     */
+    suspend fun saveFilled(id: String, write: suspend (File) -> Unit): Boolean {
+        val originalHash = originalHash(id) ?: return false
+        val temp = File(filledDir, "$id-${UUID.randomUUID()}.tmp")
+        try {
+            withContext(Dispatchers.IO) { filledDir.mkdirs() }
+            val written = runCatchingCancellable { write(temp) }.isSuccess
+            return edit { entries ->
+                val entry = entries.find { it.id == id }
+                if (!written || entry == null || !temp.renameTo(filledFile(id))) return@edit false
+                entries.upsert(entry.copy(filledFromHash = originalHash, filledBytes = filledFile(id).length()))
+                true
+            }
+        } finally {
+            temp.delete()
+        }
+    }
+
+    /**
+     * The filled-in version to open instead of entry [id]'s original, if there is one. One filled
+     * in from an earlier version of the original is dropped: it belongs to a different document.
+     */
+    suspend fun filledVersion(id: String): File? {
+        val entry = get(id)?.takeIf { it.hasFilledVersion } ?: return null
+        val file = filledFile(id)
+        if (originalHash(id) == entry.filledFromHash && file.exists()) return file
+        clearFilled(id)
+        return null
+    }
+
+    /** Deletes the filled-in version of entry [id]; the original opens again. */
+    suspend fun clearFilled(id: String) = edit { entries ->
+        filledFile(id).delete()
+        entries.find { it.id == id }?.let { entries.upsert(it.copy(filledFromHash = null, filledBytes = 0)) }
+        Unit
+    }
+
+    /** The current hash of entry [id]'s original. A picked file is hashed again if it changed. */
+    private suspend fun originalHash(id: String): String? {
+        val entry = get(id) ?: return null
+        if (entry.isCopy) return entry.contentHash
+        hashPicked(id)
+        return get(id)?.contentHash
+    }
+
     suspend fun remove(id: String) = edit { entries ->
         entries.find { it.id == id }?.let { entries.remove(it); deleteFiles(it, entries) }
         Unit
@@ -244,19 +300,25 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
 
     /** Applies [CleanupRules], sparing open documents, and deletes files that no entry refers to. */
     suspend fun cleanup() = edit { entries ->
-        val toRemove = CleanupRules.entriesToRemove(entries, now(), liveOpenByTask().values.toSet())
-        entries.filter { it.id in toRemove }.forEach { entries.remove(it); deleteFiles(it, entries) }
+        val plan = CleanupRules.plan(entries, now(), liveOpenByTask().values.toSet())
+        entries.filter { it.id in plan.removeEntries }.forEach { entries.remove(it); deleteFiles(it, entries) }
+        entries.filter { it.id in plan.dropFilled }.forEach {
+            filledFile(it.id).delete()
+            entries.upsert(it.copy(filledFromHash = null, filledBytes = 0))
+        }
 
         val kept = entries + hidden.values
         val ids = kept.map { it.id }.toSet()
-        // Imports write a .tmp file outside the lock; only delete those left behind by a crash or
-        // a cancelled import.
-        fun isOrphan(file: File) = if (file.name.endsWith(".tmp")) {
+        // Imports and saves write a .tmp file outside the lock; only delete those left behind by a
+        // crash or a cancelled import.
+        fun isOrphan(file: File, ids: Set<String>) = if (file.name.endsWith(".tmp")) {
             now() - file.lastModified() > STALE_IMPORT_MILLIS
         } else {
             file.nameWithoutExtension !in ids
         }
-        copiesDir.listFiles()?.filter(::isOrphan)?.forEach { it.delete() }
+        copiesDir.listFiles()?.filter { isOrphan(it, ids) }?.forEach { it.delete() }
+        val filledIds = kept.filter { it.hasFilledVersion }.map { it.id }.toSet()
+        filledDir.listFiles()?.filter { isOrphan(it, filledIds) }?.forEach { it.delete() }
         thumbnailsDir.listFiles()?.filter { it.nameWithoutExtension !in ids }?.forEach { it.delete() }
         // Left behind when the app was killed while a removal could still be undone.
         val uris = kept.filter { !it.isCopy }.map { it.uri }.toSet()
@@ -316,6 +378,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
             releasePermission(entry.uri.toUri())
         }
         thumbnailFile(entry.id).delete()
+        filledFile(entry.id).delete()
     }
 
     private fun releasePermission(uri: Uri) {
@@ -443,6 +506,8 @@ private fun RecentFile.toJson() = JSONObject()
     .put("lastPage", lastPage)
     .put("hasThumbnail", hasThumbnail)
     .put("encryptedPassword", encryptedPassword)
+    .put("filledFromHash", filledFromHash)
+    .put("filledBytes", filledBytes)
 
 private fun JSONObject.toRecentFile() = RecentFile(
     id = getString("id"),
@@ -457,4 +522,6 @@ private fun JSONObject.toRecentFile() = RecentFile(
     lastPage = optInt("lastPage"),
     hasThumbnail = optBoolean("hasThumbnail"),
     encryptedPassword = optString("encryptedPassword").ifEmpty { null },
+    filledFromHash = optString("filledFromHash").ifEmpty { null },
+    filledBytes = optLong("filledBytes"),
 )

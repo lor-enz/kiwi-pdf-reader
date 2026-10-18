@@ -29,47 +29,69 @@ data class RecentFile(
     val hasThumbnail: Boolean = false,
     /** Set when the user chose to remember the password; see [PasswordCipher]. */
     val encryptedPassword: String? = null,
+    /**
+     * Set while a filled-in version of a form is stored: the [contentHash] of the original it was
+     * filled in from, so it's dropped once the original changes.
+     */
+    val filledFromHash: String? = null,
+    val filledBytes: Long = 0,
 ) {
+    val hasFilledVersion: Boolean get() = filledFromHash != null
+
     /** Whether [contentHash] still describes a picked file that now has [size] and [modified]. */
     fun isHashCurrent(size: Long?, modified: Long?): Boolean =
         contentHash != null && size != null && size == sizeBytes && modified == modifiedMillis
+
+    /** What the app stores for this entry itself: its copy and its filled-in version. */
+    val storedBytes: Long get() = (if (isCopy) sizeBytes else 0) + filledBytes
 }
 
+/** What [CleanupRules.plan] decided: entries to remove, and filled-in versions to drop. */
+data class Cleanup(val removeEntries: Set<String>, val dropFilled: Set<String>)
+
+/**
+ * The limits for what the app stores itself: copies of files from other apps and filled-in
+ * forms. Both go after 30 days without being opened, and above 250 MB in total, least recently
+ * opened first. A copy goes with its entry; a picked file only loses its filled-in version.
+ */
 object CleanupRules {
-    const val COPY_MAX_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000
-    const val COPIES_MAX_TOTAL_BYTES = 250L * 1024 * 1024
+    const val STORED_MAX_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000
+    const val STORED_MAX_TOTAL_BYTES = 250L * 1024 * 1024
     const val MAX_ENTRIES = 20
 
-    /**
-     * Returns the ids of the entries to remove. [openIds] are the documents open in a viewer,
-     * which are never removed.
-     */
-    fun entriesToRemove(entries: List<RecentFile>, nowMillis: Long, openIds: Set<String>): Set<String> {
+    /** [openIds] are the documents open in a viewer, which are left alone. */
+    fun plan(entries: List<RecentFile>, nowMillis: Long, openIds: Set<String>): Cleanup {
         val removed = mutableSetOf<String>()
+        val dropped = mutableSetOf<String>()
         val newestFirst = entries.sortedByDescending { it.lastOpenedMillis }
         val removable = newestFirst.filter { it.id !in openIds }
 
-        // Copies not opened for 30 days.
-        removable
-            .filter { it.isCopy && nowMillis - it.lastOpenedMillis > COPY_MAX_AGE_MILLIS }
-            .mapTo(removed) { it.id }
+        fun release(entry: RecentFile) {
+            if (entry.isCopy) removed += entry.id else dropped += entry.id
+        }
+        fun isStored(entry: RecentFile) = entry.id !in removed && entry.id !in dropped && entry.storedBytes > 0
 
-        // Copies above the size budget, least recently opened first.
-        var copiesBytes = newestFirst.filter { it.isCopy && it.id !in removed }.sumOf { it.sizeBytes }
+        // Not opened for 30 days.
+        removable
+            .filter { isStored(it) && nowMillis - it.lastOpenedMillis > STORED_MAX_AGE_MILLIS }
+            .forEach(::release)
+
+        // Above the size budget, least recently opened first.
+        var storedBytes = newestFirst.filter(::isStored).sumOf { it.storedBytes }
         for (entry in removable.asReversed()) {
-            if (copiesBytes <= COPIES_MAX_TOTAL_BYTES) break
-            if (entry.isCopy && entry.id !in removed) {
-                removed += entry.id
-                copiesBytes -= entry.sizeBytes
+            if (storedBytes <= STORED_MAX_TOTAL_BYTES) break
+            if (isStored(entry)) {
+                storedBytes -= if (entry.isCopy) entry.storedBytes else entry.filledBytes
+                release(entry)
             }
         }
 
         // Keep the list short: drop the oldest entries beyond the limit.
-        val kept = newestFirst.filter { it.id !in removed }
-        kept.drop(MAX_ENTRIES)
+        newestFirst.filter { it.id !in removed }
+            .drop(MAX_ENTRIES)
             .filter { it.id !in openIds }
             .mapTo(removed) { it.id }
 
-        return removed
+        return Cleanup(removed, dropped - removed)
     }
 }

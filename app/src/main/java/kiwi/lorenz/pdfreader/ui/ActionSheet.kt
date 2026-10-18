@@ -34,9 +34,17 @@ fun ActionSheet(onDismiss: () -> Unit, content: @Composable ActionSheetScope.() 
 }
 
 class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) : ColumnScope by column {
+    /** [note] is shown below the [label], e.g. what the action will include. */
     @Composable
-    fun Action(@DrawableRes icon: Int, @StringRes label: Int, tag: String, onClick: () -> Unit) = ListItem(
+    fun Action(
+        @DrawableRes icon: Int,
+        @StringRes label: Int,
+        tag: String,
+        @StringRes note: Int? = null,
+        onClick: () -> Unit,
+    ) = ListItem(
         headlineContent = { Text(stringResource(label)) },
+        supportingContent = note?.let { { Text(stringResource(it)) } },
         leadingContent = { Icon(painterResource(icon), contentDescription = null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier
