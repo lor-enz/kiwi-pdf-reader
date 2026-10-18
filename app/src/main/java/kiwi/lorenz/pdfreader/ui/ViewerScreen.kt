@@ -45,8 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.pdf.models.FormEditInfo
@@ -304,7 +302,7 @@ private fun ClearFilledDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
-        // A dialog is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
-        modifier = Modifier.semantics { testTagsAsResourceId = true },
+        // A dialog is a window of its own, so it doesn't inherit exposed test tags from the root.
+        modifier = Modifier.exposeTestTags(),
     )
 }

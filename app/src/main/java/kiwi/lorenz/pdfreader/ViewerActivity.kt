@@ -6,22 +6,18 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.content.IntentCompat
 import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
+import kiwi.lorenz.pdfreader.recent.appTasks
 import kiwi.lorenz.pdfreader.ui.ViewerActions
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
-import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
+import kiwi.lorenz.pdfreader.ui.setAppContent
 import kotlinx.coroutines.launch
 
 /**
@@ -79,31 +75,26 @@ open class ViewerActivity : ComponentActivity() {
             return
         }
 
-        setContent {
-            KiwiPDFReaderTheme {
-                // Exposes test tags to adb-driven testing (uiautomator), see TestTags.
-                Box(Modifier.semantics { testTagsAsResourceId = true }) {
-                    viewModel.shownInTask?.let { task ->
-                        LaunchedEffect(task) { switchTo(task) }
-                    }
-                    val name = loadedDocument()?.name
-                    if (isOwnTask && name != null) {
-                        // The card in the app switcher shows the file name.
-                        LaunchedEffect(name) {
-                            setTaskDescription(ActivityManager.TaskDescription.Builder().setLabel(name).build())
-                        }
-                    }
-
-                    ViewerScreen(
-                        documentState = viewModel.documentState,
-                        searchState = viewModel.search.state,
-                        pendingRestorePage = viewModel.pendingRestorePage,
-                        isFilledIn = viewModel.isFilledIn,
-                        message = viewModel.message,
-                        actions = actions,
-                    )
+        setAppContent {
+            viewModel.shownInTask?.let { task ->
+                LaunchedEffect(task) { switchTo(task) }
+            }
+            val name = loadedDocument()?.name
+            if (isOwnTask && name != null) {
+                // The card in the app switcher shows the file name.
+                LaunchedEffect(name) {
+                    setTaskDescription(ActivityManager.TaskDescription.Builder().setLabel(name).build())
                 }
             }
+
+            ViewerScreen(
+                documentState = viewModel.documentState,
+                searchState = viewModel.search.state,
+                pendingRestorePage = viewModel.pendingRestorePage,
+                isFilledIn = viewModel.isFilledIn,
+                message = viewModel.message,
+                actions = actions,
+            )
         }
     }
 
@@ -126,9 +117,7 @@ open class ViewerActivity : ComponentActivity() {
 
     /** The document is already open in [task]'s viewer: shows that one instead of this one. */
     private fun switchTo(task: Int) {
-        getSystemService(ActivityManager::class.java).appTasks
-            .find { runCatching { it.taskInfo?.taskId }.getOrNull() == task }
-            ?.moveToFront()
+        appTasks()[task]?.moveToFront()
         close()
     }
 

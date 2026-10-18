@@ -1,5 +1,15 @@
 package kiwi.lorenz.pdfreader.ui
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
+
+/**
+ * Shows test tags to adb-driven testing (uiautomator) as resource ids. Set on each activity's
+ * root (see [setAppContent]) and again on sheets and dialogs, which are windows of their own.
+ */
+fun Modifier.exposeTestTags() = semantics { testTagsAsResourceId = true }
+
 /**
  * Stable ids for UI tests and adb-driven testing. They show up as resource ids in
  * `uiautomator dump`, because the root sets `testTagsAsResourceId`.

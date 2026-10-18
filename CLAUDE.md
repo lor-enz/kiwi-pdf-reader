@@ -48,8 +48,8 @@
     older, e.g. to test cleanup. Cleanup runs when the home screen is
     created, after a document opens and when a viewer closes.
 - Test tags (`ui/TestTags.kt`) show up as resource ids because the root
-  sets `testTagsAsResourceId`. Popups and sheets are windows of their own
-  and need it set again (see the tools sheet).
+  sets `testTagsAsResourceId` (`setAppContent`). Popups, sheets and dialogs
+  are windows of their own and need `Modifier.exposeTestTags()` again.
 - Page content is a single accessibility node, so links in a document are
   tapped by coordinates.
   - `form-values.sh [--password <pw>] <entry name | /device/path>` prints
