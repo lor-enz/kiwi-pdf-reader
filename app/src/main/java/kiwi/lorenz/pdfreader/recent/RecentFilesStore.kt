@@ -26,7 +26,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
-import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -92,9 +91,8 @@ class RecentFilesStore private constructor(private val context: Context) {
     suspend fun importCopy(source: Uri, name: String): RecentFile? = withContext(Dispatchers.IO) {
         copiesDir.mkdirs()
         val temp = File(copiesDir, "import-${UUID.randomUUID()}.tmp")
-        val hash = try {
-            copyHashing(source, temp)
-        } catch (_: Exception) {
+        val hash = hash(source, copyTo = temp)
+        if (hash == null) {
             temp.delete()
             return@withContext null
         }
@@ -215,7 +213,8 @@ class RecentFilesStore private constructor(private val context: Context) {
 
         val kept = entries + hidden.values
         val ids = kept.map { it.id }.toSet()
-        // Imports write a .tmp file outside the lock; only delete those left behind by a crash.
+        // Imports write a .tmp file outside the lock; only delete those left behind by a crash or
+        // a cancelled import.
         fun isOrphan(file: File) = if (file.name.endsWith(".tmp")) {
             now() - file.lastModified() > STALE_IMPORT_MILLIS
         } else {
@@ -280,28 +279,24 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     private fun copyFile(id: String) = File(copiesDir, "$id.pdf")
 
-    private fun copyHashing(source: Uri, target: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val input = context.contentResolver.openInputStream(source)
-            ?: throw IllegalStateException("Cannot read $source")
-        DigestInputStream(input, digest).use { hashing ->
-            target.outputStream().use { hashing.copyTo(it) }
-        }
-        return digest.digest().toHex()
-    }
-
-    /** Null if the file can't be read. Stops when cancelled, as large files take a while. */
-    private suspend fun hash(uri: Uri): String? = withContext(Dispatchers.IO) {
+    /**
+     * SHA-256 of the file's content, which is also written to [copyTo] if given. Null if it can't
+     * be read or written. Stops when cancelled, as large files take a while.
+     */
+    private suspend fun hash(uri: Uri, copyTo: File? = null): String? = withContext(Dispatchers.IO) {
         runCatchingCancellable {
             val digest = MessageDigest.getInstance("SHA-256")
             val input = context.contentResolver.openInputStream(uri) ?: error("Cannot read $uri")
             input.use {
-                val buffer = ByteArray(HASH_BUFFER_BYTES)
-                while (true) {
-                    ensureActive()
-                    val read = it.read(buffer)
-                    if (read < 0) break
-                    digest.update(buffer, 0, read)
+                copyTo?.outputStream().use { output ->
+                    val buffer = ByteArray(HASH_BUFFER_BYTES)
+                    while (true) {
+                        ensureActive()
+                        val read = it.read(buffer)
+                        if (read < 0) break
+                        digest.update(buffer, 0, read)
+                        output?.write(buffer, 0, read)
+                    }
                 }
             }
             digest.digest().toHex()
