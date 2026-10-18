@@ -1,7 +1,6 @@
 package kiwi.lorenz.pdfreader.recent
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -26,7 +25,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
@@ -45,7 +43,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     private val thumbnailsDir = File(root, "thumbnails")
     private val filledDir = File(root, "filled")
     private val index = AtomicFile(File(root, "index.json"))
-    private val openIndex = AtomicFile(File(root, "open.json"))
+    private val openTasks = OpenTasks(context, File(root, "open.json"))
 
     private val mutex = Mutex()
     private var loaded = false
@@ -59,8 +57,6 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     /** Entries taken off the list whose files are kept until the removal is final, see [hide]. */
     private val hidden = mutableMapOf<String, RecentFile>()
 
-    /** The entry each viewer shows, by the id of its task (card in the app switcher). */
-    private val openByTask = mutableMapOf<Int, String>()
     private val _entries = MutableStateFlow<List<RecentFile>>(emptyList())
 
     /** Newest first. */
@@ -151,7 +147,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
             val current = entries.find { it.id == id } ?: return@edit
             entries.upsert(current.copy(contentHash = hash, sizeBytes = size ?: 0, modifiedMillis = modified))
             // Duplicates open in another card stay until it's closed.
-            val openIds = liveOpenByTask().values
+            val openIds = openTasks.live().values
             entries.filter { it.id != id && it.contentHash == hash && it.id !in openIds }.forEach {
                 entries.remove(it)
                 // A form filled in through the duplicate is kept, unless this one has its own.
@@ -164,23 +160,17 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         }
     }
 
-    /**
-     * Records which entry the viewer in task [taskId] shows, or that it shows none. Saved, so
-     * cleanup leaves the entry alone and the viewer can reopen it, also after process death.
-     */
-    suspend fun setOpen(taskId: Int, entryId: String?) = edit {
-        val changed = if (entryId == null) openByTask.remove(taskId) != null else openByTask.put(taskId, entryId) != entryId
-        if (changed) saveOpen()
-    }
+    /** Records which entry the viewer in task [taskId] shows, or that it shows none; see [OpenTasks]. */
+    suspend fun setOpen(taskId: Int, entryId: String?) = edit { openTasks.set(taskId, entryId) }
 
     /** The entry the viewer in [taskId] showed, see [setOpen]. */
     suspend fun openIn(taskId: Int): RecentFile? = edit { entries ->
-        openByTask[taskId]?.let { id -> entries.find { it.id == id } }
+        openTasks.entryIn(taskId)?.let { id -> entries.find { it.id == id } }
     }
 
     /** A task other than [exceptTaskId] whose viewer shows [entryId], if there is one. */
     suspend fun taskShowing(entryId: String, exceptTaskId: Int): Int? = edit {
-        liveOpenByTask().entries.firstOrNull { it.value == entryId && it.key != exceptTaskId }?.key
+        openTasks.live().entries.firstOrNull { it.value == entryId && it.key != exceptTaskId }?.key
     }
 
     /** The viewer in [taskId] is gone: its entry is no longer protected from [cleanup]. */
@@ -300,7 +290,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
 
     /** Applies [CleanupRules], sparing open documents, and deletes files that no entry refers to. */
     suspend fun cleanup() = edit { entries ->
-        val plan = CleanupRules.plan(entries, now(), liveOpenByTask().values.toSet())
+        val plan = CleanupRules.plan(entries, now(), openTasks.live().values.toSet())
         entries.filter { it.id in plan.removeEntries }.forEach { entries.remove(it); deleteFiles(it, entries) }
         entries.filter { it.id in plan.dropFilled }.forEach {
             filledFile(it.id).delete()
@@ -337,7 +327,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         mutex.withLock {
             if (!loaded) {
                 _entries.value = load()
-                openByTask.putAll(loadOpen())
+                openTasks.load()
                 loaded = true
             }
             val entries = _entries.value.toMutableList()
@@ -350,18 +340,6 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
             }
             result
         }
-    }
-
-    /**
-     * [openByTask] without the tasks that are gone, e.g. a card swiped away while the app wasn't
-     * running. Only the app's own tasks are listed, so this doesn't need any permission.
-     */
-    private fun liveOpenByTask(): Map<Int, String> {
-        val live = context.getSystemService(ActivityManager::class.java).appTasks
-            .mapNotNull { task -> runCatching { task.taskInfo?.taskId }.getOrNull() }
-            .toSet()
-        if (openByTask.keys.retainAll(live)) saveOpen()
-        return openByTask
     }
 
     private fun MutableList<RecentFile>.upsert(entry: RecentFile) {
@@ -458,23 +436,6 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         false
     }
 
-    private fun loadOpen(): Map<Int, String> = try {
-        val json = JSONObject(openIndex.readText())
-        json.keys().asSequence().associate { it.toInt() to json.getString(it) }
-    } catch (_: Exception) {
-        // Missing or unreadable: nothing is known to be open.
-        emptyMap()
-    }
-
-    /** Failing is fine: open documents then just lose their protection from [cleanup]. */
-    private fun saveOpen() {
-        try {
-            root.mkdirs()
-            openIndex.writeText(JSONObject(openByTask.mapKeys { it.key.toString() }).toString())
-        } catch (_: IOException) {
-        }
-    }
-
     private fun now() = System.currentTimeMillis()
 
     companion object {
@@ -492,36 +453,3 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         }
     }
 }
-
-private fun RecentFile.toJson() = JSONObject()
-    .put("id", id)
-    .put("uri", uri)
-    .put("name", name)
-    .put("isCopy", isCopy)
-    .put("contentHash", contentHash)
-    .put("sizeBytes", sizeBytes)
-    .put("modifiedMillis", modifiedMillis)
-    .put("lastOpenedMillis", lastOpenedMillis)
-    .put("pageCount", pageCount)
-    .put("lastPage", lastPage)
-    .put("hasThumbnail", hasThumbnail)
-    .put("encryptedPassword", encryptedPassword)
-    .put("filledFromHash", filledFromHash)
-    .put("filledBytes", filledBytes)
-
-private fun JSONObject.toRecentFile() = RecentFile(
-    id = getString("id"),
-    uri = getString("uri"),
-    name = getString("name"),
-    isCopy = getBoolean("isCopy"),
-    contentHash = optString("contentHash").ifEmpty { null },
-    sizeBytes = optLong("sizeBytes"),
-    modifiedMillis = if (has("modifiedMillis")) getLong("modifiedMillis") else null,
-    lastOpenedMillis = getLong("lastOpenedMillis"),
-    pageCount = optInt("pageCount"),
-    lastPage = optInt("lastPage"),
-    hasThumbnail = optBoolean("hasThumbnail"),
-    encryptedPassword = optString("encryptedPassword").ifEmpty { null },
-    filledFromHash = optString("filledFromHash").ifEmpty { null },
-    filledBytes = optLong("filledBytes"),
-)
