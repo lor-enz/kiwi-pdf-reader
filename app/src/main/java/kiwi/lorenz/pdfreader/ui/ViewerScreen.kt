@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,10 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -72,8 +68,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -279,7 +273,6 @@ private val BarInsets
     @Composable get() = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
 
 /** The document's tools, collected in one place to keep the top bar calm. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ToolsSheet(
     onDismiss: () -> Unit,
@@ -287,24 +280,10 @@ private fun ToolsSheet(
     onPrint: () -> Unit,
     onShare: () -> Unit,
 ) {
-    // The sheet is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.semantics { testTagsAsResourceId = true }) {
-        @Composable
-        fun Tool(icon: Int, label: Int, tag: String, action: () -> Unit) = ListItem(
-            headlineContent = { Text(stringResource(label)) },
-            leadingContent = { Icon(painterResource(icon), contentDescription = null) },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            modifier = Modifier
-                .clickable {
-                    onDismiss()
-                    action()
-                }
-                .testTag(tag),
-        )
-        Tool(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
-        Tool(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
-        Tool(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
-        Spacer(Modifier.height(8.dp))
+    ActionSheet(onDismiss) {
+        Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
+        Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
+        Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
     }
 }
 

@@ -6,7 +6,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,12 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -47,15 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -227,7 +217,6 @@ private fun RecentFileRow(
 }
 
 /** What can be done with an entry without opening it. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecentFileSheet(
     entry: RecentFile,
@@ -236,8 +225,7 @@ private fun RecentFileSheet(
     onForgetPassword: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    // The sheet is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.semantics { testTagsAsResourceId = true }) {
+    ActionSheet(onDismiss) {
         Text(
             text = entry.name,
             style = MaterialTheme.typography.titleMedium,
@@ -248,25 +236,11 @@ private fun RecentFileSheet(
                 .padding(bottom = 8.dp)
                 .testTag(TestTags.RECENT_SHEET_TITLE),
         )
-
-        @Composable
-        fun Action(icon: Int, label: Int, tag: String, action: () -> Unit) = ListItem(
-            headlineContent = { Text(stringResource(label)) },
-            leadingContent = { Icon(painterResource(icon), contentDescription = null) },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            modifier = Modifier
-                .clickable {
-                    onDismiss()
-                    action()
-                }
-                .testTag(tag),
-        )
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onShare)
         if (entry.encryptedPassword != null) {
             Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onForgetPassword)
         }
         Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onRemove)
-        Spacer(Modifier.height(8.dp))
     }
 }
 
