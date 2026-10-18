@@ -1,5 +1,6 @@
-# Runs the unit tests and lint on pushes to main and on pull requests. Lint fails the build on errors
-# only; warnings are listed in the report. The reports are attached to the run when it fails.
+# Runs the unit tests and lint and builds the release version (shrunk by R8, unsigned) on pushes
+# to main and on pull requests. Lint fails the build on errors only; warnings are listed in the
+# report. The reports are attached to the run when it fails.
 name: CI
 
 on:
@@ -30,6 +31,10 @@ jobs:
 
       - name: Unit tests and lint
         run: ./gradlew testDebugUnitTest lintDebug
+
+      # R8 shrinks only the release version, and has broken it before (see CLAUDE.md)
+      - name: Release build
+        run: ./gradlew assembleRelease
 
       - uses: actions/upload-artifact@v7
         if: failure()

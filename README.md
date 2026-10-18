@@ -24,7 +24,7 @@ Screenshot of a happy parent successfully opening a PDF — [Finally.]
 
 ## Checks
 
-Every push to `main` and every pull request runs the unit tests and lint ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Dependabot opens a pull request each month that updates the dependencies ([`.github/dependabot.yml`](.github/dependabot.yml)). Run the same locally with `./gradlew testDebugUnitTest lintDebug`. When a run fails, its test and lint reports are attached to it.
+Every push to `main` and every pull request runs the unit tests and lint and builds the release version ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Dependabot opens a pull request each month that updates the dependencies ([`.github/dependabot.yml`](.github/dependabot.yml)). Run the same locally with `./gradlew testDebugUnitTest lintDebug assembleRelease`. When a run fails, its test and lint reports are attached to it.
 
 ## Releasing
 
