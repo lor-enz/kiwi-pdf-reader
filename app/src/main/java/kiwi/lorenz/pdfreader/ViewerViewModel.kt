@@ -23,6 +23,7 @@ import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -78,6 +79,9 @@ class ViewerViewModel(
     /** The document waiting for a password, see [DocumentState.NeedsPassword]. */
     private var passwordTarget: Target? = null
 
+    /** The entry that failed to open for now, see [FailureReason.TEMPORARY]. */
+    private var retryEntryId: String? = null
+
     // Opening
 
     /**
@@ -116,6 +120,12 @@ class ViewerViewModel(
             val name = displayName(uri)
             store.importCopy(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
         }
+    }
+
+    /** Opens the document again after a failure that's most likely passing. */
+    fun retry() {
+        val id = retryEntryId ?: return
+        launchOpen { store.get(id)?.let { Target(it) } }
     }
 
     /** Retries the document that asked for a password. */
@@ -266,6 +276,7 @@ class ViewerViewModel(
         password: String?,
         rememberPassword: Boolean,
         isTypedByUser: Boolean,
+        isRetry: Boolean = false,
     ): DocumentState {
         val entry = target.entry
         return try {
@@ -291,8 +302,15 @@ class ViewerViewModel(
             val reason = withContext(Dispatchers.IO) {
                 getApplication<Application>().contentResolver.diagnoseFailure(target.uri, openedBefore)
             }
+            // Retried once on its own (the PDF service may have to restart), so the user only
+            // sees failures that last.
+            if (reason == FailureReason.TEMPORARY && !isRetry) {
+                delay(RETRY_DELAY_MS)
+                return open(target, password, rememberPassword, isTypedByUser, isRetry = true)
+            }
+            if (reason == FailureReason.TEMPORARY) retryEntryId = entry?.id
             // A failing filled-in version says nothing about the original, see launchOpen.
-            if (entry != null && !target.isFilledIn && !reason.keepsEntry(openedBefore)) store.remove(entry.id)
+            if (entry != null && !target.isFilledIn && !reason.keepsEntry) store.remove(entry.id)
             DocumentState.Failed(reason)
         }
     }
@@ -324,6 +342,7 @@ class ViewerViewModel(
         openEntryId = null
         pendingRestorePage = null
         passwordTarget = null
+        retryEntryId = null
     }
 
     private fun closeDocument() {
@@ -356,5 +375,6 @@ class ViewerViewModel(
 
     private companion object {
         const val KEY_OPEN_ENTRY = "openEntryId"
+        const val RETRY_DELAY_MS = 500L
     }
 }

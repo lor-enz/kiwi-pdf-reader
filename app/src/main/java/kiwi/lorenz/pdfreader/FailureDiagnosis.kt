@@ -12,13 +12,7 @@ private val PDF_HEADER = "%PDF-".toByteArray()
  * file with a PDF header counts as damaged. [openedBefore] tells whether we ever had access.
  */
 fun ContentResolver.diagnoseFailure(uri: Uri, openedBefore: Boolean): FailureReason = try {
-    val head = openInputStream(uri)?.use { it.readNBytes(HEADER_SEARCH_BYTES) }
-    when {
-        head == null -> FailureReason.UNAVAILABLE
-        // An empty file is most likely an interrupted download, not some other kind of file.
-        head.isEmpty() || hasPdfHeader(head) -> FailureReason.DAMAGED
-        else -> FailureReason.NOT_PDF
-    }
+    diagnoseHead(openInputStream(uri)?.use { it.readNBytes(HEADER_SEARCH_BYTES) }, openedBefore)
 } catch (_: SecurityException) {
     // Deleting a document revokes its grants, so for a file we could read before this most
     // likely means it's gone, not that the permission was taken away.
@@ -29,11 +23,22 @@ fun ContentResolver.diagnoseFailure(uri: Uri, openedBefore: Boolean): FailureRea
 }
 
 /**
- * Whether the recent entry of a file that failed to open stays in the list. A file that opened
+ * [head] is the start of a file that failed to open, null if there's none. A file that opened
  * before and still looks like a PDF most likely failed for a passing reason (e.g. the PDF service
- * crashed), and for a copy it's the only one there is. Other failures won't go away on a retry.
+ * crashed).
  */
-internal fun FailureReason.keepsEntry(openedBefore: Boolean) = this == FailureReason.DAMAGED && openedBefore
+internal fun diagnoseHead(head: ByteArray?, openedBefore: Boolean): FailureReason = when {
+    head == null -> FailureReason.UNAVAILABLE
+    // An empty file is most likely an interrupted download, not some other kind of file.
+    head.isEmpty() || hasPdfHeader(head) -> if (openedBefore) FailureReason.TEMPORARY else FailureReason.DAMAGED
+    else -> FailureReason.NOT_PDF
+}
+
+/**
+ * Whether the recent entry of a file that failed to open stays in the list: only when the failure
+ * is most likely passing, and for a copy it's the only one there is. Others won't go away on a retry.
+ */
+internal val FailureReason.keepsEntry get() = this == FailureReason.TEMPORARY
 
 internal fun hasPdfHeader(head: ByteArray): Boolean {
     val end = minOf(head.size, HEADER_SEARCH_BYTES) - PDF_HEADER.size

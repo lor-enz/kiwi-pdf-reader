@@ -29,4 +29,6 @@ enum class FailureReason {
     NO_PERMISSION,
     /** Moved or deleted. */
     UNAVAILABLE,
+    /** Opened before and still looks like a PDF, so most likely a passing failure; worth a retry. */
+    TEMPORARY,
 }

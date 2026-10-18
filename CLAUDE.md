@@ -184,8 +184,11 @@
   can't tell "deleted" from "permission revoked": for files that opened
   before it counts as moved or deleted, otherwise as not given access.
   A failed file leaves the recent list, except when it opened before and
-  still looks like a PDF: that's most likely a passing failure (the PDF
-  service), and for a copy it's the only one there is.
+  still looks like a PDF (`TEMPORARY`): that's most likely a passing failure
+  (the PDF service), and for a copy it's the only one there is. Such a file
+  is retried once on its own after 500 ms, and only then offers "Try again"
+  instead of "Open another PDF". To test it, truncate the stored copy
+  (`files/recent/copies/` via `run-as`) of a file that opened before.
 
 # Planned changes
 
@@ -195,7 +198,7 @@
 - [ ] Opening a recent file reorders the list (it counts as opened) while
   the viewer slides in; the change shouldn't be visible. Compare clean
   options before choosing
-- [ ] Error screen: icon, title, sentence, action; rethink the texts. A
+- [x] Error screen: icon, title, sentence, action; rethink the texts. A
   file that failed only for now (kept in the list) should say "try again",
   not "damaged, download it again"
 - [ ] Password screen: less basic, still simple (lock icon, file name)

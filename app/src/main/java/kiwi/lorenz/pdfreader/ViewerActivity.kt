@@ -40,6 +40,7 @@ open class ViewerActivity : ComponentActivity() {
     private val actions = object : ViewerActions {
         override fun back() = close()
         override fun openAnother() = pickPdf.launch(arrayOf(PDF_MIME_TYPE))
+        override fun retry() = viewModel.retry()
         override fun submitPassword(password: String, remember: Boolean) = viewModel.submitPassword(password, remember)
         override fun pageRestored() = viewModel.onPageRestored()
         override fun pageChanged(page: Int) = viewModel.onPageChanged(page)

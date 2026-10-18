@@ -60,6 +60,7 @@ private val TopBarHeight = 64.dp
 interface ViewerActions {
     fun back()
     fun openAnother()
+    fun retry()
     fun submitPassword(password: String, remember: Boolean)
     fun pageRestored()
     fun pageChanged(page: Int)
@@ -184,6 +185,7 @@ fun ViewerScreen(
             is DocumentState.Failed -> FailureMessage(
                 reason = documentState.reason,
                 onOpenAnother = actions::openAnother,
+                onRetry = actions::retry,
                 modifier = Modifier.padding(contentPadding),
             )
 

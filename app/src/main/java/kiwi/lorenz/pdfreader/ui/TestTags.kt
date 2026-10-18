@@ -43,6 +43,8 @@ object TestTags {
     const val REMEMBER_PASSWORD = "remember_password"
     const val SUBMIT_PASSWORD = "submit_password"
 
+    const val FAILURE_TITLE = "failure_title"
     const val FAILURE_MESSAGE = "failure_message"
     const val OPEN_ANOTHER = "open_another"
+    const val TRY_AGAIN = "try_again"
 }

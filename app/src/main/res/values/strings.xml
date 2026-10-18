@@ -45,9 +45,16 @@
     <string name="remember_password">Remember password</string>
     <string name="open">Open</string>
 
-    <string name="error_damaged">This PDF is damaged and can\'t be opened. If you downloaded it, try downloading it again. If someone sent it to you, ask them for a new copy.</string>
-    <string name="error_not_pdf">This file isn\'t a PDF. Try opening it with another app.</string>
-    <string name="error_no_permission">Kiwi PDF Reader wasn\'t given access to this file. Try saving it to your phone first, then open it from there.</string>
-    <string name="error_unavailable">This PDF is no longer available. It may have been moved or deleted.</string>
+    <string name="error_damaged_title">This PDF is damaged</string>
+    <string name="error_damaged">If you downloaded it, try downloading it again. If someone sent it to you, ask them for a new copy.</string>
+    <string name="error_not_pdf_title">This file isn\'t a PDF</string>
+    <string name="error_not_pdf">Try opening it with another app.</string>
+    <string name="error_no_permission_title">Can\'t access this file</string>
+    <string name="error_no_permission">The app it came from didn\'t share it in a way Kiwi PDF Reader can read. Save it to your phone first, then open it from there.</string>
+    <string name="error_unavailable_title">This PDF is no longer available</string>
+    <string name="error_unavailable">It may have been moved or deleted.</string>
+    <string name="error_temporary_title">Couldn\'t open this PDF</string>
+    <string name="error_temporary">Try again. If it keeps happening, the file may be damaged.</string>
     <string name="open_another">Open another PDF</string>
+    <string name="try_again">Try again</string>
 </resources>
