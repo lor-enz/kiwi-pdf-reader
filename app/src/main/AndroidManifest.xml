@@ -12,13 +12,26 @@
         android:theme="@style/Theme.KiwiPDFReader">
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ViewerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Documents from other apps, each with a card of its own in the app switcher -->
+        <activity
+            android:name=".ExternalViewerActivity"
+            android:autoRemoveFromRecents="true"
+            android:documentLaunchMode="always"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <!-- "Open with" from file managers, mail and messenger apps -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

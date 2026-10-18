@@ -1,6 +1,5 @@
 package kiwi.lorenz.pdfreader
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -16,25 +15,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
-import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
 import kotlinx.coroutines.launch
 
+/**
+ * The home screen with the recent files list. Keeps its name, as launcher shortcuts on people's
+ * home screens point to it. Documents open in [ViewerActivity].
+ */
 class MainActivity : ComponentActivity() {
-    private val viewModel: ReaderViewModel by viewModels()
+    private val viewModel: HomeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // On rotation the ViewModel still holds the document, so only handle fresh launches.
-        if (savedInstanceState == null) handleIntent(intent)
-        addOnNewIntentListener(::handleIntent)
 
         setContent {
             KiwiPDFReaderTheme {
@@ -42,50 +38,25 @@ class MainActivity : ComponentActivity() {
                 Box(Modifier.semantics { testTagsAsResourceId = true }) {
                     val pickPdf = rememberLauncherForActivityResult(
                         ActivityResultContracts.OpenDocument()
-                    ) { uri -> uri?.let { viewModel.openPicked(it) } }
-                    val openPicker = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) }
+                    ) { uri -> uri?.let { startActivity(ViewerActivity.pickedIntent(this@MainActivity, it)) } }
 
-                    if (viewModel.documentState == DocumentState.Empty) {
-                        val recentFiles by viewModel.recentFiles.collectAsState()
-                        HomeScreen(
-                            recentFiles = recentFiles,
-                            thumbnailFile = viewModel::thumbnailFile,
-                            onOpenPdf = openPicker,
-                            onOpenRecent = viewModel::openRecent,
-                            pendingRemoval = viewModel.pendingRemoval,
-                            onShareRecent = { share(it.uri.toUri(), it.name) },
-                            onForgetPassword = viewModel::forgetPassword,
-                            onRemoveRecent = viewModel::removeRecent,
-                            onUndoRemoval = viewModel::undoRemoval,
-                            onRemovalDone = viewModel::finishRemoval,
-                        )
-                    } else {
-                        ViewerScreen(
-                            documentState = viewModel.documentState,
-                            searchState = viewModel.searchState,
-                            pendingRestorePage = viewModel.pendingRestorePage,
-                            onPageRestored = viewModel::onPageRestored,
-                            onPageChanged = viewModel::onPageChanged,
-                            onSubmitPassword = viewModel::submitPassword,
-                            onBack = {
-                                if (viewModel.openedFromOtherApp) finish() else viewModel.close()
-                            },
-                            onOpenAnother = openPicker,
-                            onOpenSearch = viewModel::openSearch,
-                            onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
-                            onShare = { loadedDocument()?.let { share(it.document.uri, it.name) } },
-                            onCloseSearch = viewModel::closeSearch,
-                            onQueryChange = viewModel::updateQuery,
-                            onNextMatch = viewModel::nextMatch,
-                            onPreviousMatch = viewModel::previousMatch,
-                        )
-                    }
+                    val recentFiles by viewModel.recentFiles.collectAsState()
+                    HomeScreen(
+                        recentFiles = recentFiles,
+                        thumbnailFile = viewModel::thumbnailFile,
+                        onOpenPdf = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
+                        onOpenRecent = { startActivity(ViewerActivity.recentIntent(this@MainActivity, it.id)) },
+                        pendingRemoval = viewModel.pendingRemoval,
+                        onShareRecent = { share(it.uri.toUri(), it.name) },
+                        onForgetPassword = viewModel::forgetPassword,
+                        onRemoveRecent = viewModel::removeRecent,
+                        onUndoRemoval = viewModel::undoRemoval,
+                        onRemovalDone = viewModel::finishRemoval,
+                    )
                 }
             }
         }
     }
-
-    private fun loadedDocument() = viewModel.documentState as? DocumentState.Loaded
 
     private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
@@ -93,14 +64,5 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this@MainActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun handleIntent(intent: Intent) {
-        val uri: Uri? = when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-            else -> null
-        }
-        uri?.let { viewModel.openFromOtherApp(it) }
     }
 }

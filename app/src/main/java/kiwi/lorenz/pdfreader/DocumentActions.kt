@@ -92,7 +92,7 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
     send.clipData = ClipData.newRawUri(null, shared)
     val chooser = Intent.createChooser(send, null)
         // Sharing it back into this app would only open it a second time.
-        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, MainActivity::class.java)))
+        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ExternalViewerActivity::class.java)))
     startActivity(chooser)
 }
 

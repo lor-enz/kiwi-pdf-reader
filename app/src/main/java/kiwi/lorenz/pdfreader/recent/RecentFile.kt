@@ -41,13 +41,13 @@ object CleanupRules {
     const val MAX_ENTRIES = 20
 
     /**
-     * Returns the ids of the entries to remove. [openId] is the currently open document, which
-     * is never removed.
+     * Returns the ids of the entries to remove. [openIds] are the documents open in a viewer,
+     * which are never removed.
      */
-    fun entriesToRemove(entries: List<RecentFile>, nowMillis: Long, openId: String?): Set<String> {
+    fun entriesToRemove(entries: List<RecentFile>, nowMillis: Long, openIds: Set<String>): Set<String> {
         val removed = mutableSetOf<String>()
         val newestFirst = entries.sortedByDescending { it.lastOpenedMillis }
-        val removable = newestFirst.filter { it.id != openId }
+        val removable = newestFirst.filter { it.id !in openIds }
 
         // Copies not opened for 30 days.
         removable
@@ -67,7 +67,7 @@ object CleanupRules {
         // Keep the list short: drop the oldest entries beyond the limit.
         val kept = newestFirst.filter { it.id !in removed }
         kept.drop(MAX_ENTRIES)
-            .filter { it.id != openId }
+            .filter { it.id !in openIds }
             .mapTo(removed) { it.id }
 
         return removed

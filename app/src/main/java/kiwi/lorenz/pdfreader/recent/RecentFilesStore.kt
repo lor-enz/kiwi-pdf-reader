@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader.recent
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -34,14 +35,15 @@ import java.util.UUID
  * Persists the recent files list, the private copies and their thumbnails under
  * `files/recent/`, which is excluded from backups.
  *
- * Process-wide singleton: several activity instances (e.g. one opened from WhatsApp, one from
- * the launcher) must not write the index concurrently.
+ * Process-wide singleton: several viewers (one per card in the app switcher) must not write the
+ * index concurrently.
  */
 class RecentFilesStore private constructor(private val context: Context) {
     private val root = File(context.filesDir, "recent")
     private val copiesDir = File(root, "copies")
     private val thumbnailsDir = File(root, "thumbnails")
     private val index = AtomicFile(File(root, "index.json"))
+    private val openIndex = AtomicFile(File(root, "open.json"))
 
     private val mutex = Mutex()
     private var loaded = false
@@ -54,6 +56,9 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     /** Entries taken off the list whose files are kept until the removal is final, see [hide]. */
     private val hidden = mutableMapOf<String, RecentFile>()
+
+    /** The entry each viewer shows, by the id of its task (card in the app switcher). */
+    private val openByTask = mutableMapOf<Int, String>()
     private val _entries = MutableStateFlow<List<RecentFile>>(emptyList())
 
     /** Newest first. */
@@ -143,10 +148,39 @@ class RecentFilesStore private constructor(private val context: Context) {
         edit { entries ->
             val current = entries.find { it.id == id } ?: return@edit
             entries.upsert(current.copy(contentHash = hash, sizeBytes = size ?: 0, modifiedMillis = modified))
-            entries.filter { it.id != id && it.contentHash == hash }.forEach {
+            // Duplicates open in another card stay until it's closed.
+            val openIds = liveOpenByTask().values
+            entries.filter { it.id != id && it.contentHash == hash && it.id !in openIds }.forEach {
                 entries.remove(it)
                 deleteFiles(it, entries)
             }
+        }
+    }
+
+    /**
+     * Records which entry the viewer in task [taskId] shows, or that it shows none. Saved, so
+     * cleanup leaves the entry alone and the viewer can reopen it, also after process death.
+     */
+    suspend fun setOpen(taskId: Int, entryId: String?) = edit {
+        val changed = if (entryId == null) openByTask.remove(taskId) != null else openByTask.put(taskId, entryId) != entryId
+        if (changed) saveOpen()
+    }
+
+    /** The entry the viewer in [taskId] showed, see [setOpen]. */
+    suspend fun openIn(taskId: Int): RecentFile? = edit { entries ->
+        openByTask[taskId]?.let { id -> entries.find { it.id == id } }
+    }
+
+    /** A task other than [exceptTaskId] whose viewer shows [entryId], if there is one. */
+    suspend fun taskShowing(entryId: String, exceptTaskId: Int): Int? = edit {
+        liveOpenByTask().entries.firstOrNull { it.value == entryId && it.key != exceptTaskId }?.key
+    }
+
+    /** The viewer in [taskId] is gone: its entry is no longer protected from [cleanup]. */
+    fun closed(taskId: Int) {
+        scope.launch {
+            setOpen(taskId, null)
+            cleanup()
         }
     }
 
@@ -207,9 +241,9 @@ class RecentFilesStore private constructor(private val context: Context) {
         }
     }
 
-    /** Applies [CleanupRules] and deletes files that no entry refers to. */
-    suspend fun cleanup(openId: String?) = edit { entries ->
-        val toRemove = CleanupRules.entriesToRemove(entries, now(), openId)
+    /** Applies [CleanupRules], sparing open documents, and deletes files that no entry refers to. */
+    suspend fun cleanup() = edit { entries ->
+        val toRemove = CleanupRules.entriesToRemove(entries, now(), liveOpenByTask().values.toSet())
         entries.filter { it.id in toRemove }.forEach { entries.remove(it); deleteFiles(it, entries) }
 
         val kept = entries + hidden.values
@@ -240,6 +274,7 @@ class RecentFilesStore private constructor(private val context: Context) {
         mutex.withLock {
             if (!loaded) {
                 _entries.value = load()
+                openByTask.putAll(loadOpen())
                 loaded = true
             }
             val entries = _entries.value.toMutableList()
@@ -252,6 +287,18 @@ class RecentFilesStore private constructor(private val context: Context) {
             }
             result
         }
+    }
+
+    /**
+     * [openByTask] without the tasks that are gone, e.g. a card swiped away while the app wasn't
+     * running. Only the app's own tasks are listed, so this doesn't need any permission.
+     */
+    private fun liveOpenByTask(): Map<Int, String> {
+        val live = context.getSystemService(ActivityManager::class.java).appTasks
+            .mapNotNull { task -> runCatching { task.taskInfo?.taskId }.getOrNull() }
+            .toSet()
+        if (openByTask.keys.retainAll(live)) saveOpen()
+        return openByTask
     }
 
     private fun MutableList<RecentFile>.upsert(entry: RecentFile) {
@@ -345,6 +392,23 @@ class RecentFilesStore private constructor(private val context: Context) {
         true
     } catch (_: IOException) {
         false
+    }
+
+    private fun loadOpen(): Map<Int, String> = try {
+        val json = JSONObject(openIndex.readText())
+        json.keys().asSequence().associate { it.toInt() to json.getString(it) }
+    } catch (_: Exception) {
+        // Missing or unreadable: nothing is known to be open.
+        emptyMap()
+    }
+
+    /** Failing is fine: open documents then just lose their protection from [cleanup]. */
+    private fun saveOpen() {
+        try {
+            root.mkdirs()
+            openIndex.writeText(JSONObject(openByTask.mapKeys { it.key.toString() }).toString())
+        } catch (_: IOException) {
+        }
     }
 
     private fun now() = System.currentTimeMillis()

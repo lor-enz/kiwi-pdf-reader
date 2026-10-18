@@ -28,10 +28,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlin.math.roundToInt
 
 sealed interface DocumentState {
@@ -78,15 +76,16 @@ data class SearchState(
     val currentMatch: SearchMatch? get() = matches.getOrNull(currentIndex)
 }
 
-class ReaderViewModel(
+/** One open document, see [ViewerActivity]. */
+class ViewerViewModel(
     application: Application,
     private val savedState: SavedStateHandle,
 ) : AndroidViewModel(application) {
     private val loader = SandboxedPdfLoader(application)
     private val store = RecentFilesStore.get(application)
 
-    /** Newest first. */
-    val recentFiles: StateFlow<List<RecentFile>> = store.entries
+    /** The task (card in the app switcher) this viewer is in. Set by the activity before opening. */
+    var taskId = -1
 
     var documentState by mutableStateOf<DocumentState>(DocumentState.Empty)
         private set
@@ -98,12 +97,12 @@ class ReaderViewModel(
     var pendingRestorePage by mutableStateOf<Int?>(null)
         private set
 
-    /** True when another app handed us the PDF; closing it should return to that app. */
-    var openedFromOtherApp: Boolean
-        get() = savedState[KEY_FROM_OTHER_APP] ?: false
-        private set(value) {
-            savedState[KEY_FROM_OTHER_APP] = value
-        }
+    /**
+     * Another task whose viewer already shows the requested document. A document is open in one
+     * viewer only, so the activity switches to that one and closes.
+     */
+    var shownInTask by mutableStateOf<Int?>(null)
+        private set
 
     /** The recent entry of the open document. Saved so it can be reopened after process death. */
     private var openEntryId: String?
@@ -121,20 +120,18 @@ class ReaderViewModel(
     /** The document waiting for a password, see [DocumentState.NeedsPassword]. */
     private var passwordTarget: Target? = null
 
-    init {
-        val restoreId = openEntryId
-        viewModelScope.launch {
-            val entry = restoreId?.let { store.get(it) }
-            if (entry != null && documentState == DocumentState.Empty) {
-                launchOpen(fromOtherApp = openedFromOtherApp) { Target(entry) }
-            }
-            store.cleanup(openId = restoreId)
-            application.deleteOldSharedCopies()
-        }
+    /**
+     * After process death the activity is recreated with its saved state, but not the document.
+     * False if no document was open.
+     */
+    fun restore(): Boolean {
+        val id = openEntryId ?: return false
+        launchOpen { store.get(id)?.also { store.touch(it.id) }?.let { Target(it) } }
+        return true
     }
 
     /** A file chosen with the app's own picker. */
-    fun openPicked(uri: Uri) = launchOpen(fromOtherApp = false) {
+    fun openPicked(uri: Uri) = launchOpen {
         val name = displayName(uri)
         store.addPicked(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
     }
@@ -143,57 +140,28 @@ class ReaderViewModel(
     fun openFromOtherApp(uri: Uri) {
         // A file URI would be read with this app's own rights, which reach its private files.
         if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
-            resetForOpen(fromOtherApp = true)
+            resetForOpen()
             documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
             return
         }
-        launchOpen(fromOtherApp = true) {
+        launchOpen {
+            // A card the app was force-stopped in starts over with its first intent, whose
+            // permission is gone by then; its copy is still there.
+            store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
             val name = displayName(uri)
             store.importCopy(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
         }
     }
 
-    fun openRecent(entry: RecentFile) = launchOpen(fromOtherApp = false) {
-        store.touch(entry.id)
-        Target(entry)
+    fun openRecent(id: String) = launchOpen {
+        store.touch(id)
+        store.get(id)?.let { Target(it) }
     }
 
-    fun close() {
-        closeDocument()
-        documentState = DocumentState.Empty
-        openedFromOtherApp = false
-        openEntryId = null
-        pendingRestorePage = null
-        passwordTarget = null
-        viewModelScope.launch { store.cleanup(openId = null) }
-    }
-
-    fun thumbnailFile(entry: RecentFile): File = store.thumbnailFile(entry.id)
-
-    /** Removed from the list, but its files are kept while the removal can be undone. */
-    var pendingRemoval by mutableStateOf<RecentFile?>(null)
-        private set
-
-    fun removeRecent(entry: RecentFile) {
-        // One undo at a time: an earlier removal becomes final.
-        pendingRemoval?.let(store::discard)
-        pendingRemoval = entry
-        viewModelScope.launch { store.hide(entry.id) }
-    }
-
-    fun undoRemoval(entry: RecentFile) {
-        if (pendingRemoval == entry) pendingRemoval = null
-        viewModelScope.launch { store.restore(entry) }
-    }
-
-    /** The thumbnail goes too, as it shows protected content. */
-    fun forgetPassword(entry: RecentFile) {
-        viewModelScope.launch { store.setPassword(entry.id, null) }
-    }
-
-    fun finishRemoval(entry: RecentFile) {
-        if (pendingRemoval == entry) pendingRemoval = null
-        store.discard(entry)
+    /** Back to this card from elsewhere: counts as opening the document again. */
+    fun onReturned() {
+        val id = openEntryId ?: return
+        viewModelScope.launch { store.touch(id) }
     }
 
     fun onPageRestored() {
@@ -271,19 +239,31 @@ class ReaderViewModel(
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
 
-    private fun resetForOpen(fromOtherApp: Boolean) {
+    private fun resetForOpen() {
         closeDocument()
-        openedFromOtherApp = fromOtherApp
         openEntryId = null
         pendingRestorePage = null
         passwordTarget = null
     }
 
-    private fun launchOpen(fromOtherApp: Boolean, resolve: suspend () -> Target) {
-        resetForOpen(fromOtherApp)
+    /** [resolve] returns null if there's nothing to open (anymore). */
+    private fun launchOpen(resolve: suspend () -> Target?) {
+        resetForOpen()
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
             val target = resolve()
+            if (target == null) {
+                documentState = DocumentState.Failed(FailureReason.UNAVAILABLE)
+                return@launch
+            }
+            target.entry?.let { entry ->
+                store.taskShowing(entry.id, exceptTaskId = taskId)?.let {
+                    shownInTask = it
+                    return@launch
+                }
+            }
+            // Before loading, so cleanup leaves the file alone while it opens.
+            store.setOpen(taskId, target.entry?.id)
             val remembered = target.entry?.encryptedPassword?.let(PasswordCipher::decrypt)
             documentState = open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
         }
@@ -345,7 +325,7 @@ class ReaderViewModel(
             // Thumbnails of protected documents only when the password is remembered.
             val showsThumbnail = password == null || rememberPassword
             if (showsThumbnail && !entry.hasThumbnail) renderThumbnail(entry.id, document)
-            store.cleanup(openId = entry.id)
+            store.cleanup()
         }
         // On its own, as hashing a large file takes a while.
         if (!entry.isCopy) viewModelScope.launch { store.hashPicked(entry.id) }
@@ -386,14 +366,15 @@ class ReaderViewModel(
         name ?: uri.lastPathSegment ?: "PDF"
     }
 
+    /** Only when the viewer is closed for good, not on rotation or process death. */
     override fun onCleared() {
         closeDocument()
+        store.closed(taskId)
     }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L
         const val THUMBNAIL_WIDTH_PX = 240
         const val KEY_OPEN_ENTRY = "openEntryId"
-        const val KEY_FROM_OTHER_APP = "openedFromOtherApp"
     }
 }

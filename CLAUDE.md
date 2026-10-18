@@ -24,9 +24,9 @@
     broken ones (damaged, truncated, empty, not a PDF).
   - `open-pdf.sh [--fresh] [--no-grant] <file>` opens a file the way
     another app would (push to Download, media store URI, VIEW intent),
-    force-stopping first since `am start` stacks activity instances.
-    `--fresh` clears the app's data: a file opened before otherwise
-    reopens at its last page.
+    in a card of its own. `--fresh` stops the app and clears its data: a
+    file opened before otherwise reopens at its last page, and one that's
+    still open switches to its card.
   - `ui.sh list|tap|text|wait|shot` reads and drives the screen through
     `uiautomator`, finding elements by test tag, text or description.
 - Test tags (`ui/TestTags.kt`) show up as resource ids because the root
@@ -37,6 +37,11 @@
 - Run `scripts/test/prepare-device.sh` before testing: it turns animations
   off, which keeps screenshots stable. An emulator booted from an older
   snapshot has them on again.
+- Return to the main task with the launcher's intent (`am start -a
+  android.intent.action.MAIN -c android.intent.category.LAUNCHER -n
+  kiwi.lorenz.pdfreader/.MainActivity`); a plain `am start -n` stacks a
+  second home screen. Switch to a card with `cmd activity task focus <id>`;
+  `dumpsys activity recents` lists the cards.
 - Process death: `am kill` doesn't work. Press home, then
   `run-as kiwi.lorenz.pdfreader kill -9 <pid>`.
 - Fast swipes fling to the end of the document; use slow ones.
@@ -132,8 +137,21 @@
 - Files from other apps are accepted only as `content://` URIs. A
   `file://` URI would be read with the app's own rights, which reach its
   private files; it gets the "not given access" error instead.
-- Only documents opened from other apps get their own task (card in the
-  app switcher); the app's own list and picker open in the main task.
+- Home (`MainActivity`) and viewer are separate activities, each with its
+  own view model. `MainActivity` keeps its name because launcher shortcuts
+  point to it. Documents from the app's own list and picker open in
+  `ViewerActivity` in the main task; documents from other apps open in
+  `ExternalViewerActivity` (`documentLaunchMode="always"`), each with a card
+  of its own named after the file. Back closes such a card and returns to
+  the app that opened it. A document is open in one viewer only: opening it
+  again, from anywhere, switches to the viewer that has it (forms in two
+  viewers would overwrite each other).
+- The store records which entry each task shows (`files/recent/open.json`,
+  by task id), so cleanup spares every document with a card, also after
+  process death, and a card can reopen its copy after its intent's
+  permission is gone. Tasks no longer in `ActivityManager.appTasks` (card
+  swiped away) drop out. Returning to a card counts as opening the
+  document. An app update or force-stop removes the document cards.
 - `androidx.pdf` can't read a PDF's outline (table of contents), so a
   tablet side panel could only show page thumbnails.
 - No OCR for scanned PDFs: the usual engine (ML Kit) needs Google Play
@@ -178,16 +196,20 @@
   thumbnail
 - [x] Hash picked files too, fixing the duplicate entries
 
-### Milestone 7: save and forms
+### Milestone 7: documents from other apps in their own task
+- [x] Split home and viewer into separate activities, each with its own
+  view model; reopening the same document returns to its card; back and
+  process death per task
+- [x] Cleanup protects every open document (every card), not just the one
+  of the window that runs it, also after process death; returning to a
+  card counts as opening it
+
+### Milestone 8: save and forms
 - [ ] Save a copy ("Save to…" via the system file picker)
 - [ ] Form filling with autosave and restore (see Project notes)
 - [ ] Check whether the filled-in file of a password-protected PDF stays
   encrypted; if not, ask the user before storing it
 - [ ] Update the privacy policy (filled-in forms are stored locally)
-
-### Milestone 8: documents from other apps in their own task
-- [ ] Split home and viewer into separate activities; reopening the same
-  document returns to its card; back and process death per task
 
 ### Milestone 9: presentation mode
 - [ ] Fullscreen (hide system bars) first

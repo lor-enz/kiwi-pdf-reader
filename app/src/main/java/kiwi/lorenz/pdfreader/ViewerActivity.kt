@@ -1,0 +1,157 @@
+package kiwi.lorenz.pdfreader
+
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.core.content.IntentCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
+import kiwi.lorenz.pdfreader.ui.ViewerScreen
+import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
+import kotlinx.coroutines.launch
+
+/**
+ * Shows one document. Opened from the recent files list, it's part of the app's main task;
+ * documents from other apps open in [ExternalViewerActivity], with a card of their own.
+ */
+open class ViewerActivity : ComponentActivity() {
+    private val viewModel: ViewerViewModel by viewModels()
+
+    private val isOwnTask get() = this is ExternalViewerActivity
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        viewModel.taskId = taskId
+
+        val isOpening = when {
+            savedInstanceState == null -> handleIntent(intent)
+            // Recreated after process death; on rotation the view model still has the document.
+            viewModel.documentState == DocumentState.Empty -> viewModel.restore() || handleIntent(intent)
+            else -> true
+        }
+        // E.g. a share without a file in it.
+        if (!isOpening) {
+            close()
+            return
+        }
+
+        setContent {
+            KiwiPDFReaderTheme {
+                // Exposes test tags to adb-driven testing (uiautomator), see TestTags.
+                Box(Modifier.semantics { testTagsAsResourceId = true }) {
+                    val pickPdf = rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenDocument()
+                    ) { uri -> uri?.let { viewModel.openPicked(it) } }
+
+                    viewModel.shownInTask?.let { task ->
+                        LaunchedEffect(task) { switchTo(task) }
+                    }
+                    val name = loadedDocument()?.name
+                    if (isOwnTask && name != null) {
+                        // The card in the app switcher shows the file name.
+                        LaunchedEffect(name) {
+                            setTaskDescription(ActivityManager.TaskDescription.Builder().setLabel(name).build())
+                        }
+                    }
+
+                    ViewerScreen(
+                        documentState = viewModel.documentState,
+                        searchState = viewModel.searchState,
+                        pendingRestorePage = viewModel.pendingRestorePage,
+                        onPageRestored = viewModel::onPageRestored,
+                        onPageChanged = viewModel::onPageChanged,
+                        onSubmitPassword = viewModel::submitPassword,
+                        onBack = ::close,
+                        onOpenAnother = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
+                        onOpenSearch = viewModel::openSearch,
+                        onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
+                        onShare = { loadedDocument()?.let { share(it.document.uri, it.name) } },
+                        onCloseSearch = viewModel::closeSearch,
+                        onQueryChange = viewModel::updateQuery,
+                        onNextMatch = viewModel::nextMatch,
+                        onPreviousMatch = viewModel::previousMatch,
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        viewModel.onReturned()
+    }
+
+    private fun loadedDocument() = viewModel.documentState as? DocumentState.Loaded
+
+    /** A card of its own goes away with its document, back to the app that opened it. */
+    private fun close() {
+        if (isOwnTask) finishAndRemoveTask() else finish()
+    }
+
+    /** The document is already open in [task]'s viewer: shows that one instead of this one. */
+    private fun switchTo(task: Int) {
+        getSystemService(ActivityManager::class.java).appTasks
+            .find { runCatching { it.taskInfo?.taskId }.getOrNull() == task }
+            ?.moveToFront()
+        close()
+    }
+
+    private fun share(uri: Uri, name: String) {
+        lifecycleScope.launch {
+            runCatchingCancellable { sharePdf(uri, name) }.onFailure {
+                Toast.makeText(this@ViewerActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /** False if the intent has nothing to open. */
+    private fun handleIntent(intent: Intent): Boolean {
+        val entryId = intent.getStringExtra(EXTRA_ENTRY_ID)
+        val uri = when (intent.action) {
+            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            else -> intent.data
+        }
+        when {
+            entryId != null -> viewModel.openRecent(entryId)
+            uri == null -> return false
+            isOwnTask -> viewModel.openFromOtherApp(uri)
+            else -> viewModel.openPicked(uri)
+        }
+        return true
+    }
+
+    companion object {
+        private const val EXTRA_ENTRY_ID = "entryId"
+
+        /** Opens an entry of the recent files list. */
+        fun recentIntent(context: Context, entryId: String) =
+            Intent(context, ViewerActivity::class.java).putExtra(EXTRA_ENTRY_ID, entryId)
+
+        /** Opens a file chosen with the app's own picker, passing on the permission to read it. */
+        fun pickedIntent(context: Context, uri: Uri) =
+            Intent(context, ViewerActivity::class.java)
+                .setData(uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    }
+}
+
+/**
+ * Documents from other apps ("Open with", "Share to"). Each gets a card of its own in the app
+ * switcher (`documentLaunchMode`), which goes away when the document is closed.
+ */
+class ExternalViewerActivity : ViewerActivity()

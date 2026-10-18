@@ -1,9 +1,10 @@
 #!/bin/bash
 # Opens a local PDF in the app the way another app would: pushed to Download, then a VIEW
-# intent with a media store URI. The app is force-stopped first, as `am start` stacks instances.
+# intent with a media store URI. Each opens in a card of its own, like from a file manager.
 #
 # Usage: scripts/test/open-pdf.sh [--fresh] [--no-grant] <file>
-#   --fresh     clear the app's data first; otherwise a file opened before reopens at its last page
+#   --fresh     stop the app and clear its data first; otherwise a file opened before reopens at
+#               its last page, and one that's still open switches to its card
 #   --no-grant  leave out the read permission, like a sender that forgets to grant it
 # Pick the device with ANDROID_SERIAL (e.g. ANDROID_SERIAL=emulator-5554).
 set -euo pipefail
@@ -18,7 +19,7 @@ while [ $# -gt 1 ]; do
     esac
     shift
 done
-[ $# -eq 1 ] || { sed -n 's/^# \{0,1\}//; 2,9p' "$0"; exit 1; }
+[ $# -eq 1 ] || { sed -n 's/^# \{0,1\}//; 2,10p' "$0"; exit 1; }
 
 name=$(basename "$1")
 path=/sdcard/Download/$name
@@ -33,8 +34,7 @@ for _ in 1 2 3 4 5; do
 done
 [ -n "$id" ] || { echo "Media scanner didn't index $path" >&2; exit 1; }
 
-adb shell am force-stop kiwi.lorenz.pdfreader
 if [ -n "$fresh" ]; then adb shell pm clear kiwi.lorenz.pdfreader >/dev/null; fi
 adb shell am start -a android.intent.action.VIEW -t application/pdf \
-    -d "content://media/external/file/$id" $grant -n kiwi.lorenz.pdfreader/.MainActivity >/dev/null
+    -d "content://media/external/file/$id" $grant -n kiwi.lorenz.pdfreader/.ExternalViewerActivity >/dev/null
 echo "Opened $name (content://media/external/file/$id)"

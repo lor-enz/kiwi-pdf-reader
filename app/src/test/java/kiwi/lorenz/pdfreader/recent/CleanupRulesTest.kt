@@ -28,19 +28,19 @@ class CleanupRulesTest {
     @Test
     fun `keeps recent copies within budget`() {
         val entries = listOf(entry("a"), entry("b", ageMillis = COPY_MAX_AGE_MILLIS))
-        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openId = null))
+        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openIds = emptySet()))
     }
 
     @Test
     fun `removes copies not opened for 30 days`() {
         val entries = listOf(entry("fresh"), entry("old", ageMillis = COPY_MAX_AGE_MILLIS + 1))
-        assertEquals(setOf("old"), entriesToRemove(entries, now, openId = null))
+        assertEquals(setOf("old"), entriesToRemove(entries, now, openIds = emptySet()))
     }
 
     @Test
     fun `old picked files are not removed by age`() {
         val entries = listOf(entry("picked", ageMillis = 10 * COPY_MAX_AGE_MILLIS, isCopy = false))
-        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openId = null))
+        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openIds = emptySet()))
     }
 
     @Test
@@ -50,7 +50,7 @@ class CleanupRulesTest {
             entry("middle", ageMillis = 2, sizeBytes = 100 * mb),
             entry("oldest", ageMillis = 3, sizeBytes = 100 * mb),
         )
-        assertEquals(setOf("oldest"), entriesToRemove(entries, now, openId = null))
+        assertEquals(setOf("oldest"), entriesToRemove(entries, now, openIds = emptySet()))
     }
 
     @Test
@@ -59,22 +59,23 @@ class CleanupRulesTest {
             entry("copy", sizeBytes = COPIES_MAX_TOTAL_BYTES),
             entry("picked", ageMillis = 1, isCopy = false, sizeBytes = 500 * mb),
         )
-        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openId = null))
+        assertEquals(emptySet<String>(), entriesToRemove(entries, now, openIds = emptySet()))
     }
 
     @Test
-    fun `never removes the open document, even when expired or too large`() {
+    fun `never removes open documents, even when expired or too large`() {
         val entries = listOf(
             entry("open", ageMillis = COPY_MAX_AGE_MILLIS + 1, sizeBytes = 400 * mb),
+            entry("open in another card", ageMillis = COPY_MAX_AGE_MILLIS + 2, sizeBytes = 10 * mb),
             entry("other", ageMillis = 1, sizeBytes = 10 * mb),
         )
-        assertEquals(setOf("other"), entriesToRemove(entries, now, openId = "open"))
+        assertEquals(setOf("other"), entriesToRemove(entries, now, openIds = setOf("open", "open in another card")))
     }
 
     @Test
     fun `limits the list to the newest entries`() {
         val entries = (0 until MAX_ENTRIES + 3).map { entry("e$it", ageMillis = it.toLong(), isCopy = false) }
         val expected = (MAX_ENTRIES until MAX_ENTRIES + 3).map { "e$it" }.toSet()
-        assertEquals(expected, entriesToRemove(entries, now, openId = null))
+        assertEquals(expected, entriesToRemove(entries, now, openIds = emptySet()))
     }
 }
