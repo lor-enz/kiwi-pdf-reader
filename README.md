@@ -22,6 +22,10 @@ Screenshot of the app UI — [Just a PDF. Just green. Just works.]
 "Just use the green one."
 Screenshot of a happy parent successfully opening a PDF — [Finally.]
 
+## Checks
+
+Every push and pull request runs the unit tests and lint ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Run the same locally with `./gradlew testDebugUnitTest lintDebug`. When a run fails, its test and lint reports are attached to it.
+
 ## Releasing
 
 Releases to Google Play are published by a GitHub Action ([`.github/workflows/release.yml`](.github/workflows/release.yml)).
