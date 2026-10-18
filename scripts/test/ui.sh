@@ -5,13 +5,14 @@
 # Usage: scripts/test/ui.sh <command>
 #   list               visible elements with tag, text and center
 #   tap <target>       taps the first element whose tag, text or description is <target>
+#   hold <target>      long-presses it
 #   text <target>      prints the text of that element
 #   wait <target> [s]  waits until it's shown (default 10 s)
 #   shot <file.png>    saves a screenshot
 # Pick the device with ANDROID_SERIAL (e.g. ANDROID_SERIAL=emulator-5554).
 set -euo pipefail
 
-usage() { sed -n 's/^# \{0,1\}//; 2,11p' "$0"; exit 1; }
+usage() { sed -n 's/^# \{0,1\}//; 2,12p' "$0"; exit 1; }
 
 # Prints "tag<TAB>text<TAB>description<TAB>x y" per element.
 elements() {
@@ -37,12 +38,12 @@ find() {
 
 case "${1:-}" in
     list) elements | column -t -s $'\t' ;;
-    tap)
+    tap | hold)
         [ $# -eq 2 ] || usage
         match=$(find "$2")
         [ -n "$match" ] || { echo "Not on screen: $2" >&2; exit 1; }
-        # shellcheck disable=SC2046
-        adb shell input tap $(cut -f4 <<<"$match")
+        read -r x y <<<"$(cut -f4 <<<"$match")"
+        if [ "$1" = tap ]; then adb shell input tap "$x" "$y"; else adb shell input swipe "$x" "$y" "$x" "$y" 800; fi
         ;;
     text)
         [ $# -eq 2 ] || usage

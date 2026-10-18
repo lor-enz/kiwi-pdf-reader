@@ -52,6 +52,10 @@ class MainActivity : ComponentActivity() {
                             thumbnailFile = viewModel::thumbnailFile,
                             onOpenPdf = openPicker,
                             onOpenRecent = viewModel::openRecent,
+                            pendingRemoval = viewModel.pendingRemoval,
+                            onRemoveRecent = viewModel::removeRecent,
+                            onUndoRemoval = viewModel::undoRemoval,
+                            onRemovalDone = viewModel::finishRemoval,
                         )
                     } else {
                         ViewerScreen(

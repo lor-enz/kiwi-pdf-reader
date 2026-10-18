@@ -114,6 +114,12 @@
   them. Filled-in versions count toward the copies' limits (30 days,
   250 MB). Where `PdfFeature.FORM_FILLING` is missing, fields stay
   read-only.
+- Removing an entry from the recent files list hides it in the store and
+  deletes its files (or releases its permission) only when the Undo
+  snackbar is gone, also when the screen is left. After process death the
+  startup cleanup removes what's left, including persisted permissions no
+  entry uses. Snackbars with an action default to indefinite in Material 3,
+  so it uses `SnackbarDuration.Long`.
 - Only documents opened from other apps get their own task (card in the
   app switcher); the app's own list and picker open in the main task.
 - `androidx.pdf` can't read a PDF's outline (table of contents), so a
@@ -154,8 +160,8 @@
   "No matches"
 
 ### Milestone 6: recent files sheet
-- [ ] Long-press an entry: sheet with its file name at the top
-- [ ] Remove from list, with an Undo snackbar (delete files only once the
+- [x] Long-press an entry: sheet with its file name at the top
+- [x] Remove from list, with an Undo snackbar (delete files only once the
   snackbar is gone)
 - [ ] Share without opening the document
 - [ ] Forget password (only when one is remembered), also deletes the

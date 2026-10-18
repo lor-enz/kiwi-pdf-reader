@@ -7,6 +7,8 @@ package kiwi.lorenz.pdfreader.ui
 object TestTags {
     const val OPEN_PDF = "open_pdf"
     const val RECENT_FILE = "recent_file"
+    const val RECENT_SHEET_TITLE = "recent_sheet_title"
+    const val REMOVE_RECENT = "remove_recent"
 
     const val BACK = "back"
     const val MORE_OPTIONS = "more_options"

@@ -1,7 +1,6 @@
 package kiwi.lorenz.pdfreader
 
 import android.app.Application
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -146,7 +145,7 @@ class ReaderViewModel(
     /** A file chosen with the app's own picker. */
     fun openPicked(uri: Uri) = launchOpen(fromOtherApp = false) {
         val name = displayName(uri)
-        if (takePersistablePermission(uri)) Target(store.addPicked(uri, name)) else Target(null, uri, name)
+        store.addPicked(uri, name)?.let { Target(it) } ?: Target(null, uri, name)
     }
 
     /** A file handed over by another app; it is copied so it can be reopened later. */
@@ -171,6 +170,27 @@ class ReaderViewModel(
     }
 
     fun thumbnailFile(entry: RecentFile): File = store.thumbnailFile(entry.id)
+
+    /** Removed from the list, but its files are kept while the removal can be undone. */
+    var pendingRemoval by mutableStateOf<RecentFile?>(null)
+        private set
+
+    fun removeRecent(entry: RecentFile) {
+        // One undo at a time: an earlier removal becomes final.
+        pendingRemoval?.let(store::discard)
+        pendingRemoval = entry
+        viewModelScope.launch { store.hide(entry.id) }
+    }
+
+    fun undoRemoval(entry: RecentFile) {
+        if (pendingRemoval == entry) pendingRemoval = null
+        viewModelScope.launch { store.restore(entry) }
+    }
+
+    fun finishRemoval(entry: RecentFile) {
+        if (pendingRemoval == entry) pendingRemoval = null
+        store.discard(entry)
+    }
 
     fun onPageRestored() {
         pendingRestorePage = null
@@ -354,14 +374,6 @@ class ReaderViewModel(
         } catch (_: Exception) {
             // No thumbnail is fine; the list shows a placeholder.
         }
-    }
-
-    private fun takePersistablePermission(uri: Uri): Boolean = try {
-        getApplication<Application>().contentResolver
-            .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        true
-    } catch (_: SecurityException) {
-        false
     }
 
     private fun closeDocument() {
