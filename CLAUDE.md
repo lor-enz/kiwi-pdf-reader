@@ -12,7 +12,7 @@
 - Only test on the emulator unless the user says otherwise; their own
   phone may be connected via adb too (target with `adb -s <serial>`).
 - Record decisions and findings in this file as they come up.
-
+- Try to update claude.md and the readme with the relevant commit. E.g. when updating the milestones instead of a separate commit just for the claude.md/readme changes.
 # Testing
 
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
@@ -85,19 +85,67 @@
   drafts) may read them later.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
+- Phones without SDK extension 13 stay supported (minSdk 31). Raising
+  minSdk to 35 would be the only way to require it and would exclude most
+  Android 12–14 phones, which mostly have the extension anyway.
+- Form edits are autosaved about 1 s after the last edit and when the app
+  goes to the background, as a full filled-in PDF in private storage,
+  keyed by the SHA-256 of the original. They survive closing the document
+  and process death, whether the file is picked or opened from another
+  app. Reopening the original opens the filled-in version without asking;
+  "Clear filled-in fields" in the tools sheet starts over. Share, Print
+  and Save a copy use the filled-in version, and the sheet says so next to
+  them. Filled-in versions count toward the copies' limits (30 days,
+  250 MB). Where `PdfFeature.FORM_FILLING` is missing, fields stay
+  read-only.
+- Only documents opened from other apps get their own task (card in the
+  app switcher); the app's own list and picker open in the main task.
+- `androidx.pdf` can't read a PDF's outline (table of contents), so a
+  tablet side panel could only show page thumbnails.
+- No OCR for scanned PDFs: the usual engine (ML Kit) needs Google Play
+  Services, and Tesseract is too large.
 
-# TODO
+# Planned changes
 
-## Known issues (not fixed on purpose, for now)
+## Known issues
 - The same PDF can appear twice in the recent files list: once picked with
   the file picker (deduplicated by URI) and once opened from another app
   (a copy, deduplicated by SHA-256). Possible fix: hash picked files too.
 
-## Open
-- [ ] More UI adjustments (the user will specify)
+## Upcoming features
 
-## Milestone 4: release (optional)
-- [x] Release signing, check the R8 release build on a device
-- [x] Publish to Google Play from GitHub Actions (see "Releasing" in the
-  README); versionCode 1 was uploaded by hand
-- [ ] Play Store screenshots and listing text from the README
+### Milestone 5: robustness
+- [ ] Links: test web, mailto, tel and in-document links (with the top
+  bar overlaid); don't crash when no app handles a link
+- [ ] Broken files: tell apart damaged, not-a-PDF and lost permission,
+  with advice (download it again, ask the sender for a new copy)
+- [ ] Search in a document without text (scanned): say so instead of
+  "No matches"
+
+### Milestone 6: recent files sheet
+- [ ] Long-press an entry: sheet with its file name at the top
+- [ ] Remove from list, with an Undo snackbar (delete files only once the
+  snackbar is gone)
+- [ ] Share without opening the document
+- [ ] Forget password (only when one is remembered), also deletes the
+  thumbnail
+- [ ] Hash picked files too, fixing the duplicate entries (known issue)
+
+### Milestone 7: save and forms
+- [ ] Save a copy ("Save to…" via the system file picker)
+- [ ] Form filling with autosave and restore (see Project notes)
+- [ ] Check whether the filled-in file of a password-protected PDF stays
+  encrypted; if not, ask the user before storing it
+- [ ] Update the privacy policy (filled-in forms are stored locally)
+
+### Milestone 8: documents from other apps in their own task
+- [ ] Split home and viewer into separate activities; reopening the same
+  document returns to its card; back and process death per task
+
+### Milestone 9: presentation mode
+- [ ] Fullscreen (hide system bars) first
+- [ ] One page at a time, swipe left/right, pinch-zoom (own pager view)
+
+### Later
+- [ ] Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
+  side panel
