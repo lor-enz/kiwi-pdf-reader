@@ -114,8 +114,8 @@ def scanned(path, pages=3):
     c.save()
 
 
-def form(path):
-    c = canvas.Canvas(path, pagesize=A4)
+def form(path, encrypt=None):
+    c = canvas.Canvas(path, pagesize=A4, encrypt=encrypt)
     c.setFont("Helvetica-Bold", 22)
     c.drawString(60, H - 60, "Form")
     c.setFont("Helvetica", 16)
@@ -151,10 +151,11 @@ def main():
     text_pages(os.path.join(out, "protected.pdf"), pages=5, encrypt=StandardEncryption(PASSWORD, canPrint=1))
     scanned(os.path.join(out, "scanned.pdf"))
     form(os.path.join(out, "form.pdf"))
+    form(os.path.join(out, "form-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1, canModify=1))
     broken(out)
     for name in sorted(os.listdir(out)):
         print(os.path.join(out, name))
-    print(f"protected.pdf password: {PASSWORD}")
+    print(f"protected.pdf and form-protected.pdf password: {PASSWORD}")
 
 
 if __name__ == "__main__":

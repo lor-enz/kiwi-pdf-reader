@@ -38,7 +38,8 @@ for e in entries:
     page = f"{e.get('lastPage', 0) + 1}/{e['pageCount']}" if e.get("pageCount") else "-"
     size = f"{e['sizeBytes'] / 1024:.0f} KB" if e.get("sizeBytes") else "-"
     flags = [flag for flag, on in [("thumbnail", e.get("hasThumbnail")), ("password", e.get("encryptedPassword")),
-                                   ("hashed", e.get("contentHash"))] if on]
+                                   ("hashed", e.get("contentHash")),
+                                   ("filled", e.get("filledFromHash"))] if on]
     if e["id"] in open_in:
         flags.append("open in #" + open_in[e["id"]])
     kind = "copy" if e["isCopy"] else "picked"

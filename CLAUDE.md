@@ -26,8 +26,9 @@
   phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
   `./gradlew installDebug`, which installs on every connected device.
   - `make-test-pdfs.py` writes test files to `build/test-pdfs/`: links,
-    long (60 pages), protected (password `kiwi`), scanned, form, and
-    broken ones (damaged, truncated, empty, not a PDF).
+    long (60 pages), protected (password `kiwi`), scanned, form,
+    form-protected (password `kiwi`), and broken ones (damaged, truncated,
+    empty, not a PDF).
   - `prepare-device.sh` turns animations off, which keeps screenshots
     stable. Run it before testing; an emulator booted from an older
     snapshot has them on again.
@@ -51,7 +52,14 @@
   and need it set again (see the tools sheet).
 - Page content is a single accessibility node, so links in a document are
   tapped by coordinates.
+  - `form-values.sh [--password <pw>] <entry name | /device/path>` prints
+    the field values of an entry's stored filled-in form, or of a PDF on
+    the device, and whether it needs a password.
 - With a text field focused, the first back only closes the keyboard.
+- Form fields are tapped by coordinates. A document that reopens at its
+  last position may sit lower on screen, so take a screenshot first. A tap
+  only counts after about 300 ms (the view waits for a double tap), so
+  leave the app no sooner than that after one.
 - Fast swipes fling to the end of the document; use slow ones.
 
 # Product philosophy
