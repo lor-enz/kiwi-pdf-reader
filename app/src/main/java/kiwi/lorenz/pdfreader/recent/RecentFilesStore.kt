@@ -6,7 +6,10 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import android.util.AtomicFile
 import androidx.core.net.toUri
+import androidx.core.util.readText
+import androidx.core.util.writeText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +40,7 @@ class RecentFilesStore private constructor(private val context: Context) {
     private val root = File(context.filesDir, "recent")
     private val copiesDir = File(root, "copies")
     private val thumbnailsDir = File(root, "thumbnails")
-    private val indexFile = File(root, "index.json")
+    private val index = AtomicFile(File(root, "index.json"))
 
     private val mutex = Mutex()
     private var loaded = false
@@ -320,19 +323,27 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
 
-    private fun load(): List<RecentFile> = try {
-        val array = JSONArray(indexFile.readText())
-        (0 until array.length()).map { array.getJSONObject(it).toRecentFile() }
-    } catch (_: Exception) {
-        // Missing or unreadable index: start with an empty list.
-        emptyList()
+    private fun load(): List<RecentFile> {
+        val array = try {
+            JSONArray(index.readText())
+        } catch (_: Exception) {
+            // Missing or unreadable index: start with an empty list.
+            return emptyList()
+        }
+        // An entry that can't be read is dropped on its own, not the whole list with it.
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                array.getJSONObject(i).toRecentFile()
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     private fun save(entries: List<RecentFile>) {
         root.mkdirs()
-        val temp = File(root, "index.json.tmp")
-        temp.writeText(JSONArray(entries.map { it.toJson() }).toString())
-        temp.renameTo(indexFile)
+        // Synced before it replaces the old index, so a crash or power loss can't leave half a file.
+        index.writeText(JSONArray(entries.map { it.toJson() }).toString())
     }
 
     private fun now() = System.currentTimeMillis()
