@@ -113,6 +113,9 @@
   top bar stays calm as tools are added. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
+- Save a copy writes to a file the user creates with the system's "Save
+  to" dialog (`CreateDocument`), and deletes it again if writing fails.
+  The viewer reports results (saved, couldn't share) in its snackbar.
 - Print passes the file through to the print system unchanged, except for
   password-protected documents: the print system can't open those, so
   their pages are rendered as images (200 dpi) from the open document.
@@ -213,7 +216,7 @@
   card counts as opening it
 
 ### Milestone 8: save and forms
-- [ ] Save a copy ("Save to…" via the system file picker)
+- [x] Save a copy ("Save to…" via the system file picker)
 - [ ] Form filling with autosave and restore (see Project notes)
 - [ ] Check whether the filled-in file of a password-protected PDF stays
   encrypted; if not, ask the user before storing it

@@ -20,6 +20,7 @@ import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
+import android.provider.DocumentsContract
 import android.util.Size
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
@@ -94,6 +95,22 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
         // Sharing it back into this app would only open it a second time.
         .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ExternalViewerActivity::class.java)))
     startActivity(chooser)
+}
+
+/**
+ * Writes the PDF at [from] to [to], a file the user just created with the system's "Save to"
+ * dialog. Deletes that file again if writing fails, so no empty or partial file is left.
+ */
+suspend fun Context.savePdfCopy(from: Uri, to: Uri) = withContext(Dispatchers.IO) {
+    try {
+        contentResolver.openInputStream(from)!!.use { input ->
+            // "wt" truncates, in case the user chose to replace an existing file.
+            contentResolver.openOutputStream(to, "wt")!!.use { input.copyTo(it) }
+        }
+    } catch (e: Exception) {
+        runCatching { DocumentsContract.deleteDocument(contentResolver, to) }
+        throw e
+    }
 }
 
 /** Recipients may read a shared file later (a mail draft), so copies are kept for a day. */
@@ -245,7 +262,7 @@ private class RenderedPrintAdapter(
 }
 
 /** A safe file name ending in ".pdf". */
-private fun pdfFileName(name: String): String {
+fun pdfFileName(name: String): String {
     val safe = name.replace(Regex("""[/\\:*?"<>|\u0000-\u001f]"""), "_").trim().ifEmpty { "document" }
     return if (safe.endsWith(".pdf", ignoreCase = true)) safe else "$safe.pdf"
 }

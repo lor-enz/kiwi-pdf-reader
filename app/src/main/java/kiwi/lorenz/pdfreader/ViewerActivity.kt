@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -57,6 +56,9 @@ open class ViewerActivity : ComponentActivity() {
                     val pickPdf = rememberLauncherForActivityResult(
                         ActivityResultContracts.OpenDocument()
                     ) { uri -> uri?.let { viewModel.openPicked(it) } }
+                    val saveCopy = rememberLauncherForActivityResult(
+                        ActivityResultContracts.CreateDocument(PDF_MIME_TYPE)
+                    ) { uri -> uri?.let { viewModel.saveCopy(it) } }
 
                     viewModel.shownInTask?.let { task ->
                         LaunchedEffect(task) { switchTo(task) }
@@ -81,6 +83,9 @@ open class ViewerActivity : ComponentActivity() {
                         onOpenSearch = viewModel::openSearch,
                         onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
                         onShare = { loadedDocument()?.let { share(it.document.uri, it.name) } },
+                        onSaveCopy = { loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) } },
+                        message = viewModel.message,
+                        onMessageShown = viewModel::onMessageShown,
                         onCloseSearch = viewModel::closeSearch,
                         onQueryChange = viewModel::updateQuery,
                         onNextMatch = viewModel::nextMatch,
@@ -114,7 +119,7 @@ open class ViewerActivity : ComponentActivity() {
     private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
             runCatchingCancellable { sharePdf(uri, name) }.onFailure {
-                Toast.makeText(this@ViewerActivity, R.string.share_failed, Toast.LENGTH_SHORT).show()
+                viewModel.showMessage(R.string.share_failed)
             }
         }
     }

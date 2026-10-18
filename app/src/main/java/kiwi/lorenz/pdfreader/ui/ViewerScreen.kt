@@ -120,6 +120,10 @@ fun ViewerScreen(
     onOpenSearch: () -> Unit,
     onPrint: () -> Unit,
     onShare: () -> Unit,
+    onSaveCopy: () -> Unit,
+    /** A string resource to show in the snackbar, see [onMessageShown]. */
+    message: Int?,
+    onMessageShown: () -> Unit,
     onCloseSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onNextMatch: () -> Unit,
@@ -145,12 +149,24 @@ fun ViewerScreen(
             onSearch = onOpenSearch,
             onPrint = onPrint,
             onShare = onShare,
+            onSaveCopy = onSaveCopy,
         )
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val linkFailedMessage = stringResource(R.string.link_failed)
+    val messageText = message?.let { stringResource(it) }
+    LaunchedEffect(messageText) {
+        messageText ?: return@LaunchedEffect
+        // Cleared right away, so the same message can come again; that restarts this effect,
+        // so the snackbar is shown in the screen's scope.
+        onMessageShown()
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(messageText)
+        }
+    }
 
     // The bar is laid over the content, so hiding it doesn't shift the pages.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -279,11 +295,13 @@ private fun ToolsSheet(
     onSearch: () -> Unit,
     onPrint: () -> Unit,
     onShare: () -> Unit,
+    onSaveCopy: () -> Unit,
 ) {
     ActionSheet(onDismiss) {
         Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
+        Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, onSaveCopy)
     }
 }
 

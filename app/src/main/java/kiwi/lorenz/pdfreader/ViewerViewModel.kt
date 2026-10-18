@@ -9,6 +9,7 @@ import android.graphics.RectF
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Size
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -96,6 +97,27 @@ class ViewerViewModel(
     /** The page to scroll to once the document is shown, or null. Consumed by the viewer. */
     var pendingRestorePage by mutableStateOf<Int?>(null)
         private set
+
+    /** A short message for the viewer's snackbar (a string resource), cleared once shown. */
+    var message by mutableStateOf<Int?>(null)
+        private set
+
+    fun showMessage(@StringRes message: Int) {
+        this.message = message
+    }
+
+    fun onMessageShown() {
+        message = null
+    }
+
+    /** Writes the document to [to], a file the user created with the system's "Save to" dialog. */
+    fun saveCopy(to: Uri) {
+        val loaded = documentState as? DocumentState.Loaded ?: return
+        viewModelScope.launch {
+            val saved = runCatchingCancellable { getApplication<Application>().savePdfCopy(loaded.document.uri, to) }
+            message = if (saved.isSuccess) R.string.copy_saved else R.string.save_failed
+        }
+    }
 
     /**
      * Another task whose viewer already shows the requested document. A document is open in one

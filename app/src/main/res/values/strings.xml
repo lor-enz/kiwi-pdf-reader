@@ -18,6 +18,9 @@
     <string name="print">Print</string>
     <string name="share">Share</string>
     <string name="share_failed">This PDF couldn\'t be shared.</string>
+    <string name="save_copy">Save a copy</string>
+    <string name="copy_saved">Copy saved</string>
+    <string name="save_failed">The copy couldn\'t be saved.</string>
     <string name="search">Search</string>
     <string name="search_hint">Search in document</string>
     <string name="close_search">Close search</string>
