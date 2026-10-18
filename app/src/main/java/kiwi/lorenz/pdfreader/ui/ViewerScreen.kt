@@ -68,9 +68,12 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -240,14 +243,20 @@ fun ViewerScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBack) {
+                            IconButton(onClick = onBack, modifier = Modifier.testTag(TestTags.BACK)) {
                                 Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
                             }
                         },
                         actions = {
                             if (loaded != null) {
-                                IconButton(onClick = { isToolsSheetOpen = true }) {
-                                    Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.more_options))
+                                IconButton(
+                                    onClick = { isToolsSheetOpen = true },
+                                    modifier = Modifier.testTag(TestTags.MORE_OPTIONS),
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.ic_more_vert),
+                                        stringResource(R.string.more_options),
+                                    )
                                 }
                             }
                         },
@@ -280,20 +289,25 @@ private fun ToolsSheet(
     onPrint: () -> Unit,
     onShare: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // The sheet is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.semantics { testTagsAsResourceId = true }) {
         @Composable
-        fun Tool(icon: Int, label: Int, action: () -> Unit) = ListItem(
+        fun Tool(icon: Int, label: Int, tag: String, action: () -> Unit) = ListItem(
             headlineContent = { Text(stringResource(label)) },
             leadingContent = { Icon(painterResource(icon), contentDescription = null) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            modifier = Modifier.clickable {
-                onDismiss()
-                action()
-            },
+            modifier = Modifier
+                .clickable {
+                    onDismiss()
+                    action()
+                }
+                .testTag(tag),
         )
-        if (isSearchSupported) Tool(R.drawable.ic_search, R.string.search, onSearch)
-        Tool(R.drawable.ic_print, R.string.print, onPrint)
-        Tool(R.drawable.ic_share, R.string.share, onShare)
+        if (isSearchSupported) {
+            Tool(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onSearch)
+        }
+        Tool(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, onPrint)
+        Tool(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, onShare)
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -374,7 +388,8 @@ private fun Document(
         state = viewerState,
         modifier = Modifier
             .fillMaxSize()
-            .onSizeChanged { viewportHeight = it.height },
+            .onSizeChanged { viewportHeight = it.height }
+            .testTag(TestTags.DOCUMENT),
         // Pages start below the bar and scroll behind it and the navigation bar.
         contentPadding = contentPadding,
         onFirstContentLoad = { isContentLoaded = true },
@@ -430,7 +445,7 @@ private fun SearchBar(
     Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
             navigationIcon = {
-                IconButton(onClick = onClose) {
+                IconButton(onClick = onClose, modifier = Modifier.testTag(TestTags.CLOSE_SEARCH)) {
                     Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_search))
                 }
             },
@@ -450,7 +465,8 @@ private fun SearchBar(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .testTag(TestTags.SEARCH_FIELD),
                 )
             },
             actions = {
@@ -466,14 +482,24 @@ private fun SearchBar(
                             )
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .testTag(TestTags.MATCH_COUNTER),
                     )
                 }
                 val hasMatches = searchState.matches.isNotEmpty()
-                IconButton(onClick = onPrevious, enabled = hasMatches) {
+                IconButton(
+                    onClick = onPrevious,
+                    enabled = hasMatches,
+                    modifier = Modifier.testTag(TestTags.PREVIOUS_MATCH),
+                ) {
                     Icon(painterResource(R.drawable.ic_arrow_up), stringResource(R.string.previous_match))
                 }
-                IconButton(onClick = onNext, enabled = hasMatches) {
+                IconButton(
+                    onClick = onNext,
+                    enabled = hasMatches,
+                    modifier = Modifier.testTag(TestTags.NEXT_MATCH),
+                ) {
                     Icon(painterResource(R.drawable.ic_arrow_down), stringResource(R.string.next_match))
                 }
             },
@@ -487,7 +513,8 @@ private fun SearchBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                    .testTag(TestTags.NO_TEXT_TO_SEARCH),
             )
         }
     }
@@ -546,7 +573,8 @@ private fun PasswordPrompt(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(focusRequester),
+                .focusRequester(focusRequester)
+                .testTag(TestTags.PASSWORD_FIELD),
         )
         Row(
             modifier = Modifier
@@ -556,6 +584,7 @@ private fun PasswordPrompt(
                     onValueChange = { rememberPassword = it },
                     role = Role.Checkbox,
                 )
+                .testTag(TestTags.REMEMBER_PASSWORD)
                 .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -564,7 +593,12 @@ private fun PasswordPrompt(
             Text(stringResource(R.string.remember_password), style = MaterialTheme.typography.bodyLarge)
         }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = submit, enabled = canSubmit, shape = MaterialTheme.shapes.small) {
+        Button(
+            onClick = submit,
+            enabled = canSubmit,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.testTag(TestTags.SUBMIT_PASSWORD),
+        ) {
             if (state.isChecking) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
@@ -603,9 +637,14 @@ private fun Failure(
             ),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
+            modifier = Modifier.testTag(TestTags.FAILURE_MESSAGE),
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onOpenAnother, shape = MaterialTheme.shapes.small) {
+        Button(
+            onClick = onOpenAnother,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.testTag(TestTags.OPEN_ANOTHER),
+        ) {
             Text(stringResource(R.string.open_another))
         }
     }

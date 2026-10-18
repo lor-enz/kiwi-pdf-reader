@@ -12,15 +12,31 @@
 - Only test on the emulator unless the user says otherwise; their own
   phone may be connected via adb too (target with `adb -s <serial>`).
 - Record decisions and findings in this file as they come up.
+- Give new UI elements a test tag (`ui/TestTags.kt`) in the same change
+  that adds them, so they can be driven by adb (see Testing).
 - Try to update claude.md and the readme with the relevant commit. E.g. when updating the milestones instead of a separate commit just for the claude.md/readme changes.
 # Testing
 
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
-- "Open from another app": push the PDF to `/sdcard/Download`, run the
-  media scanner, look up its id in `content://media/external/file`, then
-  `am start -a android.intent.action.VIEW -t application/pdf -d
-  content://media/external/file/<id> --grant-read-uri-permission`.
-- `am start` calls stack activity instances; force-stop between scenarios.
+- Helpers in `scripts/test/` (set `ANDROID_SERIAL` to pick the device):
+  - `make-test-pdfs.py` writes test files to `build/test-pdfs/`: links,
+    long (60 pages), protected (password `kiwi`), scanned, form, and
+    broken ones (damaged, truncated, empty, not a PDF).
+  - `open-pdf.sh [--fresh] [--no-grant] <file>` opens a file the way
+    another app would (push to Download, media store URI, VIEW intent),
+    force-stopping first since `am start` stacks activity instances.
+    `--fresh` clears the app's data: a file opened before otherwise
+    reopens at its last page.
+  - `ui.sh list|tap|text|wait|shot` reads and drives the screen through
+    `uiautomator`, finding elements by test tag, text or description.
+- Test tags (`ui/TestTags.kt`) show up as resource ids because the root
+  sets `testTagsAsResourceId`. Popups and sheets are windows of their own
+  and need it set again (see the tools sheet).
+- Page content is a single accessibility node, so links in a document are
+  tapped by coordinates.
+- Animations are off on the emulator (`window_animation_scale`,
+  `transition_animation_scale`, `animator_duration_scale` set to 0), which
+  keeps screenshots stable. A new emulator needs that again.
 - Process death: `am kill` doesn't work. Press home, then
   `run-as kiwi.lorenz.pdfreader kill -9 <pid>`.
 - Fast swipes fling to the end of the document; use slow ones.

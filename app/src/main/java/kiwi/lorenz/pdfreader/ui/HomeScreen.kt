@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,7 +114,11 @@ private fun Header(onOpenPdf: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onOpenPdf, shape = MaterialTheme.shapes.small) {
+        Button(
+            onClick = onOpenPdf,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.testTag(TestTags.OPEN_PDF),
+        ) {
             Text(stringResource(R.string.open_pdf))
         }
     }
@@ -132,6 +137,7 @@ private fun RecentFileRow(
             .clip(shape)
             .border(0.5.dp, MaterialTheme.colorScheme.outline, shape)
             .clickable(onClick = onClick)
+            .testTag(TestTags.RECENT_FILE)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

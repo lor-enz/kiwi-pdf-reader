@@ -10,8 +10,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -34,39 +38,42 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             KiwiPDFReaderTheme {
-                val pickPdf = rememberLauncherForActivityResult(
-                    ActivityResultContracts.OpenDocument()
-                ) { uri -> uri?.let { viewModel.openPicked(it) } }
-                val openPicker = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) }
+                // Exposes test tags to adb-driven testing (uiautomator), see TestTags.
+                Box(Modifier.semantics { testTagsAsResourceId = true }) {
+                    val pickPdf = rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenDocument()
+                    ) { uri -> uri?.let { viewModel.openPicked(it) } }
+                    val openPicker = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) }
 
-                if (viewModel.documentState == DocumentState.Empty) {
-                    val recentFiles by viewModel.recentFiles.collectAsState()
-                    HomeScreen(
-                        recentFiles = recentFiles,
-                        thumbnailFile = viewModel::thumbnailFile,
-                        onOpenPdf = openPicker,
-                        onOpenRecent = viewModel::openRecent,
-                    )
-                } else {
-                    ViewerScreen(
-                        documentState = viewModel.documentState,
-                        searchState = viewModel.searchState,
-                        pendingRestorePage = viewModel.pendingRestorePage,
-                        onPageRestored = viewModel::onPageRestored,
-                        onPageChanged = viewModel::onPageChanged,
-                        onSubmitPassword = viewModel::submitPassword,
-                        onBack = {
-                            if (viewModel.openedFromOtherApp) finish() else viewModel.close()
-                        },
-                        onOpenAnother = openPicker,
-                        onOpenSearch = viewModel::openSearch,
-                        onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
-                        onShare = ::share,
-                        onCloseSearch = viewModel::closeSearch,
-                        onQueryChange = viewModel::updateQuery,
-                        onNextMatch = viewModel::nextMatch,
-                        onPreviousMatch = viewModel::previousMatch,
-                    )
+                    if (viewModel.documentState == DocumentState.Empty) {
+                        val recentFiles by viewModel.recentFiles.collectAsState()
+                        HomeScreen(
+                            recentFiles = recentFiles,
+                            thumbnailFile = viewModel::thumbnailFile,
+                            onOpenPdf = openPicker,
+                            onOpenRecent = viewModel::openRecent,
+                        )
+                    } else {
+                        ViewerScreen(
+                            documentState = viewModel.documentState,
+                            searchState = viewModel.searchState,
+                            pendingRestorePage = viewModel.pendingRestorePage,
+                            onPageRestored = viewModel::onPageRestored,
+                            onPageChanged = viewModel::onPageChanged,
+                            onSubmitPassword = viewModel::submitPassword,
+                            onBack = {
+                                if (viewModel.openedFromOtherApp) finish() else viewModel.close()
+                            },
+                            onOpenAnother = openPicker,
+                            onOpenSearch = viewModel::openSearch,
+                            onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
+                            onShare = ::share,
+                            onCloseSearch = viewModel::closeSearch,
+                            onQueryChange = viewModel::updateQuery,
+                            onNextMatch = viewModel::nextMatch,
+                            onPreviousMatch = viewModel::previousMatch,
+                        )
+                    }
                 }
             }
         }
