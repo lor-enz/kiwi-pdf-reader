@@ -148,6 +148,9 @@
   Deleting a document revokes its URI grants, so a `SecurityException`
   can't tell "deleted" from "permission revoked": for files that opened
   before it counts as moved or deleted, otherwise as not given access.
+  A failed file leaves the recent list, except when it opened before and
+  still looks like a PDF: that's most likely a passing failure (the PDF
+  service), and for a copy it's the only one there is.
 
 # Planned changes
 

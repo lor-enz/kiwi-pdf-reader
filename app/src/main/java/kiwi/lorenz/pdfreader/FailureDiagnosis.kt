@@ -29,6 +29,13 @@ fun ContentResolver.diagnoseFailure(uri: Uri, openedBefore: Boolean): FailureRea
     FailureReason.UNAVAILABLE
 }
 
+/**
+ * Whether the recent entry of a file that failed to open stays in the list. A file that opened
+ * before and still looks like a PDF most likely failed for a passing reason (e.g. the PDF service
+ * crashed), and for a copy it's the only one there is. Other failures won't go away on a retry.
+ */
+internal fun FailureReason.keepsEntry(openedBefore: Boolean) = this == FailureReason.DAMAGED && openedBefore
+
 internal fun hasPdfHeader(head: ByteArray): Boolean {
     val end = minOf(head.size, HEADER_SEARCH_BYTES) - PDF_HEADER.size
     return (0..end).any { start -> PDF_HEADER.indices.all { head[start + it] == PDF_HEADER[it] } }

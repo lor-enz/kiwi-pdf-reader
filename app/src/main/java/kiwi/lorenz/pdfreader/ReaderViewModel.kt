@@ -336,12 +336,11 @@ class ReaderViewModel(
             passwordTarget = target
             DocumentState.NeedsPassword(target.name, isWrongPassword = isTypedByUser)
         } catch (_: Exception) {
+            val openedBefore = entry != null && entry.pageCount > 0
             val reason = withContext(Dispatchers.IO) {
-                val openedBefore = entry != null && entry.pageCount > 0
                 getApplication<Application>().contentResolver.diagnoseFailure(target.uri, openedBefore)
             }
-            // Never list a file that can't be opened.
-            entry?.let { store.remove(it.id) }
+            if (entry != null && !reason.keepsEntry(openedBefore)) store.remove(entry.id)
             DocumentState.Failed(reason)
         }
     }
