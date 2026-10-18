@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.UUID
@@ -44,6 +45,9 @@ class RecentFilesStore private constructor(private val context: Context) {
 
     private val mutex = Mutex()
     private var loaded = false
+
+    /** False while the index on disk is behind [entries], see [edit]. */
+    private var isSaved = true
 
     /** For work that must finish even when the screen that started it is gone. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -242,9 +246,10 @@ class RecentFilesStore private constructor(private val context: Context) {
             val entries = _entries.value.toMutableList()
             val result = block(entries)
             val sorted = entries.sortedByDescending { it.lastOpenedMillis }
-            if (sorted != _entries.value) {
-                save(sorted)
+            if (sorted != _entries.value || !isSaved) {
                 _entries.value = sorted
+                // When saving fails (storage full), the list still changes; the next edit retries.
+                isSaved = save(sorted)
             }
             result
         }
@@ -340,10 +345,14 @@ class RecentFilesStore private constructor(private val context: Context) {
         }
     }
 
-    private fun save(entries: List<RecentFile>) {
+    /** False if the index couldn't be written. */
+    private fun save(entries: List<RecentFile>): Boolean = try {
         root.mkdirs()
         // Synced before it replaces the old index, so a crash or power loss can't leave half a file.
         index.writeText(JSONArray(entries.map { it.toJson() }).toString())
+        true
+    } catch (_: IOException) {
+        false
     }
 
     private fun now() = System.currentTimeMillis()
