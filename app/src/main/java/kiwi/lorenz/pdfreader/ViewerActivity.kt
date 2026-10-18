@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.content.IntentCompat
+import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
+import kiwi.lorenz.pdfreader.ui.ViewerActions
 import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
 import kotlinx.coroutines.launch
@@ -31,6 +32,35 @@ open class ViewerActivity : ComponentActivity() {
     private val viewModel: ViewerViewModel by viewModels()
 
     private val isOwnTask get() = this is ExternalViewerActivity
+
+    private val pickPdf = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { viewModel.openPicked(it) }
+    }
+
+    private val saveCopy = registerForActivityResult(ActivityResultContracts.CreateDocument(PDF_MIME_TYPE)) { uri ->
+        uri?.let { viewModel.saveCopy(it) }
+    }
+
+    private val actions = object : ViewerActions {
+        override fun back() = close()
+        override fun openAnother() = pickPdf.launch(arrayOf(PDF_MIME_TYPE))
+        override fun submitPassword(password: String, remember: Boolean) = viewModel.submitPassword(password, remember)
+        override fun pageRestored() = viewModel.onPageRestored()
+        override fun pageChanged(page: Int) = viewModel.onPageChanged(page)
+        override fun formEdited(edit: FormEditInfo) = viewModel.applyFormEdit(edit)
+        override fun openSearch() = viewModel.openSearch()
+        override fun closeSearch() = viewModel.closeSearch()
+        override fun changeQuery(query: String) = viewModel.updateQuery(query)
+        override fun nextMatch() = viewModel.nextMatch()
+        override fun previousMatch() = viewModel.previousMatch()
+        override fun print() = this@ViewerActivity.print()
+        override fun share() = this@ViewerActivity.share()
+        override fun saveCopy() {
+            loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) }
+        }
+        override fun clearFilledFields() = viewModel.clearFilledFields()
+        override fun messageShown() = viewModel.onMessageShown()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,13 +83,6 @@ open class ViewerActivity : ComponentActivity() {
             KiwiPDFReaderTheme {
                 // Exposes test tags to adb-driven testing (uiautomator), see TestTags.
                 Box(Modifier.semantics { testTagsAsResourceId = true }) {
-                    val pickPdf = rememberLauncherForActivityResult(
-                        ActivityResultContracts.OpenDocument()
-                    ) { uri -> uri?.let { viewModel.openPicked(it) } }
-                    val saveCopy = rememberLauncherForActivityResult(
-                        ActivityResultContracts.CreateDocument(PDF_MIME_TYPE)
-                    ) { uri -> uri?.let { viewModel.saveCopy(it) } }
-
                     viewModel.shownInTask?.let { task ->
                         LaunchedEffect(task) { switchTo(task) }
                     }
@@ -75,24 +98,9 @@ open class ViewerActivity : ComponentActivity() {
                         documentState = viewModel.documentState,
                         searchState = viewModel.searchState,
                         pendingRestorePage = viewModel.pendingRestorePage,
-                        onPageRestored = viewModel::onPageRestored,
-                        onPageChanged = viewModel::onPageChanged,
-                        onSubmitPassword = viewModel::submitPassword,
-                        onBack = ::close,
-                        onOpenAnother = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
-                        onOpenSearch = viewModel::openSearch,
-                        onPrint = ::print,
-                        onShare = ::share,
                         isFilledIn = viewModel.isFilledIn,
-                        onClearFilled = viewModel::clearFilledFields,
-                        onFormEdit = viewModel::applyFormEdit,
-                        onSaveCopy = { loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) } },
                         message = viewModel.message,
-                        onMessageShown = viewModel::onMessageShown,
-                        onCloseSearch = viewModel::closeSearch,
-                        onQueryChange = viewModel::updateQuery,
-                        onNextMatch = viewModel::nextMatch,
-                        onPreviousMatch = viewModel::previousMatch,
+                        actions = actions,
                     )
                 }
             }

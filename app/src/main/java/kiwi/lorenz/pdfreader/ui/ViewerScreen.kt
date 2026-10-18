@@ -5,11 +5,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -18,127 +16,83 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.pdf.ExperimentalPdfApi
-import androidx.pdf.Highlight
-import androidx.pdf.PdfPoint
-import androidx.pdf.PdfRect
-import androidx.pdf.compose.PdfViewer
-import androidx.pdf.compose.PdfViewerState
-import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.DocumentState
-import kiwi.lorenz.pdfreader.FailureReason
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
-import kiwi.lorenz.pdfreader.openLink
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-
-// PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
-// pale tints of the brand green / brown that keep the text underneath readable.
-private const val MATCH_COLOR = 0xFFDCE3A6.toInt()
-private const val CURRENT_MATCH_COLOR = 0xFFF2B48C.toInt()
-
-private const val PAGE_SAVE_DELAY_MS = 500L
 
 /** Material 3 small top app bar height. */
 private val TopBarHeight = 64.dp
 
-/** How far the user has to scroll in one direction before the top bar hides or shows. */
-private val BarToggleDistance = 32.dp
+/** What the viewer screen asks for, implemented by the viewer activity. */
+interface ViewerActions {
+    fun back()
+    fun openAnother()
+    fun submitPassword(password: String, remember: Boolean)
+    fun pageRestored()
+    fun pageChanged(page: Int)
+    fun formEdited(edit: FormEditInfo)
+    fun openSearch()
+    fun closeSearch()
+    fun changeQuery(query: String)
+    fun nextMatch()
+    fun previousMatch()
+    fun print()
+    fun share()
+    fun saveCopy()
+    fun clearFilledFields()
+    fun messageShown()
+}
 
+/**
+ * [pendingRestorePage] is the page to scroll to once the document shows, [isFilledIn] whether it
+ * shows filled-in form fields, and [message] a string resource for the snackbar.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewerScreen(
     documentState: DocumentState,
     searchState: SearchState,
     pendingRestorePage: Int?,
-    onPageRestored: () -> Unit,
-    onPageChanged: (Int) -> Unit,
-    onSubmitPassword: (password: String, remember: Boolean) -> Unit,
-    onBack: () -> Unit,
-    onOpenAnother: () -> Unit,
-    onOpenSearch: () -> Unit,
-    onPrint: () -> Unit,
-    onShare: () -> Unit,
-    onSaveCopy: () -> Unit,
-    onFormEdit: (FormEditInfo) -> Unit,
-    /** The document shows filled-in form fields; see [onClearFilled]. */
     isFilledIn: Boolean,
-    onClearFilled: () -> Unit,
-    /** A string resource to show in the snackbar, see [onMessageShown]. */
     message: Int?,
-    onMessageShown: () -> Unit,
-    onCloseSearch: () -> Unit,
-    onQueryChange: (String) -> Unit,
-    onNextMatch: () -> Unit,
-    onPreviousMatch: () -> Unit,
+    actions: ViewerActions,
 ) {
-    BackHandler(onBack = if (searchState.isActive) onCloseSearch else onBack)
+    BackHandler(onBack = if (searchState.isActive) actions::closeSearch else actions::back)
 
     val loaded = documentState as? DocumentState.Loaded
     val title = when (documentState) {
@@ -156,10 +110,10 @@ fun ViewerScreen(
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
             onDismiss = { isToolsSheetOpen = false },
-            onSearch = onOpenSearch,
-            onPrint = onPrint,
-            onShare = onShare,
-            onSaveCopy = onSaveCopy,
+            onSearch = actions::openSearch,
+            onPrint = actions::print,
+            onShare = actions::share,
+            onSaveCopy = actions::saveCopy,
             isFilledIn = isFilledIn,
             onClearFilled = { isClearDialogOpen = true },
         )
@@ -169,7 +123,7 @@ fun ViewerScreen(
         ClearFilledDialog(
             onConfirm = {
                 isClearDialogOpen = false
-                onClearFilled()
+                actions.clearFilledFields()
             },
             onDismiss = { isClearDialogOpen = false },
         )
@@ -183,7 +137,7 @@ fun ViewerScreen(
         messageText ?: return@LaunchedEffect
         // Cleared right away, so the same message can come again; that restarts this effect,
         // so the snackbar is shown in the screen's scope.
-        onMessageShown()
+        actions.messageShown()
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(messageText)
@@ -203,15 +157,15 @@ fun ViewerScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         when (documentState) {
-            is DocumentState.Loaded -> Document(
+            is DocumentState.Loaded -> DocumentView(
                 documentState = documentState,
                 searchState = searchState,
                 pendingRestorePage = pendingRestorePage,
-                onPageRestored = onPageRestored,
-                onPageChanged = onPageChanged,
+                onPageRestored = actions::pageRestored,
+                onPageChanged = actions::pageChanged,
                 contentPadding = contentPadding,
                 onBarHiddenChange = { isBarHiddenByScroll = it },
-                onFormEdit = onFormEdit,
+                onFormEdit = actions::formEdited,
                 onLinkFailed = {
                     scope.launch {
                         snackbarHostState.currentSnackbarData?.dismiss()
@@ -222,16 +176,16 @@ fun ViewerScreen(
 
             is DocumentState.NeedsPassword -> PasswordPrompt(
                 state = documentState,
-                onSubmit = onSubmitPassword,
+                onSubmit = actions::submitPassword,
                 // The keyboard inset includes the navigation bar, which is already padded.
                 modifier = Modifier
                     .padding(contentPadding)
                     .consumeWindowInsets(contentPadding),
             )
 
-            is DocumentState.Failed -> Failure(
+            is DocumentState.Failed -> FailureMessage(
                 reason = documentState.reason,
-                onOpenAnother = onOpenAnother,
+                onOpenAnother = actions::openAnother,
                 modifier = Modifier.padding(contentPadding),
             )
 
@@ -260,10 +214,10 @@ fun ViewerScreen(
                 if (searchState.isActive) {
                     SearchBar(
                         searchState = searchState,
-                        onClose = onCloseSearch,
-                        onQueryChange = onQueryChange,
-                        onNext = onNextMatch,
-                        onPrevious = onPreviousMatch,
+                        onClose = actions::closeSearch,
+                        onQueryChange = actions::changeQuery,
+                        onNext = actions::nextMatch,
+                        onPrevious = actions::previousMatch,
                     )
                 } else {
                     TopAppBar(
@@ -275,7 +229,7 @@ fun ViewerScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBack, modifier = Modifier.testTag(TestTags.BACK)) {
+                            IconButton(onClick = actions::back, modifier = Modifier.testTag(TestTags.BACK)) {
                                 Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
                             }
                         },
@@ -308,7 +262,7 @@ fun ViewerScreen(
 }
 
 /** The status bar is handled separately; the bar itself only avoids side cutouts. */
-private val BarInsets
+internal val BarInsets
     @Composable get() = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
 
 /** The document's tools, collected in one place to keep the top bar calm. */
@@ -353,347 +307,4 @@ private fun ClearFilledDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         // A dialog is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
         modifier = Modifier.semantics { testTagsAsResourceId = true },
     )
-}
-
-@OptIn(ExperimentalPdfApi::class)
-@Composable
-private fun Document(
-    documentState: DocumentState.Loaded,
-    searchState: SearchState,
-    pendingRestorePage: Int?,
-    onPageRestored: () -> Unit,
-    onPageChanged: (Int) -> Unit,
-    contentPadding: PaddingValues,
-    onBarHiddenChange: (Boolean) -> Unit,
-    onFormEdit: (FormEditInfo) -> Unit,
-    onLinkFailed: () -> Unit,
-) {
-    val context = LocalContext.current
-    val viewerState = rememberPdfViewerState()
-    var isContentLoaded by remember { mutableStateOf(false) }
-    var viewportHeight by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
-    val topPaddingPx = with(density) { contentPadding.calculateTopPadding().toPx() }
-    val toggleDistancePx = with(density) { BarToggleDistance.toPx() }
-
-    LaunchedEffect(viewerState, searchState.matches, searchState.currentIndex) {
-        showMatches(viewerState, searchState)
-    }
-
-    LaunchedEffect(viewerState, isContentLoaded, pendingRestorePage) {
-        if (!isContentLoaded) return@LaunchedEffect
-        if (pendingRestorePage != null) {
-            viewerState.scrollToPage(pendingRestorePage)
-            onPageRestored()
-            return@LaunchedEffect
-        }
-        // Only track after restoring, or the initial page 0 would overwrite the saved page.
-        snapshotFlow { viewerState.centerPage(viewportHeight) }
-            .distinctUntilChanged()
-            .collectLatest { page ->
-                delay(PAGE_SAVE_DELAY_MS)
-                onPageChanged(page)
-            }
-    }
-
-    LaunchedEffect(viewerState) {
-        var previous: Pair<Int, Float>? = null
-        var travelled = 0f
-        snapshotFlow { viewerState.firstVisiblePage to viewerState.firstVisiblePageOffset.y }
-            .collect { (page, top) ->
-                val last = previous
-                previous = page to top
-                if (page == 0 && top >= topPaddingPx - 1) {
-                    // Back at the start of the document.
-                    travelled = 0f
-                    onBarHiddenChange(false)
-                    return@collect
-                }
-                // Only the user's own scrolling counts, not jumps to search matches or saved pages.
-                if (last == null || viewerState.gestureState == PdfViewerState.GESTURE_STATE_IDLE) {
-                    return@collect
-                }
-                // Positive when scrolling down through the document.
-                val delta = when {
-                    page > last.first -> toggleDistancePx
-                    page < last.first -> -toggleDistancePx
-                    else -> last.second - top
-                }
-                if (delta * travelled < 0) travelled = 0f
-                travelled += delta
-                if (abs(travelled) >= toggleDistancePx) onBarHiddenChange(travelled > 0)
-            }
-    }
-
-    FastScrollAutoHide(contentLoaded = isContentLoaded)
-
-    PdfViewer(
-        pdfDocument = documentState.document,
-        state = viewerState,
-        modifier = Modifier
-            .fillMaxSize()
-            .onSizeChanged { viewportHeight = it.height }
-            .testTag(TestTags.DOCUMENT),
-        // Pages start below the bar and scroll behind it and the navigation bar.
-        contentPadding = contentPadding,
-        onFirstContentLoad = { isContentLoaded = true },
-        // Not from the start: PdfViewer sets the document before enabling form filling, so the
-        // first pages load without their form fields, and taps on them do nothing (beta01).
-        // Enabling it once they're loaded makes the view fetch their fields again.
-        isFormFillingEnabled = isContentLoaded,
-        onFormWidgetInfoUpdated = onFormEdit,
-        // Handled here, so links with no app to open them don't fail silently.
-        onUrlLinkClicked = { uri ->
-            if (!context.openLink(uri)) onLinkFailed()
-            true
-        },
-    )
-}
-
-/** The page covering the middle of the viewport: what the user is reading. */
-@OptIn(ExperimentalPdfApi::class)
-private fun PdfViewerState.centerPage(viewportHeight: Int): Int {
-    // Read on every scroll, so snapshotFlow re-evaluates while scrolling within a page.
-    firstVisiblePageOffset
-    var page = firstVisiblePage
-    for (candidate in firstVisiblePage until firstVisiblePage + visiblePagesCount) {
-        val top = getVisiblePageOffset(candidate)?.y ?: continue
-        if (top <= viewportHeight / 2f) page = candidate
-    }
-    return page
-}
-
-@OptIn(ExperimentalPdfApi::class)
-private suspend fun showMatches(viewerState: PdfViewerState, searchState: SearchState) {
-    viewerState.setHighlights(
-        searchState.matches.flatMapIndexed { index, match ->
-            val color = if (index == searchState.currentIndex) CURRENT_MATCH_COLOR else MATCH_COLOR
-            match.bounds.map { rect ->
-                Highlight(PdfRect(match.pageNum, rect.left, rect.top, rect.right, rect.bottom), color)
-            }
-        }
-    )
-    val current = searchState.currentMatch ?: return
-    val rect = current.bounds.firstOrNull() ?: return
-    viewerState.scrollToPosition(PdfPoint(current.pageNum, rect.centerX(), rect.centerY()))
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SearchBar(
-    searchState: SearchState,
-    onClose: () -> Unit,
-    onQueryChange: (String) -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
-) {
-    val focusRequester = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
-    Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
-        TopAppBar(
-            navigationIcon = {
-                IconButton(onClick = onClose, modifier = Modifier.testTag(TestTags.CLOSE_SEARCH)) {
-                    Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_search))
-                }
-            },
-            title = {
-                TextField(
-                    value = searchState.query,
-                    onValueChange = onQueryChange,
-                    placeholder = { Text(stringResource(R.string.search_hint), maxLines = 1) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester)
-                        .testTag(TestTags.SEARCH_FIELD),
-                )
-            },
-            actions = {
-                if (searchState.query.isNotBlank() && !searchState.isSearching && !searchState.hasNoText) {
-                    Text(
-                        text = if (searchState.matches.isEmpty()) {
-                            stringResource(R.string.no_matches)
-                        } else {
-                            stringResource(
-                                R.string.match_counter,
-                                searchState.currentIndex + 1,
-                                searchState.matches.size,
-                            )
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .testTag(TestTags.MATCH_COUNTER),
-                    )
-                }
-                val hasMatches = searchState.matches.isNotEmpty()
-                IconButton(
-                    onClick = onPrevious,
-                    enabled = hasMatches,
-                    modifier = Modifier.testTag(TestTags.PREVIOUS_MATCH),
-                ) {
-                    Icon(painterResource(R.drawable.ic_arrow_up), stringResource(R.string.previous_match))
-                }
-                IconButton(
-                    onClick = onNext,
-                    enabled = hasMatches,
-                    modifier = Modifier.testTag(TestTags.NEXT_MATCH),
-                ) {
-                    Icon(painterResource(R.drawable.ic_arrow_down), stringResource(R.string.next_match))
-                }
-            },
-            windowInsets = BarInsets,
-        )
-        // Below the bar: too long for the counter's place, and it explains why nothing is found.
-        if (searchState.hasNoText && !searchState.isSearching) {
-            Text(
-                text = stringResource(R.string.no_text_to_search),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                    .testTag(TestTags.NO_TEXT_TO_SEARCH),
-            )
-        }
-    }
-}
-
-@Composable
-private fun PasswordPrompt(
-    state: DocumentState.NeedsPassword,
-    onSubmit: (password: String, remember: Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var password by rememberSaveable { mutableStateOf("") }
-    var rememberPassword by rememberSaveable { mutableStateOf(true) }
-    var isPasswordShown by rememberSaveable { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    val canSubmit = password.isNotEmpty() && !state.isChecking
-    val submit = { if (canSubmit) onSubmit(password, rememberPassword) }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.password_title),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(stringResource(R.string.password)) },
-            singleLine = true,
-            isError = state.isWrongPassword,
-            supportingText = if (state.isWrongPassword) {
-                { Text(stringResource(R.string.wrong_password)) }
-            } else {
-                null
-            },
-            visualTransformation = if (isPasswordShown) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { submit() }),
-            trailingIcon = {
-                IconButton(onClick = { isPasswordShown = !isPasswordShown }) {
-                    Icon(
-                        painterResource(if (isPasswordShown) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
-                        stringResource(if (isPasswordShown) R.string.hide_password else R.string.show_password),
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .testTag(TestTags.PASSWORD_FIELD),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = rememberPassword,
-                    onValueChange = { rememberPassword = it },
-                    role = Role.Checkbox,
-                )
-                .testTag(TestTags.REMEMBER_PASSWORD)
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(checked = rememberPassword, onCheckedChange = null)
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.remember_password), style = MaterialTheme.typography.bodyLarge)
-        }
-        Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = submit,
-            enabled = canSubmit,
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.testTag(TestTags.SUBMIT_PASSWORD),
-        ) {
-            if (state.isChecking) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            } else {
-                Text(stringResource(R.string.open))
-            }
-        }
-    }
-}
-
-@Composable
-private fun Failure(
-    reason: FailureReason,
-    onOpenAnother: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(
-                when (reason) {
-                    FailureReason.DAMAGED -> R.string.error_damaged
-                    FailureReason.NOT_PDF -> R.string.error_not_pdf
-                    FailureReason.NO_PERMISSION -> R.string.error_no_permission
-                    FailureReason.UNAVAILABLE -> R.string.error_unavailable
-                }
-            ),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(TestTags.FAILURE_MESSAGE),
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = onOpenAnother,
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.testTag(TestTags.OPEN_ANOTHER),
-        ) {
-            Text(stringResource(R.string.open_another))
-        }
-    }
 }
