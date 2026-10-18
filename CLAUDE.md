@@ -111,6 +111,11 @@
   never hides under the top bar), and links with a bare `/Dest` array do
   nothing; only `/GoTo` actions work, including named destinations (LaTeX,
   Word). Nothing to hook into for either, as of beta01.
+- Failures to open are diagnosed by reading the file's first bytes: no PDF
+  header means not a PDF, a header (or an empty file) means damaged.
+  Deleting a document revokes its URI grants, so a `SecurityException`
+  can't tell "deleted" from "permission revoked": for files that opened
+  before it counts as moved or deleted, otherwise as not given access.
 
 # Planned changes
 
@@ -124,7 +129,7 @@
 ### Milestone 5: robustness
 - [x] Links: test web, mailto, tel and in-document links (with the top
   bar overlaid); don't crash when no app handles a link
-- [ ] Broken files: tell apart damaged, not-a-PDF and lost permission,
+- [x] Broken files: tell apart damaged, not-a-PDF and lost permission,
   with advice (download it again, ask the sender for a new copy)
 - [ ] Search in a document without text (scanned): say so instead of
   "No matches"

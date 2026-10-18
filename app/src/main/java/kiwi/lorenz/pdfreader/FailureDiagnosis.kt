@@ -1,0 +1,47 @@
+package kiwi.lorenz.pdfreader
+
+import android.content.ContentResolver
+import android.net.Uri
+import java.io.InputStream
+
+/** The header may follow some junk, but must lie within the first 1024 bytes. */
+private const val HEADER_SEARCH_BYTES = 1024
+private val PDF_HEADER = "%PDF-".toByteArray()
+
+/**
+ * Why [uri] couldn't be opened as a PDF. Only meaningful after opening it failed, so a readable
+ * file with a PDF header counts as damaged. [openedBefore] tells whether we ever had access.
+ */
+fun ContentResolver.diagnoseFailure(uri: Uri, openedBefore: Boolean): FailureReason = try {
+    val head = openInputStream(uri)?.use { it.readUpTo(HEADER_SEARCH_BYTES) }
+    when {
+        head == null -> FailureReason.UNAVAILABLE
+        // An empty file is most likely an interrupted download, not some other kind of file.
+        head.isEmpty() || hasPdfHeader(head) -> FailureReason.DAMAGED
+        else -> FailureReason.NOT_PDF
+    }
+} catch (_: SecurityException) {
+    // Deleting a document revokes its grants, so for a file we could read before this most
+    // likely means it's gone, not that the permission was taken away.
+    if (openedBefore) FailureReason.UNAVAILABLE else FailureReason.NO_PERMISSION
+} catch (_: Exception) {
+    // Usually a FileNotFoundException: moved, deleted, or the app holding it is gone.
+    FailureReason.UNAVAILABLE
+}
+
+internal fun hasPdfHeader(head: ByteArray): Boolean {
+    val end = minOf(head.size, HEADER_SEARCH_BYTES) - PDF_HEADER.size
+    return (0..end).any { start -> PDF_HEADER.indices.all { head[start + it] == PDF_HEADER[it] } }
+}
+
+/** Like `readNBytes`, which needs API 33. */
+private fun InputStream.readUpTo(count: Int): ByteArray {
+    val buffer = ByteArray(count)
+    var total = 0
+    while (total < count) {
+        val read = read(buffer, total, count - total)
+        if (read < 0) break
+        total += read
+    }
+    return buffer.copyOf(total)
+}

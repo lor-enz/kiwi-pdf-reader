@@ -55,7 +55,17 @@ sealed interface DocumentState {
     data class Failed(val reason: FailureReason) : DocumentState
 }
 
-enum class FailureReason { UNREADABLE, UNAVAILABLE, PASSWORD_UNSUPPORTED }
+enum class FailureReason {
+    /** Has a PDF header but couldn't be read, e.g. an interrupted download. */
+    DAMAGED,
+    /** Some other kind of file. */
+    NOT_PDF,
+    /** The app that provides the file didn't allow us to read it. */
+    NO_PERMISSION,
+    /** Moved or deleted. */
+    UNAVAILABLE,
+    PASSWORD_UNSUPPORTED,
+}
 
 /**
  * Without SDK extension 13 (a Google Play system update), androidx.pdf falls back to the old
@@ -277,12 +287,13 @@ class ReaderViewModel(
             passwordTarget = target
             DocumentState.NeedsPassword(target.name, isWrongPassword = isTypedByUser)
         } catch (_: Exception) {
+            val reason = withContext(Dispatchers.IO) {
+                val openedBefore = entry != null && entry.pageCount > 0
+                getApplication<Application>().contentResolver.diagnoseFailure(target.uri, openedBefore)
+            }
             // Never list a file that can't be opened.
             entry?.let { store.remove(it.id) }
-            DocumentState.Failed(
-                // It opened before, so it was moved, deleted or its permission revoked.
-                if (entry != null && entry.pageCount > 0) FailureReason.UNAVAILABLE else FailureReason.UNREADABLE
-            )
+            DocumentState.Failed(reason)
         }
     }
 

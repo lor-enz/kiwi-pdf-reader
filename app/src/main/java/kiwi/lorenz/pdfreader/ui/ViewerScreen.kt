@@ -577,7 +577,9 @@ private fun Failure(
         Text(
             text = stringResource(
                 when (reason) {
-                    FailureReason.UNREADABLE -> R.string.error_unreadable
+                    FailureReason.DAMAGED -> R.string.error_damaged
+                    FailureReason.NOT_PDF -> R.string.error_not_pdf
+                    FailureReason.NO_PERMISSION -> R.string.error_no_permission
                     FailureReason.UNAVAILABLE -> R.string.error_unavailable
                     FailureReason.PASSWORD_UNSUPPORTED -> R.string.error_password_unsupported
                 }
