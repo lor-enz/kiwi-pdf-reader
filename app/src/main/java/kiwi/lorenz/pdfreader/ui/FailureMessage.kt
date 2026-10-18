@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.FailureReason
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 
 /** [onRetry] is offered instead of [onOpenAnother] when the failure is most likely passing. */
 @Composable
@@ -74,17 +74,15 @@ internal fun FailureMessage(
             )
             Spacer(Modifier.height(24.dp))
             if (reason == FailureReason.TEMPORARY) {
-                Button(
+                PrimaryButton(
                     onClick = onRetry,
-                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.testTag(TestTags.TRY_AGAIN),
                 ) {
                     Text(stringResource(R.string.try_again))
                 }
             } else {
-                Button(
+                PrimaryButton(
                     onClick = onOpenAnother,
-                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.testTag(TestTags.OPEN_ANOTHER),
                 ) {
                     Text(stringResource(R.string.open_another))

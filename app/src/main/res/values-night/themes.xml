@@ -7,13 +7,13 @@
         <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
         <item name="colorOnSurface">@color/kiwi_off_white</item>
         <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
-        <item name="colorPrimary">@color/kiwi_pale_green</item>
+        <item name="colorPrimary">@color/kiwi_green</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.KiwiPDFReader.Dialog</item>
     </style>
 
     <style name="ThemeOverlay.KiwiPDFReader.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/kiwi_pale_green</item>
-        <item name="colorOnPrimary">@color/kiwi_night_background</item>
+        <item name="colorPrimary">@color/kiwi_green</item>
+        <item name="colorOnPrimary">@color/kiwi_off_white</item>
         <item name="colorSurface">@color/kiwi_night_background</item>
         <item name="colorSurfaceContainerHigh">@color/kiwi_night_container</item>
         <item name="colorOnSurface">@color/kiwi_night_text</item>

@@ -19,4 +19,10 @@ val NightBackground = Color(0xFF1B1D16)
 val NightSurface = Color(0xFF24271D)
 val NightContainer = Color(0xFF2E3225)
 val NightText = Color(0xFFE6E8DC)
-val PaleGreen = Color(0xFFB4C26A)
+
+// Not part of the brand guide yet: secondary text and borders that need contrast (at least
+// 4.5:1 for text, 3:1 for field borders)
+val OliveGrey = Color(0xFF5E6352)
+val NightOliveGrey = Color(0xFFB8BBAD)
+val NightBorder = Color(0xFF3A3E30)
+val FieldBorder = Color(0xFF8C9180)

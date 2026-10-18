@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -51,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
 import kotlinx.coroutines.Dispatchers
@@ -179,9 +179,8 @@ private fun Header(onOpenPdf: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(32.dp))
-        Button(
+        PrimaryButton(
             onClick = onOpenPdf,
-            shape = MaterialTheme.shapes.small,
             modifier = Modifier.testTag(TestTags.OPEN_PDF),
         ) {
             Text(stringResource(R.string.open_pdf))
@@ -202,7 +201,7 @@ private fun RecentFileRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .border(0.5.dp, MaterialTheme.colorScheme.outline, shape)
+            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -225,7 +224,7 @@ private fun RecentFileRow(
             Text(
                 text = details(entry),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -274,7 +273,7 @@ private fun Thumbnail(entry: RecentFile, thumbnailFile: (RecentFile) -> File) {
             .size(width = 48.dp, height = 64.dp)
             .clip(shape)
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(0.5.dp, MaterialTheme.colorScheme.outline, shape),
+            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, shape),
         contentAlignment = Alignment.Center,
     ) {
         val image = bitmap

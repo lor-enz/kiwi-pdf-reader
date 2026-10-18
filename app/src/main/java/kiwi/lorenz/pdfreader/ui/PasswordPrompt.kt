@@ -16,11 +16,11 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 
 @Composable
 internal fun PasswordPrompt(
@@ -121,17 +122,16 @@ internal fun PasswordPrompt(
             Text(stringResource(R.string.remember_password), style = MaterialTheme.typography.bodyLarge)
         }
         Spacer(Modifier.height(16.dp))
-        Button(
+        PrimaryButton(
             onClick = submit,
             enabled = canSubmit,
-            shape = MaterialTheme.shapes.small,
             modifier = Modifier.testTag(TestTags.SUBMIT_PASSWORD),
         ) {
             if (state.isChecking) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = LocalContentColor.current,
                 )
             } else {
                 Text(stringResource(R.string.open))

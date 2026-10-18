@@ -113,6 +113,12 @@
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
   them itself).
+- Colors (`ui/theme`): both themes use Kiwi Green for text and accents.
+  In dark mode filled buttons are Dark Green instead (`PrimaryButton`), as
+  a green bright enough for text glares as a filled area. Every color role
+  a component may use is set, or it falls back to Material's lavender
+  (snackbars use the inverse colors). `outline` is for field borders (3:1),
+  `outlineVariant` for cards.
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).
@@ -210,6 +216,8 @@
 - [ ] One page at a time, swipe left/right, pinch-zoom (own pager view)
 
 ### Later
+- [ ] Dark pages in dark mode: `PdfViewer` always draws them white, which
+  glares at night. Inverting would also shift images and form colors
 - [ ] Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
   side panel (`androidx.pdf` can't read a PDF's outline, so no table of
   contents)
