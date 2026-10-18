@@ -264,7 +264,10 @@ class ViewerViewModel(
             }
             // Before loading, so cleanup leaves the file alone while it opens.
             store.setOpen(taskId, target.entry?.id)
-            val remembered = target.entry?.encryptedPassword?.let(PasswordCipher::decrypt)
+            // The keystore can be slow, so not on the main thread.
+            val remembered = target.entry?.encryptedPassword?.let {
+                withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) }
+            }
             documentState = open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
         }
     }
@@ -320,7 +323,8 @@ class ViewerViewModel(
         viewModelScope.launch {
             store.setPageCount(entry.id, document.pageCount)
             if (password != null) {
-                store.setPassword(entry.id, if (rememberPassword) PasswordCipher.encrypt(password) else null)
+                val encrypted = if (rememberPassword) withContext(Dispatchers.Default) { PasswordCipher.encrypt(password) } else null
+                store.setPassword(entry.id, encrypted)
             }
             // Thumbnails of protected documents only when the password is remembered.
             val showsThumbnail = password == null || rememberPassword

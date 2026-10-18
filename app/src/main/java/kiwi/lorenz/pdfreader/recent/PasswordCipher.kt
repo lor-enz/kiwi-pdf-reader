@@ -19,10 +19,13 @@ object PasswordCipher {
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val TAG_BITS = 128
 
-    fun encrypt(password: String): String {
+    /** Returns null if the keystore fails; the password then just isn't remembered. */
+    fun encrypt(password: String): String? = try {
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val encrypted = cipher.doFinal(password.toByteArray())
-        return "${cipher.iv.toBase64()}:${encrypted.toBase64()}"
+        "${cipher.iv.toBase64()}:${encrypted.toBase64()}"
+    } catch (_: Exception) {
+        null
     }
 
     /** Returns null if the value can't be decrypted, e.g. after the key was lost. */
