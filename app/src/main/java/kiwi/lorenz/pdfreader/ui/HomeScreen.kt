@@ -71,6 +71,7 @@ fun HomeScreen(
     thumbnailFile: (RecentFile) -> File,
     onOpenPdf: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
+    onShareRecent: (RecentFile) -> Unit,
     pendingRemoval: RecentFile?,
     onRemoveRecent: (RecentFile) -> Unit,
     onUndoRemoval: (RecentFile) -> Unit,
@@ -82,6 +83,7 @@ fun HomeScreen(
         RecentFileSheet(
             entry = entry,
             onDismiss = { sheetEntryId = null },
+            onShare = { onShareRecent(entry) },
             onRemove = { onRemoveRecent(entry) },
         )
     }
@@ -221,6 +223,7 @@ private fun RecentFileRow(
 private fun RecentFileSheet(
     entry: RecentFile,
     onDismiss: () -> Unit,
+    onShare: () -> Unit,
     onRemove: () -> Unit,
 ) {
     // The sheet is a window of its own, so it doesn't inherit testTagsAsResourceId from the root.
@@ -248,6 +251,7 @@ private fun RecentFileSheet(
                 }
                 .testTag(tag),
         )
+        Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onShare)
         Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onRemove)
         Spacer(Modifier.height(8.dp))
     }
@@ -314,6 +318,7 @@ private fun HomeScreenEmptyPreview() {
             thumbnailFile = { File("") },
             onOpenPdf = {},
             onOpenRecent = {},
+            onShareRecent = {},
             pendingRemoval = null,
             onRemoveRecent = {},
             onUndoRemoval = {},
@@ -335,6 +340,7 @@ private fun HomeScreenRecentPreview() {
             thumbnailFile = { File("") },
             onOpenPdf = {},
             onOpenRecent = {},
+            onShareRecent = {},
             pendingRemoval = null,
             onRemoveRecent = {},
             onUndoRemoval = {},

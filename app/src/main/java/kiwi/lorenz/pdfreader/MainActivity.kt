@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.content.IntentCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
                             onOpenPdf = openPicker,
                             onOpenRecent = viewModel::openRecent,
                             pendingRemoval = viewModel.pendingRemoval,
+                            onShareRecent = { share(it.uri.toUri(), it.name) },
                             onRemoveRecent = viewModel::removeRecent,
                             onUndoRemoval = viewModel::undoRemoval,
                             onRemovalDone = viewModel::finishRemoval,
@@ -71,7 +73,7 @@ class MainActivity : ComponentActivity() {
                             onOpenAnother = openPicker,
                             onOpenSearch = viewModel::openSearch,
                             onPrint = { loadedDocument()?.let { printPdf(it.document, it.name, it.isProtected, viewModel.viewModelScope) } },
-                            onShare = ::share,
+                            onShare = { loadedDocument()?.let { share(it.document.uri, it.name) } },
                             onCloseSearch = viewModel::closeSearch,
                             onQueryChange = viewModel::updateQuery,
                             onNextMatch = viewModel::nextMatch,
@@ -85,11 +87,10 @@ class MainActivity : ComponentActivity() {
 
     private fun loadedDocument() = viewModel.documentState as? DocumentState.Loaded
 
-    private fun share() {
-        val loaded = loadedDocument() ?: return
+    private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
             try {
-                sharePdf(loaded.document.uri, loaded.name)
+                sharePdf(uri, name)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

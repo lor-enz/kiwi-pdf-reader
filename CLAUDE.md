@@ -34,9 +34,9 @@
   and need it set again (see the tools sheet).
 - Page content is a single accessibility node, so links in a document are
   tapped by coordinates.
-- Animations are off on the emulator (`window_animation_scale`,
-  `transition_animation_scale`, `animator_duration_scale` set to 0), which
-  keeps screenshots stable. A new emulator needs that again.
+- Run `scripts/test/prepare-device.sh` before testing: it turns animations
+  off, which keeps screenshots stable. An emulator booted from an older
+  snapshot has them on again.
 - Process death: `am kill` doesn't work. Press home, then
   `run-as kiwi.lorenz.pdfreader kill -9 <pid>`.
 - Fast swipes fling to the end of the document; use slow ones.
@@ -163,7 +163,7 @@
 - [x] Long-press an entry: sheet with its file name at the top
 - [x] Remove from list, with an Undo snackbar (delete files only once the
   snackbar is gone)
-- [ ] Share without opening the document
+- [x] Share without opening the document
 - [ ] Forget password (only when one is remembered), also deletes the
   thumbnail
 - [ ] Hash picked files too, fixing the duplicate entries (known issue)

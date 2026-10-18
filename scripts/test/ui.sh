@@ -14,12 +14,19 @@ set -euo pipefail
 
 usage() { sed -n 's/^# \{0,1\}//; 2,12p' "$0"; exit 1; }
 
+# Fails with adb's own message (e.g. "device not found") instead of an empty screen.
+adb get-state >/dev/null
+
 # Prints "tag<TAB>text<TAB>description<TAB>x y" per element.
 elements() {
     adb exec-out uiautomator dump /dev/tty 2>/dev/null | sed 's/UI hierchary dumped to.*//' | python3 -I -c '
 import re, sys
 import xml.etree.ElementTree as ET
-root = ET.fromstring(sys.stdin.read())
+try:
+    root = ET.fromstring(sys.stdin.read())
+except ET.ParseError:
+    # No dump, e.g. the device is gone; adb reports that itself.
+    sys.exit()
 for node in root.iter("node"):
     # Page content comes as one long multi-line description; keep each field on one line.
     tag, text, desc = (" ".join(node.get(key, "").split()) for key in ("resource-id", "text", "content-desc"))
