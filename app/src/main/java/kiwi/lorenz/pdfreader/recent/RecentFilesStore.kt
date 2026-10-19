@@ -202,6 +202,17 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         }
     }
 
+    /** Forgets every remembered password, see [setPassword]. Also those of [hide]den entries. */
+    suspend fun forgetAllPasswords() = edit { entries ->
+        fun forget(entry: RecentFile): RecentFile {
+            if (entry.encryptedPassword == null) return entry
+            thumbnailFile(entry.id).delete()
+            return entry.copy(isProtected = true, encryptedPassword = null, hasThumbnail = false)
+        }
+        entries.replaceAll(::forget)
+        hidden.replaceAll { _, entry -> forget(entry) }
+    }
+
     /** The document opened without a password, e.g. after it was replaced by an unprotected one. */
     suspend fun setUnprotected(id: String) = update(id) { it.copy(isProtected = false) }
 
@@ -270,6 +281,16 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     suspend fun remove(id: String) = edit { entries ->
         entries.find { it.id == id }?.let { entries.remove(it); deleteFiles(it, entries) }
         Unit
+    }
+
+    /**
+     * Removes every entry with its files, except documents open in a viewer (as [cleanup] does).
+     * Returns how many entries stay.
+     */
+    suspend fun clear(): Int = edit { entries ->
+        val openIds = openTasks.live().values.toSet()
+        entries.filter { it.id !in openIds }.forEach { entries.remove(it); deleteFiles(it, entries) }
+        entries.size
     }
 
     /** Takes an entry off the list but keeps its files, so [restore] can undo it until [discard]. */

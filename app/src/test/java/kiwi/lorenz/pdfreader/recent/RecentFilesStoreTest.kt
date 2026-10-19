@@ -203,6 +203,66 @@ class RecentFilesStoreTest {
     }
 
     @Test
+    fun `forgetting all passwords drops their thumbnails and keeps the other ones`() = runBlocking {
+        val remembered = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        val plain = store.importCopy(provide("b.pdf", "b"), "b.pdf")!!
+        val hidden = store.importCopy(provide("c.pdf", "c"), "c.pdf")!!
+        for (entry in listOf(remembered, plain, hidden)) {
+            store.saveThumbnail(entry.id, Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888))
+        }
+        store.setPassword(remembered.id, "encrypted")
+        store.setPassword(hidden.id, "encrypted")
+        store.hide(hidden.id)
+
+        store.forgetAllPasswords()
+        restart()
+
+        val forgotten = store.get(remembered.id)!!
+        assertNull(forgotten.encryptedPassword)
+        assertTrue(forgotten.isProtected)
+        assertFalse(forgotten.hasThumbnail)
+        assertFalse(File(thumbnailsDir, "${remembered.id}.webp").exists())
+        assertTrue(store.get(plain.id)!!.hasThumbnail)
+        assertTrue(File(thumbnailsDir, "${plain.id}.webp").exists())
+        assertFalse(File(thumbnailsDir, "${hidden.id}.webp").exists())
+    }
+
+    @Test
+    fun `undoing a removal after forgetting all passwords brings no password back`() = runBlocking {
+        val entry = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        store.setPassword(entry.id, "encrypted")
+        val hidden = store.hide(entry.id)!!
+
+        store.forgetAllPasswords()
+        store.restore(hidden)
+
+        assertNull(store.get(entry.id)!!.encryptedPassword)
+    }
+
+    @Test
+    fun `clearing removes every entry with its files except open documents`() = runBlocking {
+        val open = store.importCopy(provide("open.pdf", "open"), "open.pdf")!!
+        val copy = store.importCopy(provide("copy.pdf", "copy"), "copy.pdf")!!
+        val pickedUri = provide("picked.pdf", "picked")
+        val picked = store.addPicked(pickedUri, "picked.pdf")!!
+        store.saveThumbnail(copy.id, Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888))
+        store.saveFilled(picked.id) { it.writeText("filled") }
+        runningTasks(5)
+        store.setOpen(5, open.id)
+
+        assertEquals(1, store.clear())
+
+        assertEquals(listOf(open.id), store.entries.value.map { it.id })
+        assertTrue(copyFile(open.id).exists())
+        assertFalse(copyFile(copy.id).exists())
+        assertFalse(File(thumbnailsDir, "${copy.id}.webp").exists())
+        assertFalse(File(filledDir, "${picked.id}.pdf").exists())
+        assertEquals(emptyList<Uri>(), persistedUris())
+        restart()
+        assertEquals(listOf(open.id), listed().map { it.id })
+    }
+
+    @Test
     fun `a password marks the entry as protected until it opens without one`() = runBlocking {
         val entry = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
         assertFalse(entry.isProtected)
