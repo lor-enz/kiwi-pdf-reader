@@ -265,10 +265,13 @@ private fun RecentFileSheet(
 @Composable
 private fun Thumbnail(entry: RecentFile, thumbnailFile: (RecentFile) -> File) {
     val bitmap by produceState<ImageBitmap?>(null, entry.id, entry.hasThumbnail) {
-        if (entry.hasThumbnail) {
-            value = withContext(Dispatchers.IO) {
+        // A dropped thumbnail (password forgotten) mustn't stay on screen.
+        value = if (entry.hasThumbnail) {
+            withContext(Dispatchers.IO) {
                 BitmapFactory.decodeFile(thumbnailFile(entry).path)?.asImageBitmap()
             }
+        } else {
+            null
         }
     }
     val shape = RoundedCornerShape(4.dp)
