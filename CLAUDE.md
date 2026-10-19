@@ -167,7 +167,11 @@
   reopened document has jumped to its saved page; then the cover fades out.
   `PdfViewer` only reports the first bitmap (`onFirstContentLoad`), so
   `rememberReadyPages` uses `PdfView`'s restricted per-page listener. After
-  1.5 s it shows anyway, so a slow page doesn't hold the rest back.
+  3 s (from opening, and again from the jump to the saved page) it shows
+  anyway: a safety net in case pages never report ready, as white pages
+  beat a hidden document. The jump only counts once the view reports the
+  saved page as visible: it may scroll later, and until then its visible
+  pages are the first ones, which have rendered.
 - Print renders password-protected documents as images, as the print
   system can't open them.
 - Shared copies are deleted after a day, not right away, because

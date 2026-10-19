@@ -1,8 +1,8 @@
 package kiwi.lorenz.pdfreader.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -42,6 +48,8 @@ import kiwi.lorenz.pdfreader.openLink
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
@@ -54,8 +62,18 @@ private const val PAGE_SAVE_DELAY_MS = 500L
 /** How many of the visible pages have to be rendered before the document shows. */
 private const val PAGES_BEFORE_REVEAL = 2
 
-/** Shows the document even if its pages are still rendering, so a slow page doesn't block it. */
-private const val REVEAL_TIMEOUT_MS = 1500L
+/** How long the cover takes to wipe away, top to bottom. */
+private const val REVEAL_MS = 400
+
+/** The soft edge of the wipe, as a share of the view's height. */
+private const val REVEAL_EDGE = 0.4f
+
+/**
+ * Shows the document even if its pages are still rendering, counted from opening and again from
+ * the jump to the saved page. A safety net: if the pages never report ready (the listener is
+ * restricted API), white pages are better than a document hidden for good.
+ */
+private const val REVEAL_TIMEOUT_MS = 3000L
 
 private val PlaceholderIconSize = 96.dp
 
@@ -93,6 +111,12 @@ internal fun DocumentView(
         if (!isContentLoaded) return@LaunchedEffect
         if (pendingRestorePage != null) {
             viewerState.scrollToPage(pendingRestorePage)
+            // The view may scroll later (it needs the page sizes first) and reports its visible
+            // pages after that. Until then they're still the first pages, which have rendered,
+            // and the document would show before the saved page has.
+            withTimeoutOrNull(REVEAL_TIMEOUT_MS) {
+                snapshotFlow { viewerState.showsPage(pendingRestorePage) }.first { it }
+            }
             onPageRestored()
             return@LaunchedEffect
         }
@@ -143,7 +167,7 @@ internal fun DocumentView(
     LaunchedEffect(arePagesShown) {
         if (arePagesShown) isRevealed = true
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(pendingRestorePage) {
         delay(REVEAL_TIMEOUT_MS)
         isRevealed = true
     }
@@ -172,15 +196,44 @@ internal fun DocumentView(
                 true
             },
         )
-        // Continues the placeholder of the loading state.
-        AnimatedVisibility(visible = !isRevealed, enter = EnterTransition.None, exit = fadeOut()) {
+        // Continues the placeholder of the loading state, and wipes away from the top down, so
+        // the start of the page shows first.
+        val revealProgress by animateFloatAsState(
+            targetValue = if (isRevealed) 1f else 0f,
+            animationSpec = tween(REVEAL_MS, easing = FastOutSlowInEasing),
+            label = "reveal",
+        )
+        if (revealProgress < 1f) {
             DocumentPlaceholder(
                 contentPadding = contentPadding,
-                modifier = Modifier.background(MaterialTheme.colorScheme.background),
+                modifier = Modifier
+                    .wipeAway { revealProgress }
+                    .background(MaterialTheme.colorScheme.background),
             )
         }
     }
 }
+
+/**
+ * Hides the content above a soft edge that moves from the top ([progress] 0) past the bottom
+ * ([progress] 1).
+ */
+private fun Modifier.wipeAway(progress: () -> Float): Modifier = this
+    // Offscreen, so the mask only cuts out this content, not what's drawn below it.
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val edge = size.height * REVEAL_EDGE
+        val start = progress() * (size.height + edge) - edge
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, Color.Black),
+                startY = start,
+                endY = start + edge,
+            ),
+            blendMode = BlendMode.DstIn,
+        )
+    }
 
 /**
  * Shown while a document opens, until its first pages are rendered. Opening takes a moment at
@@ -204,6 +257,10 @@ internal fun DocumentPlaceholder(contentPadding: PaddingValues, modifier: Modifi
         )
     }
 }
+
+@OptIn(ExperimentalPdfApi::class)
+private fun PdfViewerState.showsPage(page: Int): Boolean =
+    page in firstVisiblePage until firstVisiblePage + visiblePagesCount
 
 /** The page covering the middle of the viewport: what the user is reading. */
 @OptIn(ExperimentalPdfApi::class)
