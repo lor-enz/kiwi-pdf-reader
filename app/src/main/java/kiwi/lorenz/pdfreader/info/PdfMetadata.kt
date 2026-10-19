@@ -22,8 +22,8 @@ data class PdfMetadata(
     val pageCount: Int? = null,
     /** The first page as shown, in points (1/72 inch), rotation applied. */
     val pageSize: PageSize? = null,
-    /** The info dictionary's strings are encrypted then, so they're left out. */
-    val isEncrypted: Boolean = false,
+    /** Encrypted, and neither the password given nor the empty one opens it: the strings are left out. */
+    val isLocked: Boolean = false,
 )
 
 data class PageSize(val width: Double, val height: Double)

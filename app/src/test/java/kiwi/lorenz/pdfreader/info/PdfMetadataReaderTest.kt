@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader.info
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,9 +10,9 @@ import java.time.ZoneOffset
 
 /** The fixtures are made by `scripts/test/make-metadata-fixtures.py`. */
 class PdfMetadataReaderTest {
-    private fun read(name: String): PdfMetadata {
+    private fun read(name: String, password: String? = null): PdfMetadata {
         val bytes = checkNotNull(javaClass.getResourceAsStream("/metadata/$name")).use { it.readBytes() }
-        return PdfMetadataReader(ByteArraySource(bytes)).read()
+        return PdfMetadataReader(ByteArraySource(bytes), password).read()
     }
 
     private val a4 = PageSize(595.276, 841.89)
@@ -59,13 +60,35 @@ class PdfMetadataReaderTest {
     }
 
     @Test
-    fun `leaves out encrypted strings`() {
-        val metadata = read("encrypted.pdf")
-        assertTrue(metadata.isEncrypted)
-        assertNull(metadata.title)
-        assertNull(metadata.created)
-        assertEquals(2, metadata.pageCount)
-        assertEquals(a4, metadata.pageSize)
+    fun `decrypts files that open without a password`() {
+        for (name in listOf("rc4-40.pdf", "aes-128.pdf", "aes-256.pdf")) {
+            val metadata = read(name)
+            assertBill(metadata)
+            assertEquals(a4, metadata.pageSize)
+            assertFalse(name, metadata.isLocked)
+        }
+    }
+
+    @Test
+    fun `decrypts protected files with their password or the permissions one`() {
+        for (name in listOf("rc4-128-password.pdf", "aes-256-password.pdf")) {
+            assertBill(read(name, "kiwi"))
+            assertBill(read(name, "owner"))
+        }
+    }
+
+    @Test
+    fun `leaves out the strings of protected files without their password`() {
+        for (name in listOf("rc4-128-password.pdf", "aes-256-password.pdf")) {
+            for (password in listOf(null, "wrong")) {
+                val metadata = read(name, password)
+                assertTrue(name, metadata.isLocked)
+                assertNull(metadata.title)
+                assertNull(metadata.created)
+                assertEquals(2, metadata.pageCount)
+                assertEquals(a4, metadata.pageSize)
+            }
+        }
     }
 
     @Test

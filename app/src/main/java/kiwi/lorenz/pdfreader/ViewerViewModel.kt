@@ -83,6 +83,9 @@ class ViewerViewModel(
     /** The document waiting for a password, see [DocumentState.NeedsPassword]. */
     private var passwordTarget: Target? = null
 
+    /** The password the open document was opened with, for reading its info. */
+    private var openPassword: String? = null
+
     /** The entry that failed to open for now, see [FailureReason.TEMPORARY]. */
     private var retryEntryId: String? = null
 
@@ -193,11 +196,11 @@ class ViewerViewModel(
 
     /**
      * About the open document. The page size comes from the document when the file's own data
-     * can't be read for it (encrypted object streams).
+     * can't be read for it (damaged files).
      */
     suspend fun documentInfo(): DocumentInfo {
         val document = loadedDocument()?.document ?: return DocumentInfo(PdfMetadata(), null)
-        val info = getApplication<Application>().readDocumentInfo(document.uri)
+        val info = getApplication<Application>().readDocumentInfo(document.uri, openPassword)
         val pageSize = info.metadata.pageSize ?: runCatchingCancellable {
             document.getPageInfo(0).let { PageSize(it.width.toDouble(), it.height.toDouble()) }
         }.getOrNull()
@@ -311,6 +314,7 @@ class ViewerViewModel(
         val entry = target.entry
         return try {
             val document = loader.openDocument(target.uri, password)
+            openPassword = password
             passwordTarget = null
             if (entry != null) onOpened(entry, document, password, rememberPassword)
             form = (document as? EditablePdfDocument)?.let { FormAutosave(it, entry?.id, store, viewModelScope) }
@@ -374,6 +378,7 @@ class ViewerViewModel(
         openEntryId = null
         pendingRestorePage = null
         passwordTarget = null
+        openPassword = null
         retryEntryId = null
     }
 

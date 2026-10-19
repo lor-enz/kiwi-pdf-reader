@@ -10,34 +10,38 @@ endobj
 << /Count 2 /Kids [ 4 0 R 5 0 R ] /Type /Pages >>
 endobj
 4 0 obj
-<< /Contents 6 0 R /MediaBox [ 0 0 595.276 841.89 ] /Parent 3 0 R /Resources << >> /Type /Page >>
+<< /Contents 6 0 R /MediaBox [ 0 0 595.276 841.89 ] /Parent 3 0 R /Resources << /Font << /F1 7 0 R >> >> /Type /Page >>
 endobj
 5 0 obj
-<< /Contents 7 0 R /MediaBox [ 0 0 595.276 841.89 ] /Parent 3 0 R /Resources << >> /Type /Page >>
+<< /Contents 8 0 R /MediaBox [ 0 0 595.276 841.89 ] /Parent 3 0 R /Resources << /Font << /F1 7 0 R >> >> /Type /Page >>
 endobj
 6 0 obj
-<< /Length 0 >>
+<< /Length 325 >>
 stream
-
+BT 60 761 Td /F1 22 Tf (table.pdf) Tj 0 -32 Td /F1 12 Tf () Tj 0 -22 Td /F1 14 Tf (Title "Electricity bill", author Kiwi Power Ltd, subject March 2024, A4.) Tj 0 -24 Td /F1 14 Tf (Stored the classic way: a cross-reference table, nothing compressed.) Tj 0 -24 Td /F1 12 Tf () Tj 0 -22 Td /F1 14 Tf (Page 1 of 2) Tj 0 -24 Td ET
 endstream
 endobj
 7 0 obj
-<< /Length 0 >>
+<< /BaseFont /Helvetica /Encoding /WinAnsiEncoding /Subtype /Type1 /Type /Font >>
+endobj
+8 0 obj
+<< /Length 325 >>
 stream
-
+BT 60 761 Td /F1 22 Tf (table.pdf) Tj 0 -32 Td /F1 12 Tf () Tj 0 -22 Td /F1 14 Tf (Title "Electricity bill", author Kiwi Power Ltd, subject March 2024, A4.) Tj 0 -24 Td /F1 14 Tf (Stored the classic way: a cross-reference table, nothing compressed.) Tj 0 -24 Td /F1 12 Tf () Tj 0 -22 Td /F1 14 Tf (Page 2 of 2) Tj 0 -24 Td ET
 endstream
 endobj
 xref
-0 8
+0 9
 0000000000 65535 f 
 0000000015 00000 n 
 0000000064 00000 n 
 0000000273 00000 n 
 0000000338 00000 n 
-0000000451 00000 n 
-0000000564 00000 n 
-0000000613 00000 n 
-trailer << /Info 2 0 R /Root 1 0 R /Size 8 /ID [<8941c7791a83c45b2dac08e41f3d7b76><8941c7791a83c45b2dac08e41f3d7b76>] >>
+0000000473 00000 n 
+0000000608 00000 n 
+0000000984 00000 n 
+0000001081 00000 n 
+trailer << /Info 2 0 R /Root 1 0 R /Size 9 /ID [<ce260ccf46ccf97c7928992756c762a8><ce260ccf46ccf97c7928992756c762a8>] >>
 startxref
-662
+1457
 %%EOF

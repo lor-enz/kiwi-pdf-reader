@@ -239,10 +239,13 @@
   the file name is left out. `androidx.pdf` reads no metadata, so
   `PdfMetadataReader` reads the info dictionary and the first page's size
   itself: xref tables and streams, updates, object streams, Flate with PNG
-  predictors, and a scan for objects when the offsets are wrong. Encrypted
-  strings aren't decrypted (also owner-password-only files, which open
-  without asking), so those show only pages and sizes; the viewer then takes
-  the page size from the document. The sheet appears once the file is read:
+  predictors, and a scan for objects when the offsets are wrong.
+  `PdfSecurity` decrypts the standard encryption (RC4, AES-128, AES-256).
+  Files with only a permissions password open without asking and decrypt
+  with the empty password, so they show everything. Files that need a
+  password show their title and such in the viewer, and in the recents
+  sheet only when the password is remembered (as with thumbnails);
+  otherwise only pages and sizes. The sheet appears once the file is read:
   a `ModalBottomSheet` whose content grows later keeps its old height.
   Sheets skip the half-open state (`skipPartiallyExpanded`): a recreated
   sheet (e.g. on switching to dark mode) returns to it, even after being

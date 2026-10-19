@@ -8,29 +8,31 @@ import kotlin.math.abs
  * Reads [PdfMetadata] from a PDF. Only as much of the file format as that needs: cross-reference
  * tables and streams (with updates), object streams and Flate-compressed data. If the
  * cross-reference data is broken, the file is scanned for its objects, as PDF readers do.
- * Encrypted strings aren't decrypted. Never throws for a damaged file; whatever couldn't be read
- * is left out.
+ * Encrypted files are decrypted with [password], or the empty one (see [PdfSecurity]). Never
+ * throws for a damaged file; whatever couldn't be read is left out.
  */
-class PdfMetadataReader(private val source: ByteSource) {
+class PdfMetadataReader(private val source: ByteSource, private val password: String? = null) {
     private val entries = HashMap<Int, XrefEntry>()
     private var trailer = Trailer()
     private var repaired: Repair? = null
     private val objectStreams = HashMap<Int, ObjectStream?>()
+    private var security: PdfSecurity? = null
 
     fun read(): PdfMetadata {
         loadXref()
+        setUpSecurity()
         var info = infoDictionary()
         var root = resolveDict(trailer.root)
         if (info == null && root == null) {
             // Nothing found through the cross-reference data, so it's broken.
             entries.clear()
-            objectStreams.clear()
             trailer = repair().trailer
+            setUpSecurity()
             info = infoDictionary()
             root = resolveDict(trailer.root)
         }
-        val isEncrypted = trailer.encrypt != null
-        fun text(key: String) = if (isEncrypted) null else
+        val isLocked = trailer.encrypt != null && security == null
+        fun text(key: String) = if (isLocked) null else
             (resolve(info?.get(key)) as? PdfString)?.let { decodePdfText(it.bytes).trim() }?.takeIf { it.isNotEmpty() }
 
         val pages = attempt { resolveDict(root?.get("Pages")) }
@@ -44,8 +46,20 @@ class PdfMetadataReader(private val source: ByteSource) {
             modified = text("ModDate")?.let(::parsePdfDate),
             pageCount = (resolve(pages?.get("Count")) as? Number)?.toInt()?.takeIf { it > 0 },
             pageSize = pages?.let { attempt { firstPageSize(it) } },
-            isEncrypted = isEncrypted,
+            isLocked = isLocked,
         )
+    }
+
+    /** Before anything else is read, as objects read before it would stay encrypted. */
+    private fun setUpSecurity() {
+        security = null
+        objectStreams.clear()
+        val encrypt = trailer.encrypt ?: return
+        security = attempt {
+            val dict = resolveDict(encrypt) ?: return@attempt null
+            val id = ((resolve(trailer.id) as? List<*>)?.firstOrNull()?.let(::resolve) as? PdfString)?.bytes ?: ByteArray(0)
+            PdfSecurity.open(dict, id, password) { resolve(it) }
+        }
     }
 
     private fun infoDictionary() = attempt { resolveDict(trailer.info) }
@@ -92,26 +106,27 @@ class PdfMetadataReader(private val source: ByteSource) {
         return resolve(attempt { load(value.number) }, depth + 1)
     }
 
+    /** Objects in object streams were decrypted with their stream. */
     private fun load(number: Int): Any? {
-        val entry = entries[number] ?: return repair().offsets[number]?.let { objectAt(it, number) }
-        return when (entry) {
-            is XrefEntry.InFile -> objectAt(entry.offset, number)
-                ?: repair().offsets[number]?.takeIf { it != entry.offset }?.let { objectAt(it, number) }
-            is XrefEntry.InStream -> objectStream(entry.stream)?.get(entry.index)
-        }
+        val entry = entries[number]
+        if (entry is XrefEntry.InStream) return objectStream(entry.stream)?.get(entry.index)
+        val offset = (entry as? XrefEntry.InFile)?.offset
+        val found = offset?.let { objectAt(it, number) }
+            ?: repair().offsets[number]?.takeIf { it != offset }?.let { objectAt(it, number) }
+            ?: return null
+        return security?.decryptStrings(found.value, number, found.generation) ?: found.value
     }
 
     /** The object [number] at [offset], or null if a different one is there. */
-    private fun objectAt(offset: Long, number: Int): Any? {
-        val (header, value) = indirectAt(offset) ?: return null
-        return value.takeIf { header == number }
-    }
+    private fun objectAt(offset: Long, number: Int): Indirect? = indirectAt(offset)?.takeIf { it.number == number }
+
+    private class Indirect(val number: Int, val generation: Int, val value: Any?)
 
     /**
-     * The indirect object at [offset] and its number. A stream's data isn't read yet, see
-     * [streamData]. The window grows until the object fits.
+     * The indirect object at [offset]. A stream's data isn't read yet, see [streamData]. The
+     * window grows until the object fits.
      */
-    private fun indirectAt(offset: Long): Pair<Int, Any?>? {
+    private fun indirectAt(offset: Long): Indirect? {
         var window = INITIAL_WINDOW
         while (true) {
             val bytes = source.read(offset, window)
@@ -119,16 +134,17 @@ class PdfMetadataReader(private val source: ByteSource) {
             try {
                 val lexer = Lexer(bytes, reachesEnd)
                 val number = (lexer.next() as? Long)?.toInt() ?: return null
-                lexer.next() as? Long ?: return null
+                val generation = (lexer.next() as? Long)?.toInt() ?: return null
                 if (lexer.next() != Keyword("obj")) return null
                 val value = lexer.next()
                 if (value is Map<*, *> && lexer.peekKeyword() == "stream") {
                     lexer.next()
                     lexer.skipStreamLineEnd()
                     @Suppress("UNCHECKED_CAST")
-                    return number to PdfStream(value as Map<String, Any?>, offset + lexer.pos)
+                    val stream = PdfStream(value as Map<String, Any?>, offset + lexer.pos, number, generation)
+                    return Indirect(number, generation, stream)
                 }
-                return number to value
+                return Indirect(number, generation, value)
             } catch (_: EndOfData) {
                 if (reachesEnd || window >= MAX_WINDOW) return null
                 window *= 4
@@ -140,7 +156,10 @@ class PdfMetadataReader(private val source: ByteSource) {
     private fun streamData(stream: PdfStream): ByteArray? {
         val length = (resolve(stream.dict["Length"]) as? Number)?.toLong() ?: return null
         if (length < 0 || length > MAX_DECODED) return null
-        val raw = source.read(stream.dataOffset, length.toInt())
+        val stored = source.read(stream.dataOffset, length.toInt())
+        // Cross-reference streams are never encrypted.
+        val isXref = (resolve(stream.dict["Type"]) as? PdfName)?.value == "XRef"
+        val raw = security?.takeUnless { isXref }?.decryptStream(stored, stream.number, stream.generation) ?: stored
         val filters = when (val filter = resolve(stream.dict["Filter"])) {
             null -> emptyList()
             is PdfName -> listOf(filter.value)
@@ -185,11 +204,12 @@ class PdfMetadataReader(private val source: ByteSource) {
     }
 
     /** What the trailer points to. The newest update that has a key wins. */
-    private data class Trailer(val root: Any? = null, val info: Any? = null, val encrypt: Any? = null) {
+    private data class Trailer(val root: Any? = null, val info: Any? = null, val encrypt: Any? = null, val id: Any? = null) {
         fun withOlder(dict: Map<String, Any?>) = Trailer(
             root = root ?: dict["Root"],
             info = info ?: dict["Info"],
             encrypt = encrypt ?: dict["Encrypt"],
+            id = id ?: dict["ID"],
         )
     }
 
@@ -246,7 +266,7 @@ class PdfMetadataReader(private val source: ByteSource) {
     }
 
     private fun xrefStreamAt(offset: Long): Long? {
-        val stream = indirectAt(offset)?.second as? PdfStream ?: return null
+        val stream = indirectAt(offset)?.value as? PdfStream ?: return null
         val dict = stream.dict
         if ((dict["Type"] as? PdfName)?.value != "XRef") return null
         val data = streamData(stream) ?: return null
@@ -426,7 +446,7 @@ internal data class PdfName(val value: String)
 internal class PdfString(val bytes: ByteArray)
 internal data class PdfRef(val number: Int, val generation: Int)
 internal data class Keyword(val value: String)
-internal class PdfStream(val dict: Map<String, Any?>, val dataOffset: Long)
+internal class PdfStream(val dict: Map<String, Any?>, val dataOffset: Long, val number: Int, val generation: Int)
 
 /** Ran out of bytes; a larger window may help. */
 internal class EndOfData : RuntimeException(null, null, false, false)

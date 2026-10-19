@@ -10,10 +10,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.readDocumentInfo
+import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /** The recent files list; documents open in [ViewerActivity]. */
@@ -40,8 +43,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun thumbnailFile(entry: RecentFile): File = store.thumbnailFile(entry.id)
 
-    suspend fun documentInfo(entry: RecentFile): DocumentInfo =
-        getApplication<Application>().readDocumentInfo(entry.uri.toUri())
+    /** A protected entry shows its title and such only when its password is remembered (privacy). */
+    suspend fun documentInfo(entry: RecentFile): DocumentInfo {
+        // The keystore can be slow, so not on the main thread.
+        val password = entry.encryptedPassword?.let { withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) } }
+        return getApplication<Application>().readDocumentInfo(entry.uri.toUri(), password)
+    }
 
     fun removeRecent(entry: RecentFile) {
         // One undo at a time: an earlier removal becomes final.
