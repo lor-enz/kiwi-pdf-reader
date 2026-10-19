@@ -323,6 +323,14 @@
   shortcut intents name `MainActivity` and `ViewerActivity`, so pinned ones
   break if those are renamed.
 
+- Translations: English (default, `res/resources.properties` names it for the
+  per-app language setting, `generateLocaleConfig`) and German (`values-de`).
+  German uses "du", like the English copy's tone, and "Smartphone" for phone.
+  Remembering a password is "Passwort speichern", forgetting it "Passwort
+  löschen" ("Passwort vergessen" would read as "forgot password"). Add every
+  new string to each language in the same change. Paper sizes (Letter, Legal)
+  and the licenses text stay untranslated.
+
 # Planned changes
 
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.

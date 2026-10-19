@@ -53,6 +53,10 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        // Lists the translations for the system's per-app language setting
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {
