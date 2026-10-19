@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
@@ -72,6 +73,27 @@ internal fun PasswordPrompt(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Lock(Modifier.testTag(TestTags.PASSWORD_LOCK))
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Decorative: the name says which document it is.
+            Icon(
+                painter = painterResource(R.drawable.pdf_box),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = state.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .testTag(TestTags.PASSWORD_FILE_NAME),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.password_title),
             style = MaterialTheme.typography.bodyLarge,

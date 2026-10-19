@@ -213,7 +213,7 @@
 - [x] Error screen: icon, title, sentence, action; rethink the texts. A
   file that failed only for now (kept in the list) should say "try again",
   not "damaged, download it again"
-- [ ] Password screen: less basic, still simple (lock icon, file name)
+- [x] Password screen: less basic, still simple (lock icon, file name)
 - [ ] Short unlock animation after the password is accepted (under 0.5 s,
   even if opening is faster); none when the password is remembered
 

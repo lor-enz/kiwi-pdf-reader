@@ -40,6 +40,8 @@ object TestTags {
     const val NEXT_MATCH = "next_match"
     const val NO_TEXT_TO_SEARCH = "no_text_to_search"
 
+    const val PASSWORD_LOCK = "password_lock"
+    const val PASSWORD_FILE_NAME = "password_file_name"
     const val PASSWORD_FIELD = "password_field"
     const val REMEMBER_PASSWORD = "remember_password"
     const val SUBMIT_PASSWORD = "submit_password"
