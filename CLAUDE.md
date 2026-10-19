@@ -31,6 +31,9 @@
   `./gradlew installDebug`, which installs on every connected device.
   - `make-test-pdfs.py` writes test files to `build/test-pdfs/` (the
     protected ones use password `kiwi`).
+  - `make-metadata-fixtures.py` writes the committed PDFs for
+    `PdfMetadataReaderTest` (`src/test/resources/metadata/`), one per way a
+    PDF can store its metadata. Run it again after changing it.
   - `prepare-device.sh` turns animations off, which keeps screenshots
     stable. Run it before testing; an emulator booted from an older
     snapshot has them on again.
