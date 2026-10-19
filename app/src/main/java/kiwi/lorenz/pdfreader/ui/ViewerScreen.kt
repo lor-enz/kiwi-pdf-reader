@@ -1,9 +1,16 @@
 package kiwi.lorenz.pdfreader.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +69,7 @@ interface ViewerActions {
     fun openAnother()
     fun retry()
     fun submitPassword(password: String, remember: Boolean)
+    fun unlockFinished()
     fun pageRestored()
     fun pageChanged(page: Int)
     fun formEdited(edit: FormEditInfo)
@@ -156,47 +164,62 @@ fun ViewerScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        when (documentState) {
-            is DocumentState.Loaded -> DocumentView(
-                documentState = documentState,
-                searchState = searchState,
-                pendingRestorePage = pendingRestorePage,
-                onPageRestored = actions::pageRestored,
-                onPageChanged = actions::pageChanged,
-                contentPadding = contentPadding,
-                onBarHiddenChange = { isBarHiddenByScroll = it },
-                onFormEdit = actions::formEdited,
-                onLinkFailed = {
-                    scope.launch {
-                        snackbarHostState.currentSnackbarData?.dismiss()
-                        snackbarHostState.showSnackbar(linkFailedMessage)
-                    }
-                },
-            )
+        AnimatedContent(
+            targetState = documentState,
+            contentKey = { it::class },
+            transitionSpec = {
+                // The unlocked document fades in as the opened lock fades out; all else switches at once.
+                if (initialState is DocumentState.NeedsPassword && targetState is DocumentState.Loaded) {
+                    fadeIn(tween(LockMotion.REVEAL_MS)) togetherWith fadeOut(tween(LockMotion.REVEAL_MS))
+                } else {
+                    EnterTransition.None togetherWith ExitTransition.None
+                }
+            },
+            label = "document",
+        ) { state ->
+            when (state) {
+                is DocumentState.Loaded -> DocumentView(
+                    documentState = state,
+                    searchState = searchState,
+                    pendingRestorePage = pendingRestorePage,
+                    onPageRestored = actions::pageRestored,
+                    onPageChanged = actions::pageChanged,
+                    contentPadding = contentPadding,
+                    onBarHiddenChange = { isBarHiddenByScroll = it },
+                    onFormEdit = actions::formEdited,
+                    onLinkFailed = {
+                        scope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(linkFailedMessage)
+                        }
+                    },
+                )
 
-            is DocumentState.NeedsPassword -> PasswordPrompt(
-                state = documentState,
-                onSubmit = actions::submitPassword,
-                // The keyboard inset includes the navigation bar, which is already padded.
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .consumeWindowInsets(contentPadding),
-            )
+                is DocumentState.NeedsPassword -> PasswordPrompt(
+                    state = state,
+                    onSubmit = actions::submitPassword,
+                    onUnlocked = actions::unlockFinished,
+                    // The keyboard inset includes the navigation bar, which is already padded.
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .consumeWindowInsets(contentPadding),
+                )
 
-            is DocumentState.Failed -> FailureMessage(
-                reason = documentState.reason,
-                onOpenAnother = actions::openAnother,
-                onRetry = actions::retry,
-                modifier = Modifier.padding(contentPadding),
-            )
+                is DocumentState.Failed -> FailureMessage(
+                    reason = state.reason,
+                    onOpenAnother = actions::openAnother,
+                    onRetry = actions::retry,
+                    modifier = Modifier.padding(contentPadding),
+                )
 
-            DocumentState.Loading, DocumentState.Empty -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
+                DocumentState.Loading, DocumentState.Empty -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
 

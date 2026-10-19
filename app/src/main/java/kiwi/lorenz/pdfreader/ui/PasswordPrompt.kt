@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader.ui
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +57,7 @@ import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 internal fun PasswordPrompt(
     state: DocumentState.NeedsPassword,
     onSubmit: (password: String, remember: Boolean) -> Unit,
+    onUnlocked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
@@ -61,8 +65,27 @@ internal fun PasswordPrompt(
     var isPasswordShown by rememberSaveable { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    val canSubmit = password.isNotEmpty() && !state.isChecking
+    val isUnlocking = state.unlocked != null
+    val canSubmit = password.isNotEmpty() && !state.isChecking && !isUnlocking
     val submit = { if (canSubmit) onSubmit(password, rememberPassword) }
+
+    val lock = rememberLockState()
+    LaunchedEffect(isUnlocking) {
+        if (isUnlocking) {
+            lock.unlock()
+            onUnlocked()
+        }
+    }
+    // Shakes for each wrong password, not again when the screen is recreated.
+    val view = LocalView.current
+    var shakenFor by rememberSaveable { mutableIntStateOf(state.wrongAttempts) }
+    LaunchedEffect(state.wrongAttempts) {
+        if (state.wrongAttempts > shakenFor) {
+            shakenFor = state.wrongAttempts
+            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            lock.shake()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -73,7 +96,7 @@ internal fun PasswordPrompt(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Lock(Modifier.testTag(TestTags.PASSWORD_LOCK))
+        Lock(lock, Modifier.testTag(TestTags.PASSWORD_LOCK))
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Decorative: the name says which document it is.
@@ -105,9 +128,10 @@ internal fun PasswordPrompt(
             onValueChange = { password = it },
             label = { Text(stringResource(R.string.password)) },
             singleLine = true,
-            isError = state.isWrongPassword,
+            isError = state.isWrongPassword && !isUnlocking,
+            // While the lock opens, the message's line stays empty, so the layout doesn't jump.
             supportingText = if (state.isWrongPassword) {
-                { Text(stringResource(R.string.wrong_password)) }
+                { Text(if (isUnlocking) "" else stringResource(R.string.wrong_password)) }
             } else {
                 null
             },
@@ -146,7 +170,8 @@ internal fun PasswordPrompt(
         Spacer(Modifier.height(16.dp))
         PrimaryButton(
             onClick = submit,
-            enabled = canSubmit,
+            // Stays as it is while the lock opens, instead of flashing disabled.
+            enabled = canSubmit || isUnlocking,
             modifier = Modifier.testTag(TestTags.SUBMIT_PASSWORD),
         ) {
             if (state.isChecking) {

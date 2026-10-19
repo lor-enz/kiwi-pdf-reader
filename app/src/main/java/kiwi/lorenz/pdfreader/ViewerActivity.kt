@@ -42,6 +42,7 @@ open class ViewerActivity : ComponentActivity() {
         override fun openAnother() = pickPdf.launch(arrayOf(PDF_MIME_TYPE))
         override fun retry() = viewModel.retry()
         override fun submitPassword(password: String, remember: Boolean) = viewModel.submitPassword(password, remember)
+        override fun unlockFinished() = viewModel.unlockFinished()
         override fun pageRestored() = viewModel.onPageRestored()
         override fun pageChanged(page: Int) = viewModel.onPageChanged(page)
         override fun formEdited(edit: FormEditInfo) = viewModel.applyFormEdit(edit)

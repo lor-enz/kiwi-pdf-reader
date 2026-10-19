@@ -11,12 +11,18 @@ sealed interface DocumentState {
         /** Opened with a password; other apps can't read the file on their own. */
         val isProtected: Boolean,
     ) : DocumentState
-    /** [isWrongPassword] is true after the user entered a password that didn't work. */
+    /**
+     * [wrongAttempts] counts the passwords the user entered that didn't work. Once the right one
+     * opened the document, the prompt stays until its lock has opened, then [unlocked] shows.
+     */
     data class NeedsPassword(
         val name: String,
-        val isWrongPassword: Boolean,
+        val wrongAttempts: Int = 0,
         val isChecking: Boolean = false,
-    ) : DocumentState
+        val unlocked: Loaded? = null,
+    ) : DocumentState {
+        val isWrongPassword get() = wrongAttempts > 0
+    }
     data class Failed(val reason: FailureReason) : DocumentState
 }
 

@@ -132,12 +132,25 @@ class ViewerViewModel(
     fun submitPassword(password: String, remember: Boolean) {
         val target = passwordTarget ?: return
         val prompt = documentState as? DocumentState.NeedsPassword ?: return
+        if (prompt.unlocked != null) return
         loadJob?.cancel()
         // Keep the prompt on screen while checking, so typed text and checkbox survive.
         documentState = prompt.copy(isChecking = true)
         loadJob = viewModelScope.launch {
-            documentState = open(target, password, remember, isTypedByUser = true)
+            val state = open(target, password, remember, isTypedByUser = true)
+            // The document shows once the prompt's lock has opened, see unlockFinished.
+            documentState = when (state) {
+                is DocumentState.Loaded -> prompt.copy(unlocked = state)
+                is DocumentState.NeedsPassword -> prompt.copy(wrongAttempts = prompt.wrongAttempts + 1)
+                else -> state
+            }
         }
+    }
+
+    /** The prompt's lock has opened: the document it held back shows. */
+    fun unlockFinished() {
+        val prompt = documentState as? DocumentState.NeedsPassword
+        documentState = prompt?.unlocked ?: return
     }
 
     // The open document
@@ -296,7 +309,7 @@ class ViewerViewModel(
             // A remembered password that stopped working is forgotten; the user is asked instead.
             if (!isTypedByUser && password != null && entry != null) store.setPassword(entry.id, null)
             passwordTarget = target
-            DocumentState.NeedsPassword(target.name, isWrongPassword = isTypedByUser)
+            DocumentState.NeedsPassword(target.name)
         } catch (_: Exception) {
             val openedBefore = entry != null && entry.pageCount > 0
             val reason = withContext(Dispatchers.IO) {

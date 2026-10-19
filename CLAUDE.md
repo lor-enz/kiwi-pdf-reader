@@ -130,6 +130,16 @@
   top bar stays calm as tools are added. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
+- The password screen's padlock (`ui/Lock.kt`) is drawn in Compose, like
+  Material's lock icon, so its shackle can move: once the password is
+  right it lifts until the short leg is free and swings half a turn around
+  the long one, which stays in the body (seen from the front, the shackle
+  narrows and widens again on the other side; the open lock isn't
+  centered). It shakes (with the system's reject vibration) when the
+  password is wrong. All timings are in `LockMotion`. The view
+  model holds the opened document back (`NeedsPassword.unlocked`) until the
+  lock has opened, then it fades in. The password is only known to be right
+  once the document opened, so the animation can't start any earlier.
 - Print renders password-protected documents as images, as the print
   system can't open them.
 - Shared copies are deleted after a day, not right away, because
@@ -214,8 +224,8 @@
   file that failed only for now (kept in the list) should say "try again",
   not "damaged, download it again"
 - [x] Password screen: less basic, still simple (lock icon, file name)
-- [ ] Short unlock animation after the password is accepted (under 0.5 s,
-  even if opening is faster); none when the password is remembered
+- [x] Short unlock animation after the password is accepted (under 0.5 s,
+  even if opening is faster)
 
 ### Milestone 10: presentation mode
 - [ ] Fullscreen (hide system bars) first
