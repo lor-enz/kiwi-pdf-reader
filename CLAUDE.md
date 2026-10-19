@@ -129,6 +129,13 @@
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).
+- Home has no top bar, so scrolling shows only the list (a strip in the
+  background color covers the status bar). The settings cog sits in the
+  top right corner, just below the status bar, and scrolls away with the
+  header. Its icon is 24 dp from the right edge, like the sheets' content
+  (their icons, the heading and the action labels); 16 dp hugged the edge,
+  and a gap as large as the status bar looked odd on phones with a tall one
+  (Pixel).
 - Settings (cog on Home, `SettingsActivity`) has no preferences so far,
   only what the app stores and information: forget all passwords, clear
   recent files (both confirmed by a dialog, as there's no undo; open
