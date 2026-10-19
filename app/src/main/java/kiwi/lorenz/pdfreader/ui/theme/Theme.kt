@@ -13,53 +13,57 @@ import androidx.compose.ui.graphics.Color
 // containers (sheets, dialogs, menus), inverse colors (snackbars). Outline is for field borders,
 // outlineVariant for decorative ones (cards).
 private val LightColorScheme = lightColorScheme(
-    primary = KiwiGreen,
+    primary = OceanBlue,
     onPrimary = OffWhite,
-    primaryContainer = LightGreen,
-    onPrimaryContainer = DarkGreen,
-    secondary = KiwiBrown,
+    primaryContainer = IceBlue,
+    onPrimaryContainer = DeepBlue,
+    secondary = OceanBlue,
     onSecondary = OffWhite,
-    secondaryContainer = LightBrown,
-    onSecondaryContainer = DarkBrown,
+    secondaryContainer = IceBlue,
+    onSecondaryContainer = DeepBlue,
+    error = ErrorOrange,
+    onError = NightBackground,
     background = OffWhite,
     onBackground = Charcoal,
     surface = OffWhite,
     onSurface = Charcoal,
-    surfaceVariant = LightGreen,
-    onSurfaceVariant = OliveGrey,
+    surfaceVariant = IceBlue,
+    onSurfaceVariant = SlateGrey,
     outline = FieldBorder,
     outlineVariant = Gallery,
     inverseSurface = NightBackground,
     inverseOnSurface = NightText,
-    inversePrimary = KiwiGreen,
+    inversePrimary = PenguinBlue,
     surfaceContainerLowest = Color.White,
     surfaceContainerLow = OffWhite,
-    surfaceContainer = LightGreen,
-    surfaceContainerHigh = LightGreen,
-    surfaceContainerHighest = LightGreen,
+    surfaceContainer = IceBlue,
+    surfaceContainerHigh = IceBlue,
+    surfaceContainerHighest = IceBlue,
 )
 
-// The same green as in light mode for text and accents; filled buttons use Dark Green instead.
+// Penguin Blue for text and accents; filled buttons use Deep Blue instead.
 private val DarkColorScheme = darkColorScheme(
-    primary = KiwiGreen,
-    onPrimary = OffWhite,
-    primaryContainer = DarkGreen,
-    onPrimaryContainer = LightGreen,
-    secondary = KiwiBrown,
+    primary = PenguinBlue,
+    onPrimary = NightBackground,
+    primaryContainer = DeepBlue,
+    onPrimaryContainer = IceBlue,
+    secondary = PenguinBlue,
     onSecondary = NightBackground,
-    secondaryContainer = DarkBrown,
-    onSecondaryContainer = LightBrown,
+    secondaryContainer = DeepBlue,
+    onSecondaryContainer = IceBlue,
+    error = ErrorOrange,
+    onError = NightBackground,
     background = NightBackground,
     onBackground = NightText,
     surface = NightSurface,
     onSurface = NightText,
     surfaceVariant = NightContainer,
-    onSurfaceVariant = NightOliveGrey,
+    onSurfaceVariant = NightSlateGrey,
     outline = FieldBorder,
     outlineVariant = NightBorder,
     inverseSurface = NightText,
     inverseOnSurface = Charcoal,
-    inversePrimary = DarkGreen,
+    inversePrimary = OceanBlue,
     // Bottom sheets (surfaceContainerLow) sit darker than the background.
     surfaceContainerLowest = NightSheet,
     surfaceContainerLow = NightSheet,
@@ -69,14 +73,14 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 /**
- * The fill of filled buttons (see [PrimaryButton]). Dark Green in dark mode: a green bright
- * enough for text on the dark background glares as a filled area.
+ * The fill of filled buttons (see [PrimaryButton]). Deep Blue in dark mode: a blue bright enough
+ * for text on the dark background glares as a filled area.
  */
-internal val LocalButtonColor = staticCompositionLocalOf { KiwiGreen }
+internal val LocalButtonColor = staticCompositionLocalOf { OceanBlue }
 
-// No dynamic (wallpaper) colors on purpose: the app is always green.
+// No dynamic (wallpaper) colors on purpose: the app is always blue.
 @Composable
-fun KiwiPDFReaderTheme(
+fun PdfPenguinTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
@@ -85,6 +89,6 @@ fun KiwiPDFReaderTheme(
         typography = Typography,
         shapes = Shapes,
     ) {
-        CompositionLocalProvider(LocalButtonColor provides if (darkTheme) DarkGreen else KiwiGreen, content = content)
+        CompositionLocalProvider(LocalButtonColor provides if (darkTheme) DeepBlue else OceanBlue, content = content)
     }
 }

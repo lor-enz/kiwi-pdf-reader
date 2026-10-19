@@ -2,28 +2,29 @@ package kiwi.lorenz.pdfreader.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// See brand-identity.txt
-val KiwiGreen = Color(0xFF889542)
-val KiwiBrown = Color(0xFFC2784D)
+// Penguin Blue is the app icon's background and the accent in dark mode. Too light for text on a
+// light background (2.6:1), so light mode uses Ocean Blue, the same hue darker (5:1).
+val PenguinBlue = Color(0xFF00A6FB)
+val OceanBlue = Color(0xFF0070AA)
+val DeepBlue = Color(0xFF00507A)
+val IceBlue = Color(0xFFE1F2FC)
+
+// Errors (a wrong password): orange instead of Material's red, the same in both themes. Only 3:1
+// for text on the light background, accepted on purpose: a darker orange looked too dark.
+val ErrorOrange = Color(0xFFF46036)
+
 val Charcoal = Color(0xFF333333)
-val OffWhite = Color(0xFFFAFBF6)
+val OffWhite = Color(0xFFF8FAFC)
 val Gallery = Color(0xFFEFEFEF)
 
-val LightGreen = Color(0xFFF0F2E0)
-val DarkGreen = Color(0xFF5A6328)
-val LightBrown = Color(0xFFF7EDE5)
-val DarkBrown = Color(0xFF8A4E2A)
+val NightBackground = Color(0xFF14181C)
+val NightSurface = Color(0xFF1C2126)
+val NightContainer = Color(0xFF262D33)
+val NightText = Color(0xFFE2E8ED)
+val NightSheet = Color(0xFF0E1114)
 
-// Not part of the brand guide yet: a dark theme derived from it
-val NightBackground = Color(0xFF1B1D16)
-val NightSurface = Color(0xFF24271D)
-val NightContainer = Color(0xFF2E3225)
-val NightText = Color(0xFFE6E8DC)
-val NightSheet = Color(0xFF131510)
-
-// Not part of the brand guide yet: secondary text and borders that need contrast (at least
-// 4.5:1 for text, 3:1 for field borders)
-val OliveGrey = Color(0xFF5E6352)
-val NightOliveGrey = Color(0xFFB8BBAD)
-val NightBorder = Color(0xFF3A3E30)
-val FieldBorder = Color(0xFF8C9180)
+// Secondary text and borders that need contrast (at least 4.5:1 for text, 3:1 for field borders)
+val SlateGrey = Color(0xFF56616B)
+val NightSlateGrey = Color(0xFFAEB8C1)
+val NightBorder = Color(0xFF333B42)
+val FieldBorder = Color(0xFF87929C)

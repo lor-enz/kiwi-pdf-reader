@@ -69,7 +69,7 @@ private fun viewIntent(uri: Uri) = Intent(Intent.ACTION_VIEW)
     .setDataAndType(uri, PDF_MIME_TYPE)
     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-private fun Context.defaultCheckFile() = File(File(cacheDir, DEFAULT_CHECK_DIR), "Kiwi PDF Reader.pdf")
+private fun Context.defaultCheckFile() = File(File(cacheDir, DEFAULT_CHECK_DIR), "PDF Penguin.pdf")
 
 private fun Context.defaultCheckUri() = FileProvider.getUriForFile(this, "$packageName.files", defaultCheckFile())
 
@@ -83,7 +83,7 @@ private fun writeDefaultCheckPdf(file: File) {
         textSize = 28f
         textAlign = Paint.Align.CENTER
     }
-    page.canvas.drawText("Kiwi PDF Reader", 595 / 2f, 842 / 2f, paint)
+    page.canvas.drawText("PDF Penguin", 595 / 2f, 842 / 2f, paint)
     document.finishPage(page)
     file.outputStream().use(document::writeTo)
     document.close()

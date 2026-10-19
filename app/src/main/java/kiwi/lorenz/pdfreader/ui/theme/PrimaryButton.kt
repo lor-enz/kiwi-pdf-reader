@@ -7,7 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
-/** The app's filled button: the brand's primary button, calmer in dark mode (see [LocalButtonColor]). */
+/** The app's filled button, calmer in dark mode (see [LocalButtonColor]). */
 @Composable
 fun PrimaryButton(
     onClick: () -> Unit,

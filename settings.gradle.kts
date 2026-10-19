@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Kiwi PDF Reader"
+rootProject.name = "PDF Penguin"
 include(":app")
  

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- See brand-identity.txt; the Compose theme lives in ui/theme/Color.kt -->
-    <color name="kiwi_background">#FFFAFBF6</color>
-    <color name="kiwi_night_background">#FF1B1D16</color>
-    <color name="kiwi_dark_green">#FF5A6328</color>
-    <color name="kiwi_off_white">#FFFAFBF6</color>
-    <color name="kiwi_green">#FF889542</color>
-    <color name="kiwi_light_green">#FFF0F2E0</color>
-    <color name="kiwi_charcoal">#FF333333</color>
-    <color name="kiwi_night_container">#FF2E3225</color>
-    <color name="kiwi_night_text">#FFE6E8DC</color>
+    <!-- The Compose theme lives in ui/theme/Color.kt -->
+    <color name="penguin_blue">#FF00A6FB</color>
+    <color name="ocean_blue">#FF0070AA</color>
+    <color name="deep_blue">#FF00507A</color>
+    <color name="ice_blue">#FFE1F2FC</color>
+    <color name="off_white">#FFF8FAFC</color>
+    <color name="charcoal">#FF333333</color>
+    <color name="night_background">#FF14181C</color>
+    <color name="night_container">#FF262D33</color>
+    <color name="night_text">#FFE2E8ED</color>
 </resources>

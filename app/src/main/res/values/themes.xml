@@ -6,27 +6,27 @@
       choices of a form's drop-down field), which crash without it. Compose screens use their own
       theme (ui/theme), so this only styles what the viewer draws itself.
     -->
-    <style name="Theme.KiwiPDFReader" parent="Theme.Material3.Light.NoActionBar">
-        <item name="android:windowBackground">@color/kiwi_background</item>
+    <style name="Theme.PdfPenguin" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">@color/off_white</item>
         <!--
           The PDF viewer's fast scroller (page number pill and scroll thumb) reads
           these Material attributes. Without them the page number is black on a
           transparent background and invisible on dark pages.
         -->
-        <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
-        <item name="colorOnSurface">@color/kiwi_off_white</item>
-        <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
-        <item name="colorPrimary">@color/kiwi_green</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.KiwiPDFReader.Dialog</item>
+        <item name="colorSurfaceContainerHigh">@color/deep_blue</item>
+        <item name="colorOnSurface">@color/off_white</item>
+        <item name="colorOnSurfaceVariant">@color/off_white</item>
+        <item name="colorPrimary">@color/ocean_blue</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.PdfPenguin.Dialog</item>
     </style>
 
     <!-- The viewer's own dialogs, colored like the app's Compose dialogs. -->
-    <style name="ThemeOverlay.KiwiPDFReader.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/kiwi_green</item>
-        <item name="colorOnPrimary">@color/kiwi_off_white</item>
-        <item name="colorSurface">@color/kiwi_background</item>
-        <item name="colorSurfaceContainerHigh">@color/kiwi_light_green</item>
-        <item name="colorOnSurface">@color/kiwi_charcoal</item>
-        <item name="colorOnSurfaceVariant">@color/kiwi_charcoal</item>
+    <style name="ThemeOverlay.PdfPenguin.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/ocean_blue</item>
+        <item name="colorOnPrimary">@color/off_white</item>
+        <item name="colorSurface">@color/off_white</item>
+        <item name="colorSurfaceContainerHigh">@color/ice_blue</item>
+        <item name="colorOnSurface">@color/charcoal</item>
+        <item name="colorOnSurfaceVariant">@color/charcoal</item>
     </style>
 </resources>

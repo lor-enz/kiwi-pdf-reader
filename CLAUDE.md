@@ -87,6 +87,11 @@
 # Project notes
 
 - Keep the app free of Google Play Services (open source, F-Droid).
+- The app was called Kiwi PDF Reader until that name turned out to be
+  taken. The package and `applicationId` stay `kiwi.lorenz.pdfreader`
+  (the developer's domain; users don't see it, and changing it would need
+  a new Play listing), as do the GitHub repo URLs and the test data's
+  `kiwi`.
 - `androidx.pdf` is beta, and the Compose `PdfViewer` is still
   `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.
@@ -120,9 +125,15 @@
   root (same setup as the user's other apps). The upload key lives outside
   the repo. Without the file, release builds are unsigned (F-Droid signs
   them itself).
-- Colors (`ui/theme`): both themes use Kiwi Green for text and accents.
-  In dark mode filled buttons are Dark Green instead (`PrimaryButton`), as
-  a green bright enough for text glares as a filled area. Every color role
+- Colors (`ui/theme`): Penguin Blue (`#00A6FB`) is the icon's background
+  and the accent in dark mode. It's too light for text on a light
+  background (2.6:1), so light mode uses Ocean Blue, the same hue darker.
+  Filled buttons are Ocean Blue, in dark mode Deep Blue, as a blue bright
+  enough for text glares as a filled area. The greys and dark backgrounds
+  are tinted blue to match. The secondary roles reuse the blues. Errors
+  (a wrong password) are orange instead of Material's red, `#F46036` in
+  both themes. On the light background its text is only 3:1, accepted on
+  purpose: a darker orange (`#B8462A`, 5:1) looked too dark. Every color role
   a component may use is set, or it falls back to Material's lavender
   (snackbars use the inverse colors). `outline` is for field borders (3:1),
   `outlineVariant` for cards. In dark mode bottom sheets are darker than the
@@ -283,7 +294,7 @@
   dragged up, and the info sheet is meant to be read in full anyway. Page
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
-- Home shows a quiet hint below "Open PDF" while Kiwi isn't the default PDF
+- Home shows a quiet hint below "Open PDF" while the app isn't the default PDF
   app (`DefaultPdfApp.kt`, checked on every resume). It can't be dismissed:
   without being the default the app is barely used. Android has no role for
   PDFs, so an app can't ask to become the default: only "Always" in the
@@ -291,7 +302,7 @@
   default" page clears it ("Clear default preferences", below the web
   links). With no default, "Make default" opens a small PDF of the app's own
   (`cache/default-check/`), so that dialog appears; the viewer closes as soon
-  as it gets that file, and Home confirms in a snackbar once Kiwi is the
+  as it gets that file, and Home confirms in a snackbar once the app is the
   default. With another app as default, the hint says so without naming it,
   and "Clear other default" opens that app's "Open by default" page; back on
   Home the hint offers "Make default". The hint is a Material banner (tonal
@@ -307,7 +318,7 @@
   They follow the store's list once it's loaded (`loadedEntries`; the empty
   list before that would wipe them). A shortcut pinned to the home screen
   is disabled once its entry leaves the list (also during Undo) and enabled
-  again if it comes back. Icons show the thumbnail on Kiwi Green, or the PDF
+  again if it comes back. Icons show the thumbnail on Penguin Blue, or the PDF
   symbol when there's none (protected without remembered password). The
   shortcut intents name `MainActivity` and `ViewerActivity`, so pinned ones
   break if those are renamed.
@@ -321,3 +332,4 @@
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
   side panel (`androidx.pdf` can't read a PDF's outline, so no table of
   contents)
+- Change Document Info so unfilled field still show up with a grey "no info" or similar indicator that it's not filled.

@@ -74,7 +74,7 @@ class LauncherShortcuts(private val context: Context, private val store: RecentF
     }
 
     /**
-     * The first page on Kiwi Green, inside the area every launcher's mask leaves visible. Protected
+     * The first page on Penguin Blue, inside the area every launcher's mask leaves visible. Protected
      * documents only have a thumbnail while their password is remembered; others, and documents
      * that haven't opened yet, get the PDF symbol.
      */
@@ -83,7 +83,7 @@ class LauncherShortcuts(private val context: Context, private val store: RecentF
         val size = (ADAPTIVE_ICON_DP * density).roundToInt()
         val bitmap = createBitmap(size, size)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(ContextCompat.getColor(context, R.color.kiwi_green))
+        canvas.drawColor(ContextCompat.getColor(context, R.color.ic_launcher_background))
 
         val thumbnail = if (entry.hasThumbnail) {
             BitmapFactory.decodeFile(store.thumbnailFile(entry.id).path)

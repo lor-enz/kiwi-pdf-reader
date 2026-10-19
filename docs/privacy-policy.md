@@ -1,17 +1,17 @@
 ---
-title: Kiwi PDF Reader – Privacy Policy
+title: PDF Penguin – Privacy Policy
 ---
 
 # Privacy Policy
 
-**Kiwi PDF Reader** · Last updated: October 19, 2026
+**PDF Penguin** · Last updated: October 19, 2026
 
-Kiwi PDF Reader is made by Lorenz Burghardt. This policy explains what the
+PDF Penguin is made by Lorenz Burghardt. This policy explains what the
 app does with your data. The short version: **nothing leaves your device.**
 
 ## No data collection
 
-Kiwi PDF Reader does not collect, send or share any personal data.
+PDF Penguin does not collect, send or share any personal data.
 
 - The app has no internet access. It does not request the Android internet
   permission, so it cannot send anything anywhere.

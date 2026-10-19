@@ -53,9 +53,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
-// pale tints of the brand green / brown that keep the text underneath readable.
-private const val MATCH_COLOR = 0xFFDCE3A6.toInt()
-private const val CURRENT_MATCH_COLOR = 0xFFF2B48C.toInt()
+// a pale tint of Penguin Blue, and the emperor penguin's yellow-orange for the current match, that
+// keep the text underneath readable.
+private const val MATCH_COLOR = 0xFFBFE6FE.toInt()
+private const val CURRENT_MATCH_COLOR = 0xFFFFCF7A.toInt()
 
 private const val PAGE_SAVE_DELAY_MS = 500L
 

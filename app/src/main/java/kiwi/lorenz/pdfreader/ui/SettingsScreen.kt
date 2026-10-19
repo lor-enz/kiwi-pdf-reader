@@ -45,7 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
-import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
+import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 import kotlinx.coroutines.launch
 
 /** What the app keeps on the phone, and where to learn more about it. No preferences (yet). */
@@ -279,7 +279,7 @@ private const val DISABLED_ALPHA = 0.38f
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenPreview() {
-    KiwiPDFReaderTheme {
+    PdfPenguinTheme {
         SettingsScreen(
             recentFiles = listOf(
                 RecentFile("1", "", "a.pdf", true, sizeBytes = 2_400_000, lastOpenedMillis = 0, encryptedPassword = "x"),

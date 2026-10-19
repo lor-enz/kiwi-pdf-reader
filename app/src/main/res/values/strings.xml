@@ -1,13 +1,13 @@
 <resources>
-    <string name="app_name">Kiwi PDF Reader</string>
+    <string name="app_name">PDF Penguin</string>
 
-    <string name="home_tagline">Just use the green one.</string>
+    <string name="home_tagline">Just use the blue one.</string>
     <string name="open_pdf">Open PDF</string>
-    <string name="not_default_pdf_app">Kiwi PDF Reader isn\'t your default PDF app.</string>
+    <string name="not_default_pdf_app">PDF Penguin isn\'t your default PDF app.</string>
     <string name="make_default">Make default</string>
     <string name="other_default_pdf_app">A different app is set as the default PDF app.</string>
     <string name="clear_other_default">Clear other default</string>
-    <string name="now_default_pdf_app">PDFs now open in Kiwi PDF Reader.</string>
+    <string name="now_default_pdf_app">PDFs now open in PDF Penguin.</string>
     <string name="recent_files">Recent</string>
     <string name="just_now">Just now</string>
     <string name="page_of">Page %1$d of %2$d</string>
@@ -48,9 +48,9 @@
     <string name="report_problem">Report a problem</string>
     <string name="report_problem_summary">On GitHub</string>
     <string name="privacy_policy">Privacy policy</string>
-    <string name="privacy_policy_summary">Kiwi PDF Reader collects nothing. Your documents stay on your phone.</string>
+    <string name="privacy_policy_summary">PDF Penguin collects nothing. Your documents stay on your phone.</string>
     <string name="licenses">Open source licenses</string>
-    <string name="licenses_intro">Kiwi PDF Reader is built with these open source components, all under the Apache License 2.0:</string>
+    <string name="licenses_intro">PDF Penguin is built with these open source components, all under the Apache License 2.0:</string>
 
     <string name="back">Back</string>
     <string name="more_options">More options</string>
@@ -105,7 +105,7 @@
     <string name="error_not_pdf_title">This file isn\'t a PDF</string>
     <string name="error_not_pdf">Try opening it with another app.</string>
     <string name="error_no_permission_title">Can\'t access this file</string>
-    <string name="error_no_permission">The app it came from didn\'t share it in a way Kiwi PDF Reader can read. Save it to your phone first, then open it from there.</string>
+    <string name="error_no_permission">The app it came from didn\'t share it in a way PDF Penguin can read. Save it to your phone first, then open it from there.</string>
     <string name="error_unavailable_title">This PDF is no longer available</string>
     <string name="error_unavailable">It may have been moved or deleted.</string>
     <string name="error_temporary_title">Couldn\'t open this PDF</string>

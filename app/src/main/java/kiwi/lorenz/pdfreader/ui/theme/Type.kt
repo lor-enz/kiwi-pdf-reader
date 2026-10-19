@@ -9,8 +9,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Text styles from brand-identity.txt, in the system font. Letter spacing in the guide is given
-// in em; it is converted to sp for each size here.
+// Text styles in the system font. Letter spacing was specified in em; it is converted to sp for
+// each size here.
 val Typography = Typography(
     // Display: app name, hero text
     displaySmall = TextStyle(

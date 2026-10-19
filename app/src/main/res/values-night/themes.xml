@@ -2,21 +2,21 @@
 <resources>
 
     <!-- See values/themes.xml -->
-    <style name="Theme.KiwiPDFReader" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:windowBackground">@color/kiwi_night_background</item>
-        <item name="colorSurfaceContainerHigh">@color/kiwi_dark_green</item>
-        <item name="colorOnSurface">@color/kiwi_off_white</item>
-        <item name="colorOnSurfaceVariant">@color/kiwi_off_white</item>
-        <item name="colorPrimary">@color/kiwi_green</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.KiwiPDFReader.Dialog</item>
+    <style name="Theme.PdfPenguin" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/night_background</item>
+        <item name="colorSurfaceContainerHigh">@color/deep_blue</item>
+        <item name="colorOnSurface">@color/off_white</item>
+        <item name="colorOnSurfaceVariant">@color/off_white</item>
+        <item name="colorPrimary">@color/penguin_blue</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.PdfPenguin.Dialog</item>
     </style>
 
-    <style name="ThemeOverlay.KiwiPDFReader.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/kiwi_green</item>
-        <item name="colorOnPrimary">@color/kiwi_off_white</item>
-        <item name="colorSurface">@color/kiwi_night_background</item>
-        <item name="colorSurfaceContainerHigh">@color/kiwi_night_container</item>
-        <item name="colorOnSurface">@color/kiwi_night_text</item>
-        <item name="colorOnSurfaceVariant">@color/kiwi_night_text</item>
+    <style name="ThemeOverlay.PdfPenguin.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/penguin_blue</item>
+        <item name="colorOnPrimary">@color/night_background</item>
+        <item name="colorSurface">@color/night_background</item>
+        <item name="colorSurfaceContainerHigh">@color/night_container</item>
+        <item name="colorOnSurface">@color/night_text</item>
+        <item name="colorOnSurfaceVariant">@color/night_text</item>
     </style>
 </resources>

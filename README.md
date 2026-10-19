@@ -1,25 +1,25 @@
-# Kiwi PDF Reader
-A simple, clean, ad-free PDF reader for Android. Built for the people in your life who somehow end up with five PDF apps installed. Install this for them and tell them "Just use the green one!"
+# PDF Penguin
+A simple, clean, ad-free PDF reader for Android. Built for the people in your life who somehow end up with five PDF apps installed. Install this for them and tell them "Just use the blue one!"
 
 ## Why?
 There are already thousands of PDF reader apps.
 
 They all open PDFs. Most work fine. They're all red.
 
-This one is green.
+This one is blue. It has a penguin.
 
-Oh, and no ads. No subscriptions. No Paid Features. Just a clean, simple PDF reader that happens to be green.
-Install it for someone you love and tell them: "Just use the green one."
+Oh, and no ads. No subscriptions. No Paid Features. Just a clean, simple PDF reader that happens to be blue.
+Install it for someone you love and tell them: "Just use the blue one."
 They will.
 
 ## Play Store Listing Information:
 Images
 
 "Yes, another PDF reader."
-Screenshot of a clean PDF open in the app — [Suspiciously simple. Suspiciously green.]
+Screenshot of a clean PDF open in the app — [Suspiciously simple. Suspiciously blue.]
 "No ads. No subscriptions. No red."
-Screenshot of the app UI — [Just a PDF. Just green. Just works.]
-"Just use the green one."
+Screenshot of the app UI — [Just a PDF. Just blue. Just works.]
+"Just use the blue one."
 Screenshot of a happy parent successfully opening a PDF — [Finally.]
 
 ## Checks
@@ -45,7 +45,7 @@ It needs these repository secrets:
 | `UPLOAD_KEYSTORE_PASSWORD` | The keystore password |
 | `UPLOAD_KEY_ALIAS` | The key alias, e.g. `upload` |
 | `UPLOAD_KEY_PASSWORD` | The key password (the same as the keystore password for PKCS12 keystores) |
-| `PLAY_SERVICE_ACCOUNT_JSON` | The JSON key of a Google service account with permission to release Kiwi PDF Reader to testing tracks |
+| `PLAY_SERVICE_ACCOUNT_JSON` | The JSON key of a Google service account with permission to release PDF Penguin to testing tracks |
 
 To build a release locally, create `keystore.properties` in the project root (git ignores it) and run `./gradlew :app:bundleRelease`:
 

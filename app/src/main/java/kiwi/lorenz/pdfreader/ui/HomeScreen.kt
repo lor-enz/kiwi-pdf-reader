@@ -65,7 +65,7 @@ import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.PdfMetadata
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 import kiwi.lorenz.pdfreader.recent.RecentFile
-import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
+import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -457,7 +457,7 @@ private fun details(entry: RecentFile): String {
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenEmptyPreview() {
-    KiwiPDFReaderTheme {
+    PdfPenguinTheme {
         HomeScreen(
             recentFiles = emptyList(),
             thumbnailFile = { File("") },
@@ -484,7 +484,7 @@ private fun HomeScreenEmptyPreview() {
 @Composable
 private fun HomeScreenRecentPreview() {
     val now = System.currentTimeMillis()
-    KiwiPDFReaderTheme {
+    PdfPenguinTheme {
         HomeScreen(
             recentFiles = listOf(
                 RecentFile("1", "", "2024-03 Rechnung.pdf", false, lastOpenedMillis = now, pageCount = 3, title = "Electricity bill March"),
