@@ -15,23 +15,29 @@ internal fun RecentFile.toJson(): JSONObject = JSONObject()
     .put("pageCount", pageCount)
     .put("lastPage", lastPage)
     .put("hasThumbnail", hasThumbnail)
+    .put("isProtected", isProtected)
     .put("encryptedPassword", encryptedPassword)
     .put("filledFromHash", filledFromHash)
     .put("filledBytes", filledBytes)
 
-internal fun JSONObject.toRecentFile() = RecentFile(
-    id = getString("id"),
-    uri = getString("uri"),
-    name = getString("name"),
-    isCopy = getBoolean("isCopy"),
-    contentHash = optString("contentHash").ifEmpty { null },
-    sizeBytes = optLong("sizeBytes"),
-    modifiedMillis = if (has("modifiedMillis")) getLong("modifiedMillis") else null,
-    lastOpenedMillis = getLong("lastOpenedMillis"),
-    pageCount = optInt("pageCount"),
-    lastPage = optInt("lastPage"),
-    hasThumbnail = optBoolean("hasThumbnail"),
-    encryptedPassword = optString("encryptedPassword").ifEmpty { null },
-    filledFromHash = optString("filledFromHash").ifEmpty { null },
-    filledBytes = optLong("filledBytes"),
-)
+internal fun JSONObject.toRecentFile(): RecentFile {
+    val encryptedPassword = optString("encryptedPassword").ifEmpty { null }
+    return RecentFile(
+        id = getString("id"),
+        uri = getString("uri"),
+        name = getString("name"),
+        isCopy = getBoolean("isCopy"),
+        contentHash = optString("contentHash").ifEmpty { null },
+        sizeBytes = optLong("sizeBytes"),
+        modifiedMillis = if (has("modifiedMillis")) getLong("modifiedMillis") else null,
+        lastOpenedMillis = getLong("lastOpenedMillis"),
+        pageCount = optInt("pageCount"),
+        lastPage = optInt("lastPage"),
+        hasThumbnail = optBoolean("hasThumbnail"),
+        // Saved before the flag existed: a remembered password says it's protected.
+        isProtected = optBoolean("isProtected", encryptedPassword != null),
+        encryptedPassword = encryptedPassword,
+        filledFromHash = optString("filledFromHash").ifEmpty { null },
+        filledBytes = optLong("filledBytes"),
+    )
+}

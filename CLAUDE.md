@@ -146,6 +146,11 @@
   recipients (mail drafts) may read them later.
 - "Remember password" is ticked by default. Protected documents get no
   thumbnail unless their password is remembered (privacy).
+- The recent files list marks protected entries with Material's padlock
+  icons, not the animated `Lock`: open when the password is remembered (it
+  opens without asking), closed otherwise. No animation on tap. An entry
+  learns it's protected (`isProtected`) when it opens; entries saved before
+  the flag count as protected if their password is remembered.
 - Form edits are autosaved (`FormAutosave`) as a full filled-in PDF. When
   the original changes (hash), the filled-in version is dropped; otherwise
   reopening the original opens it without asking. Share, Print and Save a
@@ -226,6 +231,8 @@
 - [x] Password screen: less basic, still simple (lock icon, file name)
 - [x] Short unlock animation after the password is accepted (under 0.5 s,
   even if opening is faster)
+- [x] Protected files show a padlock in the recent files list: open when the
+  password is remembered, closed otherwise
 
 ### Milestone 10: presentation mode
 - [ ] Fullscreen (hide system bars) first

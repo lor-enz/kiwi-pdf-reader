@@ -27,6 +27,8 @@ data class RecentFile(
     val pageCount: Int = 0,
     val lastPage: Int = 0,
     val hasThumbnail: Boolean = false,
+    /** Needs a password to open. Known once it has opened, or when its password is remembered. */
+    val isProtected: Boolean = false,
     /** Set when the user chose to remember the password; see [PasswordCipher]. */
     val encryptedPassword: String? = null,
     /**

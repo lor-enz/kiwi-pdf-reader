@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -213,7 +215,7 @@ private fun RecentFileRow(
     ) {
         Thumbnail(entry, thumbnailFile)
         Spacer(Modifier.width(16.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(
                 text = entry.name,
                 style = MaterialTheme.typography.bodyLarge,
@@ -225,6 +227,17 @@ private fun RecentFileRow(
                 text = details(entry),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (entry.isProtected) {
+            // Open when it opens without asking for the password.
+            val isRemembered = entry.encryptedPassword != null
+            Spacer(Modifier.width(16.dp))
+            Icon(
+                painter = painterResource(if (isRemembered) R.drawable.lock_open_left else R.drawable.lock_closed),
+                contentDescription = stringResource(if (isRemembered) R.string.password_remembered else R.string.protected_pdf),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag(if (isRemembered) TestTags.RECENT_UNLOCKED else TestTags.RECENT_LOCKED),
             )
         }
     }

@@ -336,6 +336,8 @@ class ViewerViewModel(
             if (password != null) {
                 val encrypted = if (rememberPassword) withContext(Dispatchers.Default) { PasswordCipher.encrypt(password) } else null
                 store.setPassword(entry.id, encrypted)
+            } else if (entry.isProtected) {
+                store.setUnprotected(entry.id)
             }
             // Thumbnails of protected documents only when the password is remembered. No
             // thumbnail is fine if rendering fails; the list shows a placeholder.

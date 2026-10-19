@@ -43,6 +43,8 @@
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
     <string name="remember_password">Remember password</string>
+    <string name="protected_pdf">Protected</string>
+    <string name="password_remembered">Password remembered</string>
     <string name="open">Open</string>
 
     <string name="error_damaged_title">This PDF is damaged</string>

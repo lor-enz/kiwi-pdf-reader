@@ -203,6 +203,37 @@ class RecentFilesStoreTest {
     }
 
     @Test
+    fun `a password marks the entry as protected until it opens without one`() = runBlocking {
+        val entry = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        assertFalse(entry.isProtected)
+
+        store.setPassword(entry.id, null)
+        assertTrue(store.get(entry.id)!!.isProtected)
+        store.setPassword(entry.id, "encrypted")
+        store.setPassword(entry.id, null)
+        restart()
+        assertTrue(store.get(entry.id)!!.isProtected)
+
+        store.setUnprotected(entry.id)
+        assertFalse(store.get(entry.id)!!.isProtected)
+    }
+
+    @Test
+    fun `entries saved before the protected flag are protected if their password is remembered`() = runBlocking {
+        val remembered = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        val plain = store.importCopy(provide("b.pdf", "b"), "b.pdf")!!
+        store.setPassword(remembered.id, "encrypted")
+        val entries = JSONArray(index.readText())
+        for (i in 0 until entries.length()) entries.getJSONObject(i).remove("isProtected")
+        index.writeText(entries.toString())
+
+        restart()
+
+        assertTrue(store.get(remembered.id)!!.isProtected)
+        assertFalse(store.get(plain.id)!!.isProtected)
+    }
+
+    @Test
     fun `removing a picked file releases its permission`() = runBlocking {
         val uri = provide("picked.pdf", "picked")
         val entry = store.addPicked(uri, "picked.pdf")!!

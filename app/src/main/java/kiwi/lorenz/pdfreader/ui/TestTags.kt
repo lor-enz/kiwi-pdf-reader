@@ -17,6 +17,8 @@ fun Modifier.exposeTestTags() = semantics { testTagsAsResourceId = true }
 object TestTags {
     const val OPEN_PDF = "open_pdf"
     const val RECENT_FILE = "recent_file"
+    const val RECENT_LOCKED = "recent_locked"
+    const val RECENT_UNLOCKED = "recent_unlocked"
     const val RECENT_SHEET_TITLE = "recent_sheet_title"
     const val SHARE_RECENT = "share_recent"
     const val FORGET_PASSWORD = "forget_password"

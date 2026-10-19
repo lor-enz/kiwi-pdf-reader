@@ -188,18 +188,22 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     suspend fun setLastPage(id: String, page: Int) = update(id) { it.copy(lastPage = page) }
 
     /**
-     * Remembers or forgets a document's password. Without a remembered password, the thumbnail is
-     * dropped too: it would show protected content in the list.
+     * Remembers or forgets the password of a protected document. Without a remembered password,
+     * the thumbnail is dropped too: it would show protected content in the list.
      */
     suspend fun setPassword(id: String, encryptedPassword: String?) {
         if (encryptedPassword == null) withContext(Dispatchers.IO) { thumbnailFile(id).delete() }
         update(id) {
             it.copy(
+                isProtected = true,
                 encryptedPassword = encryptedPassword,
                 hasThumbnail = it.hasThumbnail && encryptedPassword != null,
             )
         }
     }
+
+    /** The document opened without a password, e.g. after it was replaced by an unprotected one. */
+    suspend fun setUnprotected(id: String) = update(id) { it.copy(isProtected = false) }
 
     fun thumbnailFile(id: String) = File(thumbnailsDir, "$id.webp")
 
