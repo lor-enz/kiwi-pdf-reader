@@ -54,7 +54,7 @@ class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) :
     @Composable
     fun Heading(name: String, title: String?, tag: String) = Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 16.dp, end = 24.dp, bottom = 8.dp),
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
     ) {
         // Decorative: the name says which document it is.
         Icon(
@@ -102,6 +102,8 @@ class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) :
                 onDismiss()
                 onClick()
             }
-            .testTag(tag),
+            .testTag(tag)
+            // 24 dp from the edges with the list item's own 16 dp; the ripple still spans the sheet.
+            .padding(horizontal = 8.dp),
     )
 }

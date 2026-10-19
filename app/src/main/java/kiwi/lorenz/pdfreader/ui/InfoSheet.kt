@@ -64,7 +64,7 @@ private fun Details(info: DocumentInfo, pageCount: Int) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             // Lined up with the name in the heading.
-            modifier = Modifier.padding(start = 56.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+            modifier = Modifier.padding(start = 64.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
         ) {
             Detail(R.string.info_author, metadata.author, TestTags.INFO_AUTHOR)
             Detail(R.string.info_subject, metadata.subject, TestTags.INFO_SUBJECT)
