@@ -205,6 +205,40 @@ class RecentFilesStoreTest {
     }
 
     @Test
+    fun `forgetting the password drops the title, others keep theirs`() = runBlocking {
+        val remembered = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
+        val plain = store.importCopy(provide("b.pdf", "b"), "b.pdf")!!
+        store.setPassword(remembered.id, "encrypted")
+        store.setTitle(remembered.id, "Statement")
+        store.setTitle(plain.id, "Invoice")
+
+        store.setPassword(remembered.id, null)
+
+        assertNull(store.get(remembered.id)!!.title)
+        assertEquals("Invoice", store.get(plain.id)!!.title)
+    }
+
+    @Test
+    fun `entries saved before titles get theirs read once, protected ones only with their password`() = runBlocking {
+        val titled = store.importCopy(provide("a.pdf", pdfWithTitle("Electricity bill")), "a.pdf")!!
+        val protected = store.importCopy(provide("b.pdf", pdfWithTitle("Secret")), "b.pdf")!!
+        val untitled = store.importCopy(provide("c.pdf", "not really a PDF"), "c.pdf")!!
+        store.setPassword(protected.id, null)
+        val entries = JSONArray(index.readText())
+        for (i in 0 until entries.length()) entries.getJSONObject(i).remove("isTitleRead")
+        index.writeText(entries.toString())
+        restart()
+        assertFalse(store.get(titled.id)!!.isTitleRead)
+
+        store.readMissingTitles()
+
+        assertEquals("Electricity bill", store.get(titled.id)!!.title)
+        assertNull(store.get(protected.id)!!.title)
+        assertNull(store.get(untitled.id)!!.title)
+        assertTrue(listed().all { it.isTitleRead })
+    }
+
+    @Test
     fun `forgetting all passwords drops their thumbnails and keeps the other ones`() = runBlocking {
         val remembered = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
         val plain = store.importCopy(provide("b.pdf", "b"), "b.pdf")!!
@@ -413,6 +447,16 @@ class RecentFilesStoreTest {
         store.get("")
         return store.entries.value
     }
+
+    /** Just enough of a PDF for its title to be read. */
+    private fun pdfWithTitle(title: String) = """
+        %PDF-1.4
+        1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+        2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj
+        3 0 obj << /Title ($title) >> endobj
+        trailer << /Root 1 0 R /Info 3 0 R >>
+        %%EOF
+    """.trimIndent()
 
     /** A new store reading what the old one saved, like after process death. */
     private fun restart() {

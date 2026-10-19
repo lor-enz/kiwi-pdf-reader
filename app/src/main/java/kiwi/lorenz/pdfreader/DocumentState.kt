@@ -8,6 +8,8 @@ sealed interface DocumentState {
     data class Loaded(
         val document: PdfDocument,
         val name: String,
+        /** From the document's metadata, shown above the file name. */
+        val title: String?,
         /** Opened with a password; other apps can't read the file on their own. */
         val isProtected: Boolean,
     ) : DocumentState

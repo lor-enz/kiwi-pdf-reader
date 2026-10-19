@@ -19,6 +19,8 @@ internal fun RecentFile.toJson(): JSONObject = JSONObject()
     .put("encryptedPassword", encryptedPassword)
     .put("filledFromHash", filledFromHash)
     .put("filledBytes", filledBytes)
+    .put("title", title)
+    .put("isTitleRead", isTitleRead)
 
 internal fun JSONObject.toRecentFile(): RecentFile {
     val encryptedPassword = optString("encryptedPassword").ifEmpty { null }
@@ -39,5 +41,8 @@ internal fun JSONObject.toRecentFile(): RecentFile {
         encryptedPassword = encryptedPassword,
         filledFromHash = optString("filledFromHash").ifEmpty { null },
         filledBytes = optLong("filledBytes"),
+        title = optString("title").ifEmpty { null },
+        // Saved before titles were: read once, see RecentFilesStore.readMissingTitles.
+        isTitleRead = optBoolean("isTitleRead", false),
     )
 }

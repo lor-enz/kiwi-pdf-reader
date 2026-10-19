@@ -13,6 +13,7 @@ import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
 import kiwi.lorenz.pdfreader.LauncherShortcuts
+import kiwi.lorenz.pdfreader.info.readDocumentInfo
 import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -195,9 +196,29 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
 
     suspend fun setLastPage(id: String, page: Int) = update(id) { it.copy(lastPage = page) }
 
+    /** Read when the document opens. For a protected one, null unless its password is remembered. */
+    suspend fun setTitle(id: String, title: String?) = update(id) { it.copy(title = title, isTitleRead = true) }
+
+    /**
+     * Reads the titles of entries saved before titles were stored, a protected one's only with
+     * its remembered password. Others get theirs when they open.
+     */
+    suspend fun readMissingTitles() {
+        for (entry in edit { entries -> entries.filter { !it.isTitleRead } }) {
+            // The keystore can be slow, so not on the main thread.
+            val password = entry.encryptedPassword?.let { withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) } }
+            val title = if (entry.isProtected && password == null) {
+                null
+            } else {
+                context.readDocumentInfo(entry.uri.toUri(), password).metadata.title
+            }
+            setTitle(entry.id, title)
+        }
+    }
+
     /**
      * Remembers or forgets the password of a protected document. Without a remembered password,
-     * the thumbnail is dropped too: it would show protected content in the list.
+     * the thumbnail and title are dropped too: they would show protected content in the list.
      */
     suspend fun setPassword(id: String, encryptedPassword: String?) {
         if (encryptedPassword == null) withContext(Dispatchers.IO) { thumbnailFile(id).delete() }
@@ -206,6 +227,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
                 isProtected = true,
                 encryptedPassword = encryptedPassword,
                 hasThumbnail = it.hasThumbnail && encryptedPassword != null,
+                title = it.title.takeIf { encryptedPassword != null },
             )
         }
     }
@@ -215,7 +237,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         fun forget(entry: RecentFile): RecentFile {
             if (entry.encryptedPassword == null) return entry
             thumbnailFile(entry.id).delete()
-            return entry.copy(isProtected = true, encryptedPassword = null, hasThumbnail = false)
+            return entry.copy(isProtected = true, encryptedPassword = null, hasThumbnail = false, title = null)
         }
         entries.replaceAll(::forget)
         hidden.replaceAll { _, entry -> forget(entry) }

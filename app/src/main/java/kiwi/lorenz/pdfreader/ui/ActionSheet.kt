@@ -3,6 +3,7 @@ package kiwi.lorenz.pdfreader.ui
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,9 +47,12 @@ fun ActionSheet(onDismiss: () -> Unit, content: @Composable ActionSheetScope.() 
 }
 
 class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) : ColumnScope by column {
-    /** The document the actions are for. Icon and name line up with the actions' icons and labels. */
+    /**
+     * The document the actions are for: its [title], if it has one, above its file [name]. Icon
+     * and name line up with the actions' icons and labels.
+     */
     @Composable
-    fun Heading(name: String, tag: String) = Row(
+    fun Heading(name: String, title: String?, tag: String) = Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 16.dp, end = 24.dp, bottom = 8.dp),
     ) {
@@ -59,13 +63,25 @@ class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) :
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.width(16.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.testTag(tag),
-        )
+        Column {
+            Text(
+                text = title ?: name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag(tag),
+            )
+            if (title != null) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag(TestTags.HEADING_FILE_NAME),
+                )
+            }
+        }
     }
 
     /** [note] is shown below the [label], e.g. what the action will include. */

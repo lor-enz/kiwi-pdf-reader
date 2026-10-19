@@ -134,6 +134,19 @@ def form(path, encrypt=None):
     c.save()
 
 
+def titled(path, title, about):
+    """A short document with [title] in its metadata, saying what it tests."""
+    c = canvas.Canvas(path, pagesize=A4)
+    c.setTitle(title)
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(60, H - 60, os.path.basename(path))
+    c.setFont("Helvetica", 14)
+    for i, line in enumerate(about):
+        c.drawString(60, H - 110 - i * 24, line)
+    c.showPage()
+    c.save()
+
+
 def broken(out):
     open(os.path.join(out, "not-a-pdf.pdf"), "w").write("Hello, this is plain text, not a PDF.\n")
     with open(os.path.join(out, "damaged.pdf"), "wb") as f:
@@ -152,6 +165,12 @@ def main():
     scanned(os.path.join(out, "scanned.pdf"))
     form(os.path.join(out, "form.pdf"))
     form(os.path.join(out, "form-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1, canModify=1))
+    titled(os.path.join(out, "long-title.pdf"),
+           "Annual report on the development of electricity prices for private households "
+           "in Bavaria and Baden-Württemberg, 2019 to 2024, with forecasts",
+           ["A very long title: cut off in the top bar (one line)", "and in the recent files list (two lines)."])
+    titled(os.path.join(out, "Same as title.pdf"), "Same as title",
+           ["The title is the file name without .pdf:", "both are shown anyway."])
     broken(out)
     for name in sorted(os.listdir(out)):
         print(os.path.join(out, name))

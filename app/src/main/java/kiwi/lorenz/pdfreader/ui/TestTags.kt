@@ -17,6 +17,8 @@ fun Modifier.exposeTestTags() = semantics { testTagsAsResourceId = true }
 object TestTags {
     const val OPEN_PDF = "open_pdf"
     const val RECENT_FILE = "recent_file"
+    const val RECENT_TITLE = "recent_title"
+    const val RECENT_FILE_NAME = "recent_file_name"
     const val RECENT_LOCKED = "recent_locked"
     const val RECENT_UNLOCKED = "recent_unlocked"
     const val RECENT_SHEET_TITLE = "recent_sheet_title"
@@ -38,6 +40,8 @@ object TestTags {
     const val LICENSE_TEXT = "license_text"
 
     const val BACK = "back"
+    const val TOP_BAR_TITLE = "top_bar_title"
+    const val TOP_BAR_FILE_NAME = "top_bar_file_name"
     const val MORE_OPTIONS = "more_options"
     const val DOCUMENT = "document"
     const val TOOLS_SHEET_TITLE = "tools_sheet_title"
@@ -50,7 +54,8 @@ object TestTags {
     const val CONFIRM_CLEAR_FILLED = "confirm_clear_filled"
 
     const val INFO_SHEET_TITLE = "info_sheet_title"
-    const val INFO_TITLE = "info_title"
+    /** The file name below a sheet's heading, when the document has a title. */
+    const val HEADING_FILE_NAME = "heading_file_name"
     const val INFO_AUTHOR = "info_author"
     const val INFO_SUBJECT = "info_subject"
     const val INFO_PAGES = "info_pages"

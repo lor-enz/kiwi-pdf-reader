@@ -31,25 +31,30 @@ import java.time.Instant
 
 /**
  * What the document says about itself, and its pages and size. [load] reads it from the file;
- * [pageCount] is used when known (0 if not), as the opened document knows best.
+ * [pageCount] is used when known (0 if not), as the opened document knows best. The [title] is
+ * the heading's, as in the other sheets.
  */
 @Composable
-fun InfoSheet(name: String, pageCount: Int, load: suspend () -> DocumentInfo, onDismiss: () -> Unit) {
+fun InfoSheet(
+    name: String,
+    title: String?,
+    pageCount: Int,
+    load: suspend () -> DocumentInfo,
+    onDismiss: () -> Unit,
+) {
     // Shown once read (a few milliseconds): a sheet whose content grows later keeps its height.
     val info by produceState<DocumentInfo?>(null) { value = load() }
     val loaded = info ?: return
     ActionSheet(onDismiss) {
-        Heading(name, TestTags.INFO_SHEET_TITLE)
-        Details(loaded, name, pageCount)
+        Heading(name, title, TestTags.INFO_SHEET_TITLE)
+        Details(loaded, pageCount)
     }
 }
 
 @Composable
-private fun Details(info: DocumentInfo, name: String, pageCount: Int) {
+private fun Details(info: DocumentInfo, pageCount: Int) {
     val context = LocalContext.current
     val metadata = info.metadata
-    // The heading shows the file name; a title that only repeats it says nothing new.
-    val title = metadata.title?.takeUnless { it.equals(name.removeSuffix(".pdf"), ignoreCase = true) || it == name }
     val pages = pageCount.takeIf { it > 0 } ?: metadata.pageCount
     val created = metadata.created?.let { formatDate(context, it) }
     // Most documents are never changed after they're made.
@@ -61,7 +66,6 @@ private fun Details(info: DocumentInfo, name: String, pageCount: Int) {
             // Lined up with the name in the heading.
             modifier = Modifier.padding(start = 56.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
         ) {
-            Detail(R.string.info_title, title, TestTags.INFO_TITLE)
             Detail(R.string.info_author, metadata.author, TestTags.INFO_AUTHOR)
             Detail(R.string.info_subject, metadata.subject, TestTags.INFO_SUBJECT)
             Detail(R.string.info_pages, pages?.toString(), TestTags.INFO_PAGES)

@@ -314,14 +314,19 @@ class ViewerViewModel(
         val entry = target.entry
         return try {
             val document = loader.openDocument(target.uri, password)
+            // Before the document shows, so the top bar doesn't change. From the original, as
+            // the filled-in version is written by the PDF library.
+            val title = getApplication<Application>()
+                .readDocumentInfo(entry?.uri?.toUri() ?: target.uri, password).metadata.title
             openPassword = password
             passwordTarget = null
-            if (entry != null) onOpened(entry, document, password, rememberPassword)
+            if (entry != null) onOpened(entry, document, title, password, rememberPassword)
             form = (document as? EditablePdfDocument)?.let { FormAutosave(it, entry?.id, store, viewModelScope) }
             isFilledIn = target.isFilledIn
             DocumentState.Loaded(
                 document = document,
                 name = target.name,
+                title = title,
                 isProtected = password != null,
             )
         } catch (e: CancellationException) {
@@ -349,7 +354,13 @@ class ViewerViewModel(
         }
     }
 
-    private fun onOpened(entry: RecentFile, document: PdfDocument, password: String?, rememberPassword: Boolean) {
+    private fun onOpened(
+        entry: RecentFile,
+        document: PdfDocument,
+        title: String?,
+        password: String?,
+        rememberPassword: Boolean,
+    ) {
         openEntryId = entry.id
         pendingRestorePage = entry.lastPage.takeIf { it in 1 until document.pageCount }
         viewModelScope.launch {
@@ -360,6 +371,8 @@ class ViewerViewModel(
             } else if (entry.isProtected) {
                 store.setUnprotected(entry.id)
             }
+            // The list shows protected content only when the password is remembered.
+            store.setTitle(entry.id, title.takeIf { password == null || rememberPassword })
             // Thumbnails of protected documents only when the password is remembered. No
             // thumbnail is fine if rendering fails; the list shows a placeholder.
             val showsThumbnail = password == null || rememberPassword

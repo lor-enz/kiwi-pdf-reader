@@ -32,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -121,6 +122,7 @@ fun ViewerScreen(
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
             name = loaded.name,
+            title = loaded.title,
             onDismiss = { isToolsSheetOpen = false },
             onSearch = actions::openSearch,
             onPrint = actions::print,
@@ -136,6 +138,7 @@ fun ViewerScreen(
         key(loaded.document) {
             InfoSheet(
                 name = loaded.name,
+                title = loaded.title,
                 pageCount = loaded.document.pageCount,
                 load = actions::documentInfo,
                 onDismiss = { isInfoSheetOpen = false },
@@ -262,11 +265,27 @@ fun ViewerScreen(
                 } else {
                     TopAppBar(
                         title = {
-                            Text(
-                                text = title,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            // The document's title, if it has one, with the file name smaller below it.
+                            val documentTitle = loaded?.title
+                            Column {
+                                Text(
+                                    text = documentTitle ?: title,
+                                    style = if (documentTitle != null) MaterialTheme.typography.titleMedium else LocalTextStyle.current,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.testTag(TestTags.TOP_BAR_TITLE),
+                                )
+                                if (documentTitle != null) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.testTag(TestTags.TOP_BAR_FILE_NAME),
+                                    )
+                                }
+                            }
                         },
                         navigationIcon = {
                             IconButton(onClick = actions::back, modifier = Modifier.testTag(TestTags.BACK)) {
@@ -309,6 +328,7 @@ internal val BarInsets
 @Composable
 private fun ToolsSheet(
     name: String,
+    title: String?,
     onDismiss: () -> Unit,
     onSearch: () -> Unit,
     onPrint: () -> Unit,
@@ -321,7 +341,7 @@ private fun ToolsSheet(
     // Says that the filled-in fields come along, so nobody wonders whether they do.
     val note = R.string.with_filled_in_fields.takeIf { isFilledIn }
     ActionSheet(onDismiss) {
-        Heading(name, TestTags.TOOLS_SHEET_TITLE)
+        Heading(name, title, TestTags.TOOLS_SHEET_TITLE)
         Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onClick = onSearch)
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)

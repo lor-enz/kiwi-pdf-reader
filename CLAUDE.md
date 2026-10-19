@@ -232,11 +232,22 @@
   instead of "Open another PDF". To test it, truncate the stored copy
   (`files/recent/copies/` via `run-as`) of a file that opened before.
 
+- A document's title (from its metadata) is shown above its file name in
+  the recent files list, the viewer's top bar and the sheets' headings;
+  without one, only the file name shows, as before. Every title is shown,
+  even ones that look generated ("Microsoft Word - …") or repeat the file
+  name: the app doesn't judge a document's content, and the file name is
+  always there too. The card in the app switcher, launcher shortcuts, the
+  password screen, Save a copy and Share keep the file name. The viewer
+  reads the title while the document opens (from the original, not the
+  filled-in version), so the top bar doesn't change; entries store it
+  (`title`), a protected one's only while its password is remembered (as
+  with thumbnails). Entries saved before titles were stored
+  (`isTitleRead` false) get theirs when Home starts.
 - "Document info", in the viewer's and the recent entries' sheets, opens a
-  sheet of its own with title, author, subject, pages, page size, file
-  size, created, modified (only when another day) and the app it was made
-  with. A title that only repeats
-  the file name is left out. `androidx.pdf` reads no metadata, so
+  sheet of its own with author, subject, pages, page size, file size,
+  created, modified (only when another day) and the app it was made with;
+  its heading shows the title. `androidx.pdf` reads no metadata, so
   `PdfMetadataReader` reads the info dictionary and the first page's size
   itself: xref tables and streams, updates, object streams, Flate with PNG
   predictors, and a scan for objects when the offsets are wrong.
@@ -264,7 +275,6 @@
 
 # Planned changes
 
-- Document title instead of file name. If the PDF's metadata has a real title, show it in the recent files list, with the file name smaller underneath.
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
 - Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
 - Dark pages in dark mode: `PdfViewer` always draws them white, which

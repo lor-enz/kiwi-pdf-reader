@@ -38,6 +38,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             store.cleanup()
             application.deleteOldSharedCopies()
+            store.readMissingTitles()
         }
     }
 

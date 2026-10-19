@@ -101,6 +101,7 @@ fun HomeScreen(
     recentFiles.find { it.id == infoEntryId }?.let { entry ->
         InfoSheet(
             name = entry.name,
+            title = entry.title,
             pageCount = entry.pageCount,
             load = { documentInfo(entry) },
             onDismiss = { infoEntryId = null },
@@ -253,12 +254,24 @@ private fun RecentFileRow(
         Thumbnail(entry, thumbnailFile)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
+            // The title, if the document has one, with the file name smaller below it.
             Text(
-                text = entry.name,
+                text = entry.title ?: entry.name,
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag(TestTags.RECENT_TITLE),
             )
+            if (entry.title != null) {
+                Text(
+                    text = entry.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag(TestTags.RECENT_FILE_NAME),
+                )
+            }
             Spacer(Modifier.height(4.dp))
             Text(
                 text = details(entry),
@@ -291,7 +304,7 @@ private fun RecentFileSheet(
     onRemove: () -> Unit,
 ) {
     ActionSheet(onDismiss) {
-        Heading(entry.name, TestTags.RECENT_SHEET_TITLE)
+        Heading(entry.name, entry.title, TestTags.RECENT_SHEET_TITLE)
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onClick = onShare)
         Action(R.drawable.ic_info, R.string.document_info, TestTags.RECENT_INFO, onClick = onInfo)
         if (entry.encryptedPassword != null) {
@@ -386,7 +399,7 @@ private fun HomeScreenRecentPreview() {
     KiwiPDFReaderTheme {
         HomeScreen(
             recentFiles = listOf(
-                RecentFile("1", "", "Electricity bill March.pdf", false, lastOpenedMillis = now, pageCount = 3),
+                RecentFile("1", "", "2024-03 Rechnung.pdf", false, lastOpenedMillis = now, pageCount = 3, title = "Electricity bill March"),
                 RecentFile("2", "", "Manual.pdf", true, lastOpenedMillis = now - 86_400_000, pageCount = 28, lastPage = 11),
             ),
             thumbnailFile = { File("") },

@@ -37,6 +37,13 @@ data class RecentFile(
      */
     val filledFromHash: String? = null,
     val filledBytes: Long = 0,
+    /**
+     * The title in the document's metadata, shown above the file name. Kept for a protected
+     * document only while its password is remembered, like the thumbnail.
+     */
+    val title: String? = null,
+    /** False for entries saved before titles were stored, until theirs is read. */
+    val isTitleRead: Boolean = true,
 ) {
     val hasFilledVersion: Boolean get() = filledFromHash != null
 

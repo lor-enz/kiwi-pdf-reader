@@ -62,7 +62,6 @@
     <string name="clear">Clear</string>
     <string name="cancel">Cancel</string>
     <string name="document_info">Document info</string>
-    <string name="info_title">Title</string>
     <string name="info_author">Author</string>
     <string name="info_subject">Subject</string>
     <string name="info_pages">Pages</string>
