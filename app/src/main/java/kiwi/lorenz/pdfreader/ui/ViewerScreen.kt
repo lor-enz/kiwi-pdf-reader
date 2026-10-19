@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -231,14 +230,7 @@ fun ViewerScreen(
                     modifier = Modifier.padding(contentPadding),
                 )
 
-                DocumentState.Loading, DocumentState.Empty -> Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(contentPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                DocumentState.Loading, DocumentState.Empty -> DocumentPlaceholder(contentPadding)
             }
         }
 

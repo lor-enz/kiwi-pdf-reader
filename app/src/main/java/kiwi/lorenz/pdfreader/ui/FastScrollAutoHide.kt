@@ -52,7 +52,7 @@ private fun PdfView.allowAutoHide(accessibilityManager: AccessibilityManager) {
     }
 }
 
-private fun View.findPdfView(): PdfView? = when (this) {
+internal fun View.findPdfView(): PdfView? = when (this) {
     is PdfView -> this
     is ViewGroup -> (0 until childCount).firstNotNullOfOrNull { getChildAt(it).findPdfView() }
     else -> null

@@ -44,6 +44,7 @@ object TestTags {
     const val TOP_BAR_FILE_NAME = "top_bar_file_name"
     const val MORE_OPTIONS = "more_options"
     const val DOCUMENT = "document"
+    const val DOCUMENT_LOADING = "document_loading"
     const val TOOLS_SHEET_TITLE = "tools_sheet_title"
     const val TOOL_SEARCH = "tool_search"
     const val TOOL_PRINT = "tool_print"

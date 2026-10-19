@@ -1,8 +1,16 @@
 package kiwi.lorenz.pdfreader.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,11 +19,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.pdf.ExperimentalPdfApi
 import androidx.pdf.Highlight
@@ -26,6 +36,7 @@ import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.DocumentState
+import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
 import kiwi.lorenz.pdfreader.openLink
 import kotlinx.coroutines.delay
@@ -39,6 +50,14 @@ private const val MATCH_COLOR = 0xFFDCE3A6.toInt()
 private const val CURRENT_MATCH_COLOR = 0xFFF2B48C.toInt()
 
 private const val PAGE_SAVE_DELAY_MS = 500L
+
+/** How many of the visible pages have to be rendered before the document shows. */
+private const val PAGES_BEFORE_REVEAL = 2
+
+/** Shows the document even if its pages are still rendering, so a slow page doesn't block it. */
+private const val REVEAL_TIMEOUT_MS = 1500L
+
+private val PlaceholderIconSize = 96.dp
 
 /** How far the user has to scroll in one direction before the top bar hides or shows. */
 private val BarToggleDistance = 32.dp
@@ -59,6 +78,8 @@ internal fun DocumentView(
     val context = LocalContext.current
     val viewerState = rememberPdfViewerState()
     var isContentLoaded by remember { mutableStateOf(false) }
+    var isRevealed by remember { mutableStateOf(false) }
+    val readyPages by rememberReadyPages()
     var viewportHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val topPaddingPx = with(density) { contentPadding.calculateTopPadding().toPx() }
@@ -113,29 +134,75 @@ internal fun DocumentView(
             }
     }
 
+    // The document shows once the pages in view are rendered (after jumping to the saved page),
+    // instead of white pages filling in one by one.
+    val arePagesShown = !isRevealed && isContentLoaded && pendingRestorePage == null &&
+        viewerState.visiblePagesCount > 0 &&
+        (0 until minOf(viewerState.visiblePagesCount, PAGES_BEFORE_REVEAL))
+            .all { viewerState.firstVisiblePage + it in readyPages }
+    LaunchedEffect(arePagesShown) {
+        if (arePagesShown) isRevealed = true
+    }
+    LaunchedEffect(Unit) {
+        delay(REVEAL_TIMEOUT_MS)
+        isRevealed = true
+    }
+
     FastScrollAutoHide(contentLoaded = isContentLoaded)
 
-    PdfViewer(
-        pdfDocument = documentState.document,
-        state = viewerState,
-        modifier = Modifier
+    Box(Modifier.fillMaxSize()) {
+        PdfViewer(
+            pdfDocument = documentState.document,
+            state = viewerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged { viewportHeight = it.height }
+                .testTag(TestTags.DOCUMENT),
+            // Pages start below the bar and scroll behind it and the navigation bar.
+            contentPadding = contentPadding,
+            onFirstContentLoad = { isContentLoaded = true },
+            // Not from the start: PdfViewer sets the document before enabling form filling, so the
+            // first pages load without their form fields, and taps on them do nothing (beta01).
+            // Enabling it once they're loaded makes the view fetch their fields again.
+            isFormFillingEnabled = isContentLoaded,
+            onFormWidgetInfoUpdated = onFormEdit,
+            // Handled here, so links with no app to open them don't fail silently.
+            onUrlLinkClicked = { uri ->
+                if (!context.openLink(uri)) onLinkFailed()
+                true
+            },
+        )
+        // Continues the placeholder of the loading state.
+        AnimatedVisibility(visible = !isRevealed, enter = EnterTransition.None, exit = fadeOut()) {
+            DocumentPlaceholder(
+                contentPadding = contentPadding,
+                modifier = Modifier.background(MaterialTheme.colorScheme.background),
+            )
+        }
+    }
+}
+
+/**
+ * Shown while a document opens, until its first pages are rendered. Opening takes a moment at
+ * most, too short for a spinner to read as progress, so it's a calm PDF symbol instead.
+ */
+@Composable
+internal fun DocumentPlaceholder(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
             .fillMaxSize()
-            .onSizeChanged { viewportHeight = it.height }
-            .testTag(TestTags.DOCUMENT),
-        // Pages start below the bar and scroll behind it and the navigation bar.
-        contentPadding = contentPadding,
-        onFirstContentLoad = { isContentLoaded = true },
-        // Not from the start: PdfViewer sets the document before enabling form filling, so the
-        // first pages load without their form fields, and taps on them do nothing (beta01).
-        // Enabling it once they're loaded makes the view fetch their fields again.
-        isFormFillingEnabled = isContentLoaded,
-        onFormWidgetInfoUpdated = onFormEdit,
-        // Handled here, so links with no app to open them don't fail silently.
-        onUrlLinkClicked = { uri ->
-            if (!context.openLink(uri)) onLinkFailed()
-            true
-        },
-    )
+            .padding(contentPadding)
+            .testTag(TestTags.DOCUMENT_LOADING),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Decorative: the top bar names the document.
+        Icon(
+            painter = painterResource(R.drawable.pdf_box),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(PlaceholderIconSize),
+        )
+    }
 }
 
 /** The page covering the middle of the viewport: what the user is reading. */
