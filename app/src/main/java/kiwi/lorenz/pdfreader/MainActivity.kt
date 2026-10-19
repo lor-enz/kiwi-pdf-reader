@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
                 recentFiles = recentFiles,
                 thumbnailFile = viewModel::thumbnailFile,
                 onOpenPdf = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
+                onOpenSettings = { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) },
                 onOpenRecent = { startActivity(ViewerActivity.recentIntent(this@MainActivity, it.id)) },
                 pendingRemoval = viewModel.pendingRemoval,
                 onShareRecent = { share(it.uri.toUri(), it.name) },

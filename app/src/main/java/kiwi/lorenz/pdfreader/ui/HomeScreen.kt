@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -30,6 +32,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -60,11 +65,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     recentFiles: List<RecentFile>,
     thumbnailFile: (RecentFile) -> File,
     onOpenPdf: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
     onShareRecent: (RecentFile) -> Unit,
     onForgetPassword: (RecentFile) -> Unit,
@@ -114,7 +121,24 @@ fun HomeScreen(
         scope.launch { snackbarHostState.showSnackbar(messageText) }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {},
+                actions = {
+                    IconButton(onClick = onOpenSettings, modifier = Modifier.testTag(TestTags.SETTINGS)) {
+                        Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings))
+                    }
+                },
+                // Like the page until the list scrolls under it (surface differs when dark).
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                scrollBehavior = scrollBehavior,
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+    ) { innerPadding ->
         // Removing the last entry switches to the centered layout; fade instead of jumping.
         Crossfade(targetState = recentFiles.isEmpty(), label = "recent files") { isEmpty ->
             if (isEmpty) {
@@ -134,7 +158,7 @@ fun HomeScreen(
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
-                        top = innerPadding.calculateTopPadding() + 32.dp,
+                        top = innerPadding.calculateTopPadding() + 8.dp,
                         bottom = innerPadding.calculateBottomPadding() + 16.dp,
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -325,6 +349,7 @@ private fun HomeScreenEmptyPreview() {
             recentFiles = emptyList(),
             thumbnailFile = { File("") },
             onOpenPdf = {},
+            onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
             onForgetPassword = {},
@@ -350,6 +375,7 @@ private fun HomeScreenRecentPreview() {
             ),
             thumbnailFile = { File("") },
             onOpenPdf = {},
+            onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
             onForgetPassword = {},

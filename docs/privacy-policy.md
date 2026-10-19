@@ -4,7 +4,7 @@ title: Kiwi PDF Reader – Privacy Policy
 
 # Privacy Policy
 
-**Kiwi PDF Reader** · Last updated: October 18, 2026
+**Kiwi PDF Reader** · Last updated: October 19, 2026
 
 Kiwi PDF Reader is made by Lorenz Burghardt. This policy explains what the
 app does with your data. The short version: **nothing leaves your device.**
@@ -48,9 +48,11 @@ with its copy, filled-in form, thumbnail and password, when the list grows
 beyond 20 entries. Copies and filled-in forms also go when they haven't been
 opened for 30 days or take up more than 250 MB together; a document you
 picked from your own files then stays in the list without its filled-in
-form. You can also remove a document from the list yourself. To delete
-everything at once, clear the app's storage in Android's settings or
-uninstall the app.
+form. You can also remove a document from the list yourself. In the app's
+settings, "Clear recent files" deletes the list with all copies, filled-in
+forms and thumbnails at once, and "Forget all passwords" deletes every
+remembered password. Clearing the app's storage in Android's settings or
+uninstalling the app deletes everything.
 
 ## Backups
 

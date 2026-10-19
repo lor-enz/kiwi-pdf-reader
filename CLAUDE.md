@@ -126,6 +126,17 @@
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).
+- Settings (cog on Home, `SettingsActivity`) has no preferences so far,
+  only what the app stores and information: forget all passwords, clear
+  recent files (both confirmed by a dialog, as there's no undo; open
+  documents stay, as in cleanup), version (tap copies it with the Android
+  version and device for bug reports), source, issues, privacy policy and
+  licenses. No "Open by default" link: that system page is about web links
+  and doesn't help with PDFs. Every runtime dependency is Apache 2.0, so the
+  licenses screen lists them with one license text
+  (`res/raw/apache_license.txt`); check the list when adding a dependency
+  (`./gradlew :app:dependencies --configuration releaseRuntimeClasspath`).
+  Google's `oss-licenses` plugin needs Play Services.
 - The viewer's tools live in a bottom sheet behind the ⋮ button, so the
   top bar stays calm as tools are added. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
@@ -220,25 +231,11 @@
 
 # Planned changes
 
-## Upcoming features
-
-### Milestone 9: polish (needs discussion first)
-- [x] Opening a recent file reorders the list (it counts as opened) while
-  the viewer slides in; the change shouldn't be visible
-- [x] Error screen: icon, title, sentence, action; rethink the texts. A
-  file that failed only for now (kept in the list) should say "try again",
-  not "damaged, download it again"
-- [x] Password screen: less basic, still simple (lock icon, file name)
-- [x] Short unlock animation after the password is accepted (under 0.5 s,
-  even if opening is faster)
-- [x] Protected files show a padlock in the recent files list: open when the
-  password is remembered, closed otherwise
-
-### Milestone 10: presentation mode
+## presentation mode
 - [ ] Fullscreen (hide system bars) first
 - [ ] One page at a time, swipe left/right, pinch-zoom (own pager view)
 
-### Later
+## Other
 - [ ] Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - [ ] Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

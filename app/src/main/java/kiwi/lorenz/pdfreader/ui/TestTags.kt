@@ -23,6 +23,18 @@ object TestTags {
     const val SHARE_RECENT = "share_recent"
     const val FORGET_PASSWORD = "forget_password"
     const val REMOVE_RECENT = "remove_recent"
+    const val SETTINGS = "settings"
+
+    const val FORGET_ALL_PASSWORDS = "forget_all_passwords"
+    const val CONFIRM_FORGET_ALL_PASSWORDS = "confirm_forget_all_passwords"
+    const val CLEAR_RECENT_FILES = "clear_recent_files"
+    const val CONFIRM_CLEAR_RECENT_FILES = "confirm_clear_recent_files"
+    const val VERSION = "version"
+    const val SOURCE_CODE = "source_code"
+    const val REPORT_PROBLEM = "report_problem"
+    const val PRIVACY_POLICY = "privacy_policy"
+    const val LICENSES = "licenses"
+    const val LICENSE_TEXT = "license_text"
 
     const val BACK = "back"
     const val MORE_OPTIONS = "more_options"
