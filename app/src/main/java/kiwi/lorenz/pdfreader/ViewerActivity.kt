@@ -57,6 +57,7 @@ open class ViewerActivity : ComponentActivity() {
             loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) }
         }
         override fun clearFilledFields() = viewModel.clearFilledFields()
+        override suspend fun documentInfo() = viewModel.documentInfo()
         override fun messageShown() = viewModel.onMessageShown()
     }
 

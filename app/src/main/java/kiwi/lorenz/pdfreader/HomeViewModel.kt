@@ -7,6 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.core.net.toUri
+import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.info.readDocumentInfo
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +39,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun thumbnailFile(entry: RecentFile): File = store.thumbnailFile(entry.id)
+
+    suspend fun documentInfo(entry: RecentFile): DocumentInfo =
+        getApplication<Application>().readDocumentInfo(entry.uri.toUri())
 
     fun removeRecent(entry: RecentFile) {
         // One undo at a time: an earlier removal becomes final.

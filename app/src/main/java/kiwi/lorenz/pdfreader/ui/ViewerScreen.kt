@@ -42,6 +42,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +59,7 @@ import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
+import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kotlinx.coroutines.launch
 
 /** Material 3 small top app bar height. */
@@ -82,6 +84,7 @@ interface ViewerActions {
     fun share()
     fun saveCopy()
     fun clearFilledFields()
+    suspend fun documentInfo(): DocumentInfo
     fun messageShown()
 }
 
@@ -113,6 +116,7 @@ fun ViewerScreen(
     val isBarVisible = searchState.isActive || loaded == null || !isBarHiddenByScroll
 
     var isToolsSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var isInfoSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isClearDialogOpen by rememberSaveable { mutableStateOf(false) }
     if (isToolsSheetOpen && loaded != null) {
         ToolsSheet(
@@ -122,9 +126,21 @@ fun ViewerScreen(
             onPrint = actions::print,
             onShare = actions::share,
             onSaveCopy = actions::saveCopy,
+            onInfo = { isInfoSheetOpen = true },
             isFilledIn = isFilledIn,
             onClearFilled = { isClearDialogOpen = true },
         )
+    }
+    if (isInfoSheetOpen && loaded != null) {
+        // Keyed by document, so another one opened in this viewer is read anew.
+        key(loaded.document) {
+            InfoSheet(
+                name = loaded.name,
+                pageCount = loaded.document.pageCount,
+                load = actions::documentInfo,
+                onDismiss = { isInfoSheetOpen = false },
+            )
+        }
     }
 
     if (isClearDialogOpen) {
@@ -298,6 +314,7 @@ private fun ToolsSheet(
     onPrint: () -> Unit,
     onShare: () -> Unit,
     onSaveCopy: () -> Unit,
+    onInfo: () -> Unit,
     isFilledIn: Boolean,
     onClearFilled: () -> Unit,
 ) {
@@ -309,6 +326,7 @@ private fun ToolsSheet(
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)
         Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, note, onSaveCopy)
+        Action(R.drawable.ic_info, R.string.document_info, TestTags.TOOL_INFO, onClick = onInfo)
         if (isFilledIn) {
             Action(R.drawable.ic_restart, R.string.clear_filled_in, TestTags.TOOL_CLEAR_FILLED, onClick = onClearFilled)
         }

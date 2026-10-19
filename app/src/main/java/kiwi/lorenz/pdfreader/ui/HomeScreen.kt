@@ -57,6 +57,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.info.PdfMetadata
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.KiwiPDFReaderTheme
@@ -74,6 +76,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
     onShareRecent: (RecentFile) -> Unit,
+    documentInfo: suspend (RecentFile) -> DocumentInfo,
     onForgetPassword: (RecentFile) -> Unit,
     pendingRemoval: RecentFile?,
     onRemoveRecent: (RecentFile) -> Unit,
@@ -84,13 +87,23 @@ fun HomeScreen(
 ) {
     // Long-pressing an entry opens its sheet; kept by id, as the entry itself changes.
     var sheetEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var infoEntryId by rememberSaveable { mutableStateOf<String?>(null) }
     recentFiles.find { it.id == sheetEntryId }?.let { entry ->
         RecentFileSheet(
             entry = entry,
             onDismiss = { sheetEntryId = null },
             onShare = { onShareRecent(entry) },
+            onInfo = { infoEntryId = entry.id },
             onForgetPassword = { onForgetPassword(entry) },
             onRemove = { onRemoveRecent(entry) },
+        )
+    }
+    recentFiles.find { it.id == infoEntryId }?.let { entry ->
+        InfoSheet(
+            name = entry.name,
+            pageCount = entry.pageCount,
+            load = { documentInfo(entry) },
+            onDismiss = { infoEntryId = null },
         )
     }
 
@@ -273,12 +286,14 @@ private fun RecentFileSheet(
     entry: RecentFile,
     onDismiss: () -> Unit,
     onShare: () -> Unit,
+    onInfo: () -> Unit,
     onForgetPassword: () -> Unit,
     onRemove: () -> Unit,
 ) {
     ActionSheet(onDismiss) {
         Heading(entry.name, TestTags.RECENT_SHEET_TITLE)
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onClick = onShare)
+        Action(R.drawable.ic_info, R.string.document_info, TestTags.RECENT_INFO, onClick = onInfo)
         if (entry.encryptedPassword != null) {
             Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onClick = onForgetPassword)
         }
@@ -352,6 +367,7 @@ private fun HomeScreenEmptyPreview() {
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
+            documentInfo = { DocumentInfo(PdfMetadata(), null) },
             onForgetPassword = {},
             pendingRemoval = null,
             onRemoveRecent = {},
@@ -378,6 +394,7 @@ private fun HomeScreenRecentPreview() {
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
+            documentInfo = { DocumentInfo(PdfMetadata(), null) },
             onForgetPassword = {},
             pendingRemoval = null,
             onRemoveRecent = {},

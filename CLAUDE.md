@@ -232,6 +232,23 @@
   instead of "Open another PDF". To test it, truncate the stored copy
   (`files/recent/copies/` via `run-as`) of a file that opened before.
 
+- "Document info", in the viewer's and the recent entries' sheets, opens a
+  sheet of its own with title, author, subject, pages, page size, file
+  size, created, modified (only when another day) and the app it was made
+  with. A title that only repeats
+  the file name is left out. `androidx.pdf` reads no metadata, so
+  `PdfMetadataReader` reads the info dictionary and the first page's size
+  itself: xref tables and streams, updates, object streams, Flate with PNG
+  predictors, and a scan for objects when the offsets are wrong. Encrypted
+  strings aren't decrypted (also owner-password-only files, which open
+  without asking), so those show only pages and sizes; the viewer then takes
+  the page size from the document. The sheet appears once the file is read:
+  a `ModalBottomSheet` whose content grows later keeps its old height.
+  Sheets skip the half-open state (`skipPartiallyExpanded`): a recreated
+  sheet (e.g. on switching to dark mode) returns to it, even after being
+  dragged up, and the info sheet is meant to be read in full anyway. Page
+  sizes are named (A4, Letter, …) or given in mm, or inches in the US.
+
 - Launcher shortcuts (`LauncherShortcuts`, long press on the app icon) open
   the four most recent entries, on top of Home so back leads to the list.
   They follow the store's list once it's loaded (`loadedEntries`; the empty
@@ -245,7 +262,6 @@
 # Planned changes
 
 - Document title instead of file name. If the PDF's metadata has a real title, show it in the recent files list, with the file name smaller underneath.
-- Document info in the sheets. Shows author, page count, size and other relevant stuff.
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
 - Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
 - Dark pages in dark mode: `PdfViewer` always draws them white, which

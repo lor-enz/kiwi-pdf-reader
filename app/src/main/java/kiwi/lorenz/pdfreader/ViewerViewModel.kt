@@ -17,6 +17,10 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.models.FormEditInfo
+import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.info.PageSize
+import kiwi.lorenz.pdfreader.info.PdfMetadata
+import kiwi.lorenz.pdfreader.info.readDocumentInfo
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
@@ -185,6 +189,19 @@ class ViewerViewModel(
         val file = File(File(app.cacheDir, UNSAVED_FORMS_DIR).apply { mkdirs() }, "$taskId.pdf")
         form.writeTo(file)
         return Uri.fromFile(file)
+    }
+
+    /**
+     * About the open document. The page size comes from the document when the file's own data
+     * can't be read for it (encrypted object streams).
+     */
+    suspend fun documentInfo(): DocumentInfo {
+        val document = loadedDocument()?.document ?: return DocumentInfo(PdfMetadata(), null)
+        val info = getApplication<Application>().readDocumentInfo(document.uri)
+        val pageSize = info.metadata.pageSize ?: runCatchingCancellable {
+            document.getPageInfo(0).let { PageSize(it.width.toDouble(), it.height.toDouble()) }
+        }.getOrNull()
+        return info.copy(metadata = info.metadata.copy(pageSize = pageSize))
     }
 
     /** Writes the document to [to], a file the user created with the system's "Save to" dialog. */
