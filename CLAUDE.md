@@ -152,6 +152,9 @@
   closed. Drop-down fields open a Material Components dialog, which crashes
   without a Material theme: the XML theme is based on Material 3 (Compose
   doesn't need it) and colors that dialog via `materialAlertDialogTheme`.
+- Home collects the recent files only while resumed, so opening an entry
+  (which moves it to the top) doesn't reorder the list as the viewer slides
+  in. Home takes the new order when it's back.
 - Removing an entry hides it in the store and deletes its files only when
   the Undo snackbar is gone (also when the screen is left); after process
   death the startup cleanup finishes the job. Snackbars with an action
@@ -205,9 +208,8 @@
 ## Upcoming features
 
 ### Milestone 9: polish (needs discussion first)
-- [ ] Opening a recent file reorders the list (it counts as opened) while
-  the viewer slides in; the change shouldn't be visible. Compare clean
-  options before choosing
+- [x] Opening a recent file reorders the list (it counts as opened) while
+  the viewer slides in; the change shouldn't be visible
 - [x] Error screen: icon, title, sentence, action; rethink the texts. A
   file that failed only for now (kept in the list) should say "try again",
   not "damaged, download it again"

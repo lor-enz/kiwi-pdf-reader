@@ -7,9 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kiwi.lorenz.pdfreader.ui.HomeScreen
 import kiwi.lorenz.pdfreader.ui.setAppContent
@@ -31,7 +32,11 @@ class MainActivity : ComponentActivity() {
                 ActivityResultContracts.OpenDocument()
             ) { uri -> uri?.let { startActivity(ViewerActivity.pickedIntent(this@MainActivity, it)) } }
 
-            val recentFiles by viewModel.recentFiles.collectAsState()
+            // Only while in front: opening an entry moves it to the top, which mustn't show while
+            // the viewer slides in. Home takes the new order when it's back.
+            val recentFiles by viewModel.recentFiles.collectAsStateWithLifecycle(
+                minActiveState = Lifecycle.State.RESUMED
+            )
             HomeScreen(
                 recentFiles = recentFiles,
                 thumbnailFile = viewModel::thumbnailFile,
