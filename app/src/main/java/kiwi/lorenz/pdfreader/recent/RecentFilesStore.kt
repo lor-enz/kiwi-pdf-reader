@@ -12,14 +12,18 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
+import kiwi.lorenz.pdfreader.LauncherShortcuts
 import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,7 +50,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     private val openTasks = OpenTasks(context, File(root, "open.json"))
 
     private val mutex = Mutex()
-    private var loaded = false
+    private val loaded = MutableStateFlow(false)
 
     /** False while the index on disk is behind [entries], see [edit]. */
     private var isSaved = true
@@ -61,6 +65,10 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
 
     /** Newest first. */
     val entries: StateFlow<List<RecentFile>> = _entries.asStateFlow()
+
+    /** [entries], but only once they've been read from disk: before that, the list isn't known. */
+    val loadedEntries: Flow<List<RecentFile>> =
+        combine(loaded, _entries) { isLoaded, entries -> entries.takeIf { isLoaded } }.filterNotNull()
 
     suspend fun get(id: String): RecentFile? = edit { entries -> entries.find { it.id == id } }
 
@@ -350,10 +358,10 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     /** Runs [block] on the loaded list under the lock, then saves it if it changed. */
     private suspend fun <T> edit(block: (MutableList<RecentFile>) -> T): T = withContext(Dispatchers.IO) {
         mutex.withLock {
-            if (!loaded) {
+            if (!loaded.value) {
                 _entries.value = load()
                 openTasks.load()
-                loaded = true
+                loaded.value = true
             }
             val entries = _entries.value.toMutableList()
             val result = block(entries)
@@ -474,7 +482,10 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         private var instance: RecentFilesStore? = null
 
         fun get(context: Context): RecentFilesStore = instance ?: synchronized(this) {
-            instance ?: RecentFilesStore(context.applicationContext).also { instance = it }
+            instance ?: RecentFilesStore(context.applicationContext).also {
+                instance = it
+                LauncherShortcuts(context.applicationContext, it).start()
+            }
         }
     }
 }

@@ -12,6 +12,8 @@
     <string name="remove_from_list">Remove from list</string>
     <string name="removed_from_list">Removed from the list</string>
     <string name="undo">Undo</string>
+    <!-- A shortcut pinned to the home screen whose file has left the recent files list -->
+    <string name="shortcut_removed">This file is no longer in the recent files list.</string>
 
     <string name="settings">Settings</string>
     <string name="stored_on_phone">Stored on this phone</string>

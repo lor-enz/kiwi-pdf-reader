@@ -8,7 +8,9 @@ import android.util.AtomicFile
 import androidx.core.util.readText
 import androidx.core.util.writeText
 import kiwi.lorenz.pdfreader.recent.TestFilesProvider.Companion.provide
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -396,6 +398,17 @@ class RecentFilesStoreTest {
     }
 
     /** The entries, after loading them if the store hasn't yet. */
+    @Test
+    fun `loaded entries wait for the list to be read`() = runBlocking {
+        val picked = store.addPicked(provide("a.pdf", "content a"), "a.pdf")!!
+        restart()
+
+        // Launcher shortcuts mustn't take the empty list before loading for an emptied one.
+        assertNull(withTimeoutOrNull(100) { store.loadedEntries.first() })
+        listed()
+        assertEquals(listOf(picked.id), store.loadedEntries.first().map { it.id })
+    }
+
     private suspend fun listed(): List<RecentFile> {
         store.get("")
         return store.entries.value

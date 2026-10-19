@@ -229,15 +229,24 @@
   instead of "Open another PDF". To test it, truncate the stored copy
   (`files/recent/copies/` via `run-as`) of a file that opened before.
 
+- Launcher shortcuts (`LauncherShortcuts`, long press on the app icon) open
+  the four most recent entries, on top of Home so back leads to the list.
+  They follow the store's list once it's loaded (`loadedEntries`; the empty
+  list before that would wipe them). A shortcut pinned to the home screen
+  is disabled once its entry leaves the list (also during Undo) and enabled
+  again if it comes back. Icons show the thumbnail on Kiwi Green, or the PDF
+  symbol when there's none (protected without remembered password). The
+  shortcut intents name `MainActivity` and `ViewerActivity`, so pinned ones
+  break if those are renamed.
+
 # Planned changes
 
-## presentation mode
-- [ ] Fullscreen (hide system bars) first
-- [ ] One page at a time, swipe left/right, pinch-zoom (own pager view)
-
-## Other
-- [ ] Dark pages in dark mode: `PdfViewer` always draws them white, which
+- Document title instead of file name. If the PDF's metadata has a real title, show it in the recent files list, with the file name smaller underneath.
+- Document info in the sheets. Shows author, page count, size and other relevant stuff.
+- Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
+- Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
+- Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
-- [ ] Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
+- Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
   side panel (`androidx.pdf` can't read a PDF's outline, so no table of
   contents)
