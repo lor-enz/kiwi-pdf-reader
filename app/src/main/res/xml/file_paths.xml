@@ -2,4 +2,6 @@
 <paths>
     <!-- Copies handed to other apps by "Share", see DocumentActions.kt -->
     <cache-path name="shared" path="shared/" />
+    <!-- Opened to show the "Open with" dialog, see DefaultPdfApp.kt -->
+    <cache-path name="default-check" path="default-check/" />
 </paths>

@@ -144,7 +144,7 @@
   documents stay, as in cleanup), version (tap copies it with the Android
   version and device for bug reports), source, issues, privacy policy and
   licenses. No "Open by default" link: that system page is about web links
-  and doesn't help with PDFs. Every runtime dependency is Apache 2.0, so the
+  and can only clear defaults (see the default PDF app hint). Every runtime dependency is Apache 2.0, so the
   licenses screen lists them with one license text
   (`res/raw/apache_license.txt`); check the list when adding a dependency
   (`./gradlew :app:dependencies --configuration releaseRuntimeClasspath`).
@@ -282,6 +282,25 @@
   sheet (e.g. on switching to dark mode) returns to it, even after being
   dragged up, and the info sheet is meant to be read in full anyway. Page
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
+
+- Home shows a quiet hint below "Open PDF" while Kiwi isn't the default PDF
+  app (`DefaultPdfApp.kt`, checked on every resume). It can't be dismissed:
+  without being the default the app is barely used. Android has no role for
+  PDFs, so an app can't ask to become the default: only "Always" in the
+  system's "Open with" dialog sets it, and only the default app's "Open by
+  default" page clears it ("Clear default preferences", below the web
+  links). With no default, "Make default" opens a small PDF of the app's own
+  (`cache/default-check/`), so that dialog appears; the viewer closes as soon
+  as it gets that file, and Home confirms in a snackbar once Kiwi is the
+  default. With another app as default, the hint says so without naming it,
+  and "Clear other default" opens that app's "Open by default" page; back on
+  Home the hint offers "Make default". The hint is a Material banner (tonal
+  fill, info icon, action bottom right), not outlined: that read as one
+  more recent entry. Seeing other apps needs the manifest's `<queries>` entry
+  for viewing PDFs. To test it, set or clear defaults on the emulator with
+  a plain VIEW intent (`open-pdf.sh` targets the app directly) and Drive's
+  PDF viewer. Once the dialog suggests one app ("Open with …"), only that
+  one gets "Always"; the others below it open just once.
 
 - Launcher shortcuts (`LauncherShortcuts`, long press on the app icon) open
   the four most recent entries, on top of Home so back leads to the list.

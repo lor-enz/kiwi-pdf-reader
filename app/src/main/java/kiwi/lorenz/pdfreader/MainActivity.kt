@@ -42,6 +42,9 @@ class MainActivity : ComponentActivity() {
                 recentFiles = recentFiles,
                 thumbnailFile = viewModel::thumbnailFile,
                 onOpenPdf = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
+                pdfDefault = viewModel.pdfDefault,
+                onMakeDefault = ::askToBecomeDefault,
+                onChangeDefault = { openDefaultSettings(it.packageName) },
                 onOpenSettings = { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) },
                 onOpenRecent = { startActivity(ViewerActivity.recentIntent(this@MainActivity, it.id)) },
                 pendingRemoval = viewModel.pendingRemoval,
@@ -55,6 +58,18 @@ class MainActivity : ComponentActivity() {
                 onMessageShown = viewModel::onMessageShown,
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Before the first frame, so the hint doesn't flash; and again after the "Open with"
+        // dialog or the other app's settings.
+        viewModel.refreshPdfDefault()
+    }
+
+    private fun askToBecomeDefault() {
+        viewModel.onAskingForDefault()
+        lifecycleScope.launch { askToBecomePdfDefault() }
     }
 
     private fun share(uri: Uri, name: String) {

@@ -3,6 +3,11 @@
 
     <string name="home_tagline">Just use the green one.</string>
     <string name="open_pdf">Open PDF</string>
+    <string name="not_default_pdf_app">Kiwi PDF Reader isn\'t your default PDF app.</string>
+    <string name="make_default">Make default</string>
+    <string name="other_default_pdf_app">A different app is set as the default PDF app.</string>
+    <string name="clear_other_default">Clear other default</string>
+    <string name="now_default_pdf_app">PDFs now open in Kiwi PDF Reader.</string>
     <string name="recent_files">Recent</string>
     <string name="just_now">Just now</string>
     <string name="page_of">Page %1$d of %2$d</string>

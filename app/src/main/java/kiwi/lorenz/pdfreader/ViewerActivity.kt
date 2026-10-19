@@ -66,6 +66,12 @@ open class ViewerActivity : ComponentActivity() {
         enableEdgeToEdge()
         viewModel.taskId = taskId
 
+        // Only opened to show the "Open with" dialog; Home sees what was chosen.
+        if (isDefaultCheck(intent.data)) {
+            close()
+            return
+        }
+
         val isOpening = when {
             savedInstanceState == null -> handleIntent(intent)
             // Recreated after process death; on rotation the view model still has the document.

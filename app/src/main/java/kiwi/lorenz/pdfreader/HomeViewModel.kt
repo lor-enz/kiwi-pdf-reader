@@ -34,6 +34,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     var message by mutableStateOf<Int?>(null)
         private set
 
+    /** Which app opens PDFs; Home shows a hint unless it's this one. Checked on every return. */
+    var pdfDefault by mutableStateOf<PdfDefault>(PdfDefault.ThisApp)
+        private set
+
+    /** The "Open with" dialog was shown, so becoming the default deserves a confirmation. */
+    private var isAskingForDefault = false
+
     init {
         viewModelScope.launch {
             store.cleanup()
@@ -71,6 +78,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** The thumbnail goes too, as it shows protected content. */
     fun forgetPassword(entry: RecentFile) {
         viewModelScope.launch { store.setPassword(entry.id, null) }
+    }
+
+    fun refreshPdfDefault() {
+        pdfDefault = getApplication<Application>().pdfDefault()
+        if (isAskingForDefault && pdfDefault == PdfDefault.ThisApp) showMessage(R.string.now_default_pdf_app)
+        isAskingForDefault = false
+    }
+
+    /** Before showing the "Open with" dialog ([askToBecomePdfDefault]). */
+    fun onAskingForDefault() {
+        isAskingForDefault = true
     }
 
     fun showMessage(@StringRes message: Int) {

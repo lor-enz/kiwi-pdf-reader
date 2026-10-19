@@ -2,6 +2,7 @@ package kiwi.lorenz.pdfreader.ui
 
 import android.graphics.BitmapFactory
 import android.text.format.DateUtils
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,6 +36,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,9 +55,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.PdfMetadata
@@ -72,6 +76,9 @@ fun HomeScreen(
     recentFiles: List<RecentFile>,
     thumbnailFile: (RecentFile) -> File,
     onOpenPdf: () -> Unit,
+    pdfDefault: PdfDefault,
+    onMakeDefault: () -> Unit,
+    onChangeDefault: (PdfDefault.OtherApp) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
     onShareRecent: (RecentFile) -> Unit,
@@ -152,7 +159,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Header(onOpenPdf)
+                        Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault)
                     }
                     SettingsButton(
                         onClick = onOpenSettings,
@@ -184,7 +191,7 @@ fun HomeScreen(
                                         .offset(x = 4.dp),
                                 )
                                 Spacer(Modifier.height(24.dp))
-                                Header(onOpenPdf)
+                                Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault)
                             }
                         }
                         item {
@@ -229,7 +236,12 @@ private fun SettingsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Header(onOpenPdf: () -> Unit) {
+private fun Header(
+    onOpenPdf: () -> Unit,
+    pdfDefault: PdfDefault,
+    onMakeDefault: () -> Unit,
+    onChangeDefault: (PdfDefault.OtherApp) -> Unit,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.app_name),
@@ -248,6 +260,56 @@ private fun Header(onOpenPdf: () -> Unit) {
         ) {
             Text(stringResource(R.string.open_pdf))
         }
+        DefaultHint(pdfDefault, onMakeDefault, onChangeDefault)
+    }
+}
+
+/** A quiet hint while another app, or none, opens PDFs from other apps, with a way to change it. */
+@Composable
+private fun DefaultHint(
+    pdfDefault: PdfDefault,
+    onMakeDefault: () -> Unit,
+    onChangeDefault: (PdfDefault.OtherApp) -> Unit,
+) {
+    // Keeps showing the last state while it disappears.
+    var shown by remember { mutableStateOf(pdfDefault) }
+    if (pdfDefault != PdfDefault.ThisApp) shown = pdfDefault
+    AnimatedVisibility(visible = pdfDefault != PdfDefault.ThisApp) {
+        val other = shown as? PdfDefault.OtherApp
+        HintBox(
+            isOtherApp = other != null,
+            onClick = { if (other != null) onChangeDefault(other) else onMakeDefault() },
+            modifier = Modifier.padding(top = 24.dp),
+        )
+    }
+}
+
+/** Material's banner: icon and text side by side, the action at the end below them. */
+@Composable
+private fun HintBox(isOtherApp: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .testTag(TestTags.DEFAULT_HINT)
+            .padding(start = 16.dp, top = 16.dp, end = 8.dp, bottom = 4.dp),
+    ) {
+        Row(Modifier.padding(end = 8.dp)) {
+            Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(16.dp))
+            Text(
+                text = stringResource(if (isOtherApp) R.string.other_default_pdf_app else R.string.not_default_pdf_app),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(
+            onClick = onClick,
+            modifier = Modifier
+                .align(Alignment.End)
+                .testTag(if (isOtherApp) TestTags.CLEAR_OTHER_DEFAULT else TestTags.MAKE_DEFAULT),
+        ) { Text(stringResource(if (isOtherApp) R.string.clear_other_default else R.string.make_default)) }
     }
 }
 
@@ -400,6 +462,9 @@ private fun HomeScreenEmptyPreview() {
             recentFiles = emptyList(),
             thumbnailFile = { File("") },
             onOpenPdf = {},
+            pdfDefault = PdfDefault.None,
+            onMakeDefault = {},
+            onChangeDefault = {},
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
@@ -427,6 +492,9 @@ private fun HomeScreenRecentPreview() {
             ),
             thumbnailFile = { File("") },
             onOpenPdf = {},
+            pdfDefault = PdfDefault.OtherApp(""),
+            onMakeDefault = {},
+            onChangeDefault = {},
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
