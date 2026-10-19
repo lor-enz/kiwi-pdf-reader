@@ -30,7 +30,9 @@
   phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
   `./gradlew installDebug`, which installs on every connected device.
   - `make-test-pdfs.py` writes test files to `build/test-pdfs/` (the
-    protected ones use password `kiwi`).
+    protected ones use password `kiwi`). `heavy.pdf` (about 200 MB, a
+    large image on every page) renders slowly, e.g. to test the viewer's
+    cover.
   - `make-metadata-fixtures.py` writes the committed PDFs for
     `PdfMetadataReaderTest` (`src/test/resources/metadata/`), one per way a
     PDF can store its metadata. Run it again after changing it.

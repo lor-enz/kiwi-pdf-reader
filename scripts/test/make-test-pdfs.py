@@ -114,6 +114,23 @@ def scanned(path, pages=3):
     c.save()
 
 
+def heavy(path, pages=20):
+    """Every page a large photo-like image (noise compresses badly), so pages render slowly."""
+    c = canvas.Canvas(path, pagesize=A4)
+    font = ImageFont.load_default(size=300)
+    for n in range(1, pages + 1):
+        image = Image.effect_noise((2480, 3508), 80).convert("RGB")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((100, 100, 1500, 500), fill="white")
+        draw.text((150, 150), f"PAGE {n}", font=font, fill="black")
+        buffer = io.BytesIO()
+        image.save(buffer, "JPEG", quality=95)
+        buffer.seek(0)
+        c.drawImage(ImageReader(buffer), 0, 0, W, H)
+        c.showPage()
+    c.save()
+
+
 def form(path, encrypt=None):
     c = canvas.Canvas(path, pagesize=A4, encrypt=encrypt)
     c.setFont("Helvetica-Bold", 22)
@@ -163,6 +180,7 @@ def main():
     text_pages(os.path.join(out, "long.pdf"), pages=60)
     text_pages(os.path.join(out, "protected.pdf"), pages=5, encrypt=StandardEncryption(PASSWORD, canPrint=1))
     scanned(os.path.join(out, "scanned.pdf"))
+    heavy(os.path.join(out, "heavy.pdf"))
     form(os.path.join(out, "form.pdf"))
     form(os.path.join(out, "form-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1, canModify=1))
     titled(os.path.join(out, "long-title.pdf"),
