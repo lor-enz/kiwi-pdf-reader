@@ -6,6 +6,8 @@
   must build and pass the tests on its own.
 - Work in milestones. After each one: build, run the unit tests, test on
   the emulator, then report to the user, who tests on a real phone.
+- Test on an available emulator yourself, except when the user says they'll
+  test (usually a small change): then stop after the build and unit tests.
 - If the emulator or a device misbehaves during testing (hanging installs,
   very slow responses, unresponsive adb), stop and tell the user instead of
   waiting or working around it. It usually needs a manual restart.
