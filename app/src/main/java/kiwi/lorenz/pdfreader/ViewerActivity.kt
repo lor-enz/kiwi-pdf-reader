@@ -14,6 +14,7 @@ import androidx.core.content.IntentCompat
 import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
+import kiwi.lorenz.pdfreader.defaultapp.isDefaultCheck
 import kiwi.lorenz.pdfreader.recent.appTasks
 import kiwi.lorenz.pdfreader.ui.setAppContent
 import kiwi.lorenz.pdfreader.viewer.DocumentState

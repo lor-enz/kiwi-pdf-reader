@@ -304,10 +304,10 @@
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
 - Home shows a quiet hint below "Open PDF" while the app isn't the default PDF
-  app (`DefaultPdfApp.kt`, checked on every resume). "Not now" hides it for
+  app (`defaultapp/DefaultPdfApp.kt`, checked on every resume). "Not now" hides it for
   7 days (`PdfDefaultTracker`, a timestamp in shared preferences), as
   without being the default the app is barely used. Settings shows the same
-  banner (`ui/DefaultHint.kt`) without "Not now", below "Clear recent
+  banner (`defaultapp/DefaultHint.kt`) without "Not now", below "Clear recent
   files", or a quiet line once the app is the default, so it's always
   found there. Android has no role for
   PDFs, so an app can't ask to become the default: only "Always" in the

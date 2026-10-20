@@ -7,13 +7,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.core.net.toUri
-import kiwi.lorenz.pdfreader.PdfDefaultTracker
 import kiwi.lorenz.pdfreader.SnackbarMessage
 import kiwi.lorenz.pdfreader.ViewerActivity
+import kiwi.lorenz.pdfreader.defaultapp.PdfDefaultTracker
 import kiwi.lorenz.pdfreader.deleteOldSharedCopies
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.readDocumentInfo
-import kiwi.lorenz.pdfreader.pdfDefault
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore

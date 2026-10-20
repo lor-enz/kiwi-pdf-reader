@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kiwi.lorenz.pdfreader.defaultapp.openDefaultSettings
 import kiwi.lorenz.pdfreader.settings.LicensesScreen
 import kiwi.lorenz.pdfreader.settings.SettingsScreen
 import kiwi.lorenz.pdfreader.settings.SettingsViewModel

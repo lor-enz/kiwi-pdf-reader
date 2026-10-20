@@ -40,11 +40,11 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.defaultapp.DefaultHint
+import kiwi.lorenz.pdfreader.defaultapp.PdfDefault
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.ConfirmDialog
-import kiwi.lorenz.pdfreader.ui.DefaultHint
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme

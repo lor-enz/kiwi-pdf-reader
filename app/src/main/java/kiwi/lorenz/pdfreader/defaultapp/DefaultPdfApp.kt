@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.defaultapp
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -17,6 +17,10 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
+import kiwi.lorenz.pdfreader.PDF_MIME_TYPE
+import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.SnackbarMessage
+import kiwi.lorenz.pdfreader.providedUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

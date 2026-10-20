@@ -57,12 +57,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.defaultapp.DefaultHint
+import kiwi.lorenz.pdfreader.defaultapp.PdfDefault
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.PdfMetadata
 import kiwi.lorenz.pdfreader.ui.ActionSheet
-import kiwi.lorenz.pdfreader.ui.DefaultHint
 import kiwi.lorenz.pdfreader.ui.InfoSheet
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags

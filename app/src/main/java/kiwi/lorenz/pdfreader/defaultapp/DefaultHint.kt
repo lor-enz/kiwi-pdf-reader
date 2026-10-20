@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.defaultapp
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -24,8 +24,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.ui.TestTags
 
 /**
  * A quiet hint while another app, or none, opens PDFs from other apps, with a way to change it.
