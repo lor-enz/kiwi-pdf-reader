@@ -121,14 +121,14 @@ internal fun Presentation(
             pageSizes[index]?.fitInto(width, height)?.width
         }
         // Half the screen and half the page: centered, its neighbors are right behind the edges.
-        val slot = layout.slotWidth(pagerState.settledPage)
+        // Fixed while scrolling: changed under a swipe (settling on a page of another width as the
+        // next swipe starts), it would move the pages under the finger and throw off the snapping.
+        var centeredSlot by remember { mutableIntStateOf(layout.slotWidth(pagerState.settledPage)) }
+        val slot = if (pagerState.isScrollInProgress) centeredSlot else layout.slotWidth(pagerState.settledPage)
         // The pager keeps its offset in pixels, which no longer centers the page once its slot
-        // changes (settled on a page of another width). Before layout, so nothing jumps.
-        var centeredSlot by remember { mutableIntStateOf(slot) }
-        // Read here, so it's checked again once a swipe has ended.
-        val isScrolling = pagerState.isScrollInProgress
+        // changes. Before layout, so nothing jumps.
         SideEffect {
-            if (slot != centeredSlot && !isScrolling) {
+            if (slot != centeredSlot) {
                 centeredSlot = slot
                 pagerState.requestScrollToPage(pagerState.settledPage)
             }
