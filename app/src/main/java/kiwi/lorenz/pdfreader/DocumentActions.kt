@@ -22,8 +22,10 @@ import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
 import android.provider.DocumentsContract
 import android.util.Size
+import androidx.activity.ComponentActivity
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.pdf.PdfDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +74,13 @@ fun Context.printPdf(document: PdfDocument, file: Uri, name: String, isProtected
     printManager.print(name, adapter, null)
 }
 
+/** Shares the PDF that [file] returns; a failure shows in the screen's snackbar. */
+fun ComponentActivity.launchSharePdf(name: String, message: SnackbarMessage, file: suspend () -> Uri) {
+    lifecycleScope.launch {
+        runCatchingCancellable { sharePdf(file(), name) }.onFailure { message.show(R.string.share_failed) }
+    }
+}
+
 /** Hands the PDF to the share sheet. Throws if it can't be read anymore. */
 suspend fun Context.sharePdf(uri: Uri, name: String) {
     // A copy under the real name, so the recipient doesn't see a cryptic one.
@@ -85,7 +94,7 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
         }
         target
     }
-    val shared = FileProvider.getUriForFile(this, "$packageName.files", file)
+    val shared = providedUri(file)
     val send = Intent(Intent.ACTION_SEND)
         .setType(PDF_MIME_TYPE)
         .putExtra(Intent.EXTRA_STREAM, shared)
@@ -97,6 +106,9 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
         .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ExternalViewerActivity::class.java)))
     startActivity(chooser)
 }
+
+/** A URI that other apps can read [file] through, with a grant; see the provider in the manifest. */
+fun Context.providedUri(file: File): Uri = FileProvider.getUriForFile(this, "$packageName.files", file)
 
 /**
  * Writes the PDF at [from] to [to], a file the user just created with the system's "Save to"

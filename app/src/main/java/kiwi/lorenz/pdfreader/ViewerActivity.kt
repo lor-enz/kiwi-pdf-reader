@@ -151,11 +151,7 @@ open class ViewerActivity : ComponentActivity() {
     /** Filled-in form fields included, as with print and save a copy. */
     private fun share() {
         val name = loadedDocument()?.name ?: return
-        lifecycleScope.launch {
-            runCatchingCancellable { sharePdf(checkNotNull(viewModel.currentFile()), name) }.onFailure {
-                viewModel.message.show(R.string.share_failed)
-            }
-        }
+        launchSharePdf(name, viewModel.message) { checkNotNull(viewModel.currentFile()) }
     }
 
     private fun print() {

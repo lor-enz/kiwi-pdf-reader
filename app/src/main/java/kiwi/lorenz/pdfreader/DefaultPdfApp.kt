@@ -12,7 +12,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -58,7 +57,7 @@ fun Context.pdfDefault(): PdfDefault {
  */
 suspend fun Context.askToBecomePdfDefault() {
     val file = withContext(Dispatchers.IO) { defaultCheckFile().also { if (!it.exists()) writeDefaultCheckPdf(it) } }
-    startActivity(viewIntent(FileProvider.getUriForFile(this, "$packageName.files", file)))
+    startActivity(viewIntent(providedUri(file)))
 }
 
 /**
@@ -127,7 +126,7 @@ private fun viewIntent(uri: Uri) = Intent(Intent.ACTION_VIEW)
 
 private fun Context.defaultCheckFile() = File(File(cacheDir, DEFAULT_CHECK_DIR), "PDF Penguin.pdf")
 
-private fun Context.defaultCheckUri() = FileProvider.getUriForFile(this, "$packageName.files", defaultCheckFile())
+private fun Context.defaultCheckUri() = providedUri(defaultCheckFile())
 
 /** Another app opens it if the user picks that one instead, so it shows the app's name. */
 private fun writeDefaultCheckPdf(file: File) {
