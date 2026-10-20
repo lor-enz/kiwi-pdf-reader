@@ -55,9 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.info.InfoSheet
 import kiwi.lorenz.pdfreader.ui.ActionSheet
 import kiwi.lorenz.pdfreader.ui.ConfirmDialog
-import kiwi.lorenz.pdfreader.ui.InfoSheet
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 

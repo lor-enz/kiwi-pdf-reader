@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.info
 
 import android.content.Context
 import android.icu.util.LocaleData
@@ -23,13 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.info.DocumentInfo
-import kiwi.lorenz.pdfreader.info.PageSize
-import kiwi.lorenz.pdfreader.info.heightMm
-import kiwi.lorenz.pdfreader.info.paper
-import kiwi.lorenz.pdfreader.info.widthMm
 import java.text.NumberFormat
 import java.time.Instant
+import kiwi.lorenz.pdfreader.ui.ActionSheet
+import kiwi.lorenz.pdfreader.ui.TestTags
 
 /**
  * What the document says about itself, and its pages and size. [load] reads it from the file;

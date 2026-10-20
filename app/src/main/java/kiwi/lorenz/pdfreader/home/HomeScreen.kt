@@ -61,9 +61,9 @@ import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.defaultapp.DefaultHint
 import kiwi.lorenz.pdfreader.defaultapp.PdfDefault
 import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.info.InfoSheet
 import kiwi.lorenz.pdfreader.info.PdfMetadata
 import kiwi.lorenz.pdfreader.ui.ActionSheet
-import kiwi.lorenz.pdfreader.ui.InfoSheet
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton

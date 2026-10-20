@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.recent
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

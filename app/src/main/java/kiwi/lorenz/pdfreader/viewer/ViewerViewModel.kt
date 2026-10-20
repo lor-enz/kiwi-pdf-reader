@@ -31,7 +31,7 @@ import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
-import kiwi.lorenz.pdfreader.renderThumbnail
+import kiwi.lorenz.pdfreader.recent.renderThumbnail
 import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kiwi.lorenz.pdfreader.savePdfCopy
 import kotlinx.coroutines.CancellationException
