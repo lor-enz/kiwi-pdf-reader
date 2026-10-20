@@ -335,8 +335,8 @@
   the user with "du", as Android does, and says "Smartphone". "Remember" is
   "speichern" (forgetting a password is "entfernen", since "Passwort
   vergessen" reads as "forgot password"), the recent files list is "Zuletzt
-  geöffnet". Prefer a few short words over long compounds ("Infos zum
-  Dokument", not "Dokumenteigenschaften"). The tagline refers to the app:
+  geöffnet". Prefer short words over long compounds ("Document info" is
+  "Eigenschaften", not "Dokumenteigenschaften"). The tagline refers to the app:
   "Nimm einfach die Blaue." The app name isn't translated (`translatable="false"`). The
   system's per-app language setting lists both languages
   (`generateLocaleConfig`, default locale in `res/resources.properties`).

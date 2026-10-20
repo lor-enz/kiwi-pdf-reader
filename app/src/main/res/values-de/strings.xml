@@ -1,7 +1,7 @@
 <resources>
     <string name="home_tagline">Nimm einfach die Blaue.</string>
     <string name="open_pdf">PDF öffnen</string>
-    <string name="not_default_pdf_app">PDF Penguin ist nicht die standard PDF App.</string>
+    <string name="not_default_pdf_app">PDF Penguin ist nicht deine Standard-App für PDFs.</string>
     <string name="make_default">Als Standard festlegen</string>
     <string name="other_default_pdf_app">Eine andere App ist als Standard-App für PDFs festgelegt.</string>
     <string name="clear_other_default">Anderen Standard aufheben</string>
