@@ -11,7 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kiwi.lorenz.pdfreader.ui.HomeScreen
+import kiwi.lorenz.pdfreader.home.HomeScreen
+import kiwi.lorenz.pdfreader.home.HomeViewModel
 import kiwi.lorenz.pdfreader.ui.setAppContent
 
 /**
