@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.annotation.StringRes
+import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +15,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.pdf.EditablePdfDocument
 import androidx.pdf.PdfDocument
+import androidx.pdf.PdfLoader
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.models.FormEditInfo
@@ -22,6 +24,7 @@ import kiwi.lorenz.pdfreader.info.PageSize
 import kiwi.lorenz.pdfreader.info.PdfMetadata
 import kiwi.lorenz.pdfreader.info.readDocumentInfo
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
+import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.CancellationException
@@ -33,12 +36,20 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /** One open document, see [ViewerActivity]. */
-class ViewerViewModel(
+class ViewerViewModel @VisibleForTesting internal constructor(
     application: Application,
     private val savedState: SavedStateHandle,
+    private val store: RecentFilesStore,
+    private val loader: PdfLoader,
+    private val passwords: PasswordEncryption,
 ) : AndroidViewModel(application) {
-    private val loader = SandboxedPdfLoader(application)
-    private val store = RecentFilesStore.get(application)
+    constructor(application: Application, savedState: SavedStateHandle) : this(
+        application,
+        savedState,
+        RecentFilesStore.get(application),
+        SandboxedPdfLoader(application),
+        PasswordCipher,
+    )
 
     /** The task (card in the app switcher) this viewer is in. Set by the activity before opening. */
     var taskId = -1
@@ -286,7 +297,7 @@ class ViewerViewModel(
             store.setOpen(taskId, target.entry?.id)
             // The keystore can be slow, so not on the main thread.
             val remembered = target.entry?.encryptedPassword?.let {
-                withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) }
+                withContext(Dispatchers.Default) { passwords.decrypt(it) }
             }
             suspend fun openWithRemembered(target: Target) =
                 open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
@@ -366,7 +377,7 @@ class ViewerViewModel(
         viewModelScope.launch {
             store.setPageCount(entry.id, document.pageCount)
             if (password != null) {
-                val encrypted = if (rememberPassword) withContext(Dispatchers.Default) { PasswordCipher.encrypt(password) } else null
+                val encrypted = if (rememberPassword) withContext(Dispatchers.Default) { passwords.encrypt(password) } else null
                 store.setPassword(entry.id, encrypted)
             } else if (entry.isProtected) {
                 store.setUnprotected(entry.id)

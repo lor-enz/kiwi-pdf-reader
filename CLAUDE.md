@@ -24,7 +24,10 @@
 - Unit tests run on the JVM. `RecentFilesStoreTest` uses Robolectric (simulating
   Android 15, see `src/test/resources/robolectric.properties`) and a fake
   documents provider (`TestFilesProvider`), so store logic is tested without a
-  device; add a test there when changing the store.
+  device; add a test there when changing the store. `ViewerViewModelTest` covers
+  how the viewer opens documents (passwords, filled-in forms, failures, other
+  cards) with the real store, a fake `PdfLoader` and fake password encryption
+  (Robolectric has no Android Keystore); add a test there when changing that.
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
 - Helpers in `scripts/test/` use the running emulator, never a connected
   phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
