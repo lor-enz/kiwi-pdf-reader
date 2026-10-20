@@ -388,7 +388,5 @@
 - Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
-
-- Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
   side panel

@@ -4,77 +4,63 @@ title: PDF Penguin – Privacy Policy
 
 # Privacy Policy
 
-**PDF Penguin** · Last updated: October 19, 2026
+**PDF Penguin** · Last updated: October 20, 2026
 
-PDF Penguin is made by Lorenz Burghardt. This policy explains what the
-app does with your data. The short version: **nothing leaves your device.**
+This policy describes how PDF Penguin ("the app"), developed by Lorenz
+Burghardt, handles your data. In short: the app collects no personal data,
+and nothing you open in it leaves your device unless you send it somewhere
+yourself.
 
-## No data collection
+## Data collection and sharing
 
-PDF Penguin does not collect, send or share any personal data.
+PDF Penguin does not collect, transmit or share personal data. It has no
+internet access (it does not request Android's internet permission) and
+contains no accounts, advertising, analytics, crash reporting or third-party
+services. When you print, share or save a copy of a document, it is passed
+only to the printer, app or location you choose.
 
-- The app has no internet access. It does not request the Android internet
-  permission, so it cannot send anything anywhere.
-- No accounts, no ads, no analytics, no crash reporting, no tracking.
-- No third-party services or SDKs that collect data.
-- Printing, sharing and saving a copy only hand a document to the printer,
-  app or folder you choose yourself.
+## Data stored on your device
 
-## What the app stores on your device
+To provide its features, the app keeps the following in its private storage,
+which other apps cannot access:
 
-To show your recent files, the app keeps a few things in its private storage
-on your device. Other apps can't access it.
+- **Recent files:** the names and titles of documents you opened, where they
+  were opened from, and the page you last viewed.
+- **Document copies:** private copies of PDFs opened from other apps, as
+  Android allows access to such files only while they are open.
+- **Filled-in forms:** your entries in PDF forms, saved automatically. Forms
+  in password-protected documents stay protected by the same password.
+- **Thumbnails:** preview images of first pages. Password-protected documents
+  get no thumbnail or title unless their password is remembered.
+- **Passwords:** only if you choose "Remember password", encrypted with a key
+  held in the Android Keystore.
+- **Shared copies:** temporary copies handed to other apps when you share a
+  document, deleted after one day.
 
-- **Recent files list:** the names of documents you opened and where they
-  were opened from.
-- **Copies of documents opened from other apps:** when you open a PDF from
-  another app (for example an email or a messenger), Android only lets the
-  app read it while it's open. So that you can reopen it from the recent
-  files list, the app keeps a private copy.
-- **Filled-in forms:** when you fill in a PDF form, the app saves the
-  filled-in document automatically, so your entries are still there when you
-  reopen it. A form that was password-protected stays protected with the
-  same password. "Clear filled-in fields" deletes it.
-- **Thumbnails:** small preview images of the first page. Password-protected
-  documents get no thumbnail unless you chose to remember their password.
-- **Remembered passwords:** if you tick "Remember password", the password is
-  encrypted with a key kept in the Android Keystore and stored only on your
-  device.
-- **Shared documents:** when you share a PDF, the app hands over a temporary
-  copy with the document's real name. These copies are deleted automatically after a day.
+This data is excluded from Android backups and device-to-device transfers.
 
-This data is removed automatically. A document leaves the list, together
-with its copy, filled-in form, thumbnail and password, when the list grows
-beyond 20 entries. Copies and filled-in forms also go when they haven't been
-opened for 30 days or take up more than 250 MB together; a document you
-picked from your own files then stays in the list without its filled-in
-form. You can also remove a document from the list yourself. In the app's
-settings, "Clear recent files" deletes the list with all copies, filled-in
-forms and thumbnails at once, and "Forget all passwords" deletes every
-remembered password. Clearing the app's storage in Android's settings or
-uninstalling the app deletes everything.
+## Retention and deletion
 
-## Backups
-
-The recent files list, document copies, filled-in forms, thumbnails and
-remembered passwords are excluded from Android backups and device-to-device
-transfers.
+Stored data is deleted automatically: the recent files list keeps at most 20
+documents, and copies and filled-in forms are deleted after 30 days without
+use or once they take up more than 250 MB in total. You can remove single
+documents from the list, or use "Clear recent files" and "Forget all
+passwords" in the app's settings. Uninstalling the app or clearing its
+storage deletes all of its data.
 
 ## Permissions
 
-The app doesn't request any permissions. It only opens files you choose
-yourself, through the system file picker or by opening or sharing a PDF
-from another app.
+The app requests no permissions. It can only open files you choose, through
+the system file picker or by opening a PDF from another app.
 
 ## Children
 
 The app collects no data from anyone, including children.
 
-## Changes
+## Changes to this policy
 
-If this policy changes, the new version will be published on this page with
-a new date.
+Changes will be published on this page with a new date.
 
 ## Contact
 
-Questions about this policy? Email [apps@lorenz.kiwi](mailto:apps@lorenz.kiwi).
+Questions about this policy: [apps@lorenz.kiwi](mailto:apps@lorenz.kiwi)
