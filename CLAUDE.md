@@ -327,8 +327,10 @@
   Branches start open or closed as the author left them. A jump puts the
   target's top right below the top bar (`PdfViewerState.scrollToPosition`
   centers its point, so it's shifted by half the view). The section being
-  read is the last that starts above a line a quarter down the visible
-  area; it's marked, and its closed parents open when the drawer does. To
+  read is the last that starts above a line a third down the visible area
+  (a quarter missed chapter headings below a page's top margin); it's
+  marked, and its closed parents open, as soon as the drawer starts to
+  open (it's composed off screen), not once it's open: that came late. To
   test it, `contents.pdf` from `make-test-pdfs.py` draws a rule where each
   entry leads.
 

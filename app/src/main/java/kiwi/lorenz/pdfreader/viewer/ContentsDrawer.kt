@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +57,10 @@ internal fun ContentsDrawer(
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ModalDrawerSheet(drawerState, Modifier.testTag(TestTags.CONTENTS_DRAWER)) {
-                Contents(outline, readingPosition, isOpen = drawerState.isOpen, onItemClick)
+                // As soon as it starts to open: its content is there while it's off screen, so it
+                // slides in with the section being read marked and in view.
+                val isOpening = drawerState.targetValue == DrawerValue.Open
+                Contents(outline, readingPosition, isOpening, onItemClick)
             }
         },
         content = content,
@@ -73,7 +77,7 @@ private class ContentsRow(val item: OutlineItem, val path: List<Int>) {
 private fun Contents(
     outline: List<OutlineItem>,
     readingPosition: () -> PdfPoint?,
-    isOpen: Boolean,
+    isOpening: Boolean,
     onItemClick: (OutlineItem) -> Unit,
 ) {
     // Branches open as the author left them.
@@ -84,8 +88,8 @@ private fun Contents(
     val rows = visibleRows(outline, expanded)
     val listState = rememberLazyListState()
 
-    LaunchedEffect(isOpen) {
-        if (!isOpen) return@LaunchedEffect
+    LaunchedEffect(isOpening) {
+        if (!isOpening) return@LaunchedEffect
         val current = readingPosition()?.let { currentRow(outline, it) }
             .also { current = it } ?: return@LaunchedEffect
         // The section being read shows, even inside closed branches.

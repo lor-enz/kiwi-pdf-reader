@@ -83,9 +83,10 @@ private val PlaceholderIconSize = 96.dp
 
 /**
  * Where the reader is, as a share of the visible area below the bar: a heading in the top part
- * of the screen is the section being read, see [ReadingPosition].
+ * of the screen is the section being read, see [ReadingPosition]. A quarter was too little: a
+ * chapter heading below a page's top margin didn't count.
  */
-private const val READING_LINE = 0.25f
+private const val READING_LINE = 1 / 3f
 
 /** How far the user has to scroll in one direction before the top bar hides or shows. */
 private val BarToggleDistance = 32.dp
