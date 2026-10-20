@@ -3,13 +3,21 @@ package kiwi.lorenz.pdfreader.ui
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -40,9 +48,22 @@ fun ActionSheet(onDismiss: () -> Unit, content: @Composable ActionSheetScope.() 
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         // The sheet is a window of its own, so it doesn't inherit exposed test tags from the root.
         modifier = Modifier.exposeTestTags(),
+        // The navigation bar's inset goes inside the scrolling content (below), or it would be a
+        // strip that hides the actions scrolling past it.
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Top) },
     ) {
-        ActionSheetScope(this, onDismiss).content()
-        Spacer(Modifier.height(8.dp))
+        // The sheet doesn't scroll by itself: whatever doesn't fit (e.g. in landscape) would be cut
+        // off. Dragging the sheet down to close it still works once the content is at its top.
+        Column(
+            Modifier
+                // Scrolls from anywhere on the sheet, also beside content narrower than it.
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+        ) {
+            ActionSheetScope(this, onDismiss).content()
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 

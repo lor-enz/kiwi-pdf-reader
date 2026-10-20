@@ -326,7 +326,12 @@
   a `ModalBottomSheet` whose content grows later keeps its old height.
   Sheets skip the half-open state (`skipPartiallyExpanded`): a recreated
   sheet (e.g. on switching to dark mode) returns to it, even after being
-  dragged up, and the info sheet is meant to be read in full anyway. Page
+  dragged up, and the info sheet is meant to be read in full anyway. All
+  sheets are `ActionSheet`s, whose content scrolls when it doesn't fit (e.g.
+  in landscape; `ModalBottomSheet` would cut it off). The navigation bar's
+  inset is inside the scrolling content, or it would be a strip hiding what
+  scrolls past it, and the content fills the width, so the sheet scrolls
+  beside narrow content too. Page
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
 - The table of contents (the PDF's outline) opens in a drawer from the left
