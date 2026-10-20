@@ -10,8 +10,8 @@ import androidx.core.net.toUri
 import kiwi.lorenz.pdfreader.ViewerActivity
 import kiwi.lorenz.pdfreader.defaultapp.PdfDefaultTracker
 import kiwi.lorenz.pdfreader.document.deleteOldSharedCopies
-import kiwi.lorenz.pdfreader.info.DocumentInfo
-import kiwi.lorenz.pdfreader.info.readDocumentInfo
+import kiwi.lorenz.pdfreader.pdf.DocumentInfo
+import kiwi.lorenz.pdfreader.pdf.readDocumentInfo
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore

@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.info
+package kiwi.lorenz.pdfreader.pdf
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

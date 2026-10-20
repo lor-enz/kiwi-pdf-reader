@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.pdf.PdfPoint
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.info.OutlineItem
+import kiwi.lorenz.pdfreader.pdf.OutlineItem
 import kiwi.lorenz.pdfreader.ui.TestTags
 
 /** How far each level of the outline is indented. */

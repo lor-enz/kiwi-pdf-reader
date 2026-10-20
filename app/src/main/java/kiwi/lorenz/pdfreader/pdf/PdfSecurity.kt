@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.info
+package kiwi.lorenz.pdfreader.pdf
 
 import java.security.MessageDigest
 import javax.crypto.Cipher

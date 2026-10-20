@@ -17,7 +17,8 @@
   that adds them, so they can be driven by adb (see Testing).
 - Packages are by feature, each with its screens and logic: `viewer`,
   `home`, `settings`, `defaultapp`, `info`, `recent`, `document` (open,
-  print, share). `ui` holds only what several features share (sheets,
+  print, share), `pdf` (reads what `androidx.pdf` can't: metadata, the
+  table of contents). `ui` holds only what several features share (sheets,
   dialogs, `TestTags`, theme), `util` small helpers. The root holds only
   `PdfPenguinApp` and the activities, which keep their names and package
   (manifest, launcher, pinned shortcuts). Put a new file in the package of

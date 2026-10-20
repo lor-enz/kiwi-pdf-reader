@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.info
+package kiwi.lorenz.pdfreader.pdf
 
 import java.time.Instant
 import java.time.LocalDateTime

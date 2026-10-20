@@ -23,6 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.pdf.DocumentInfo
+import kiwi.lorenz.pdfreader.pdf.PageSize
 import java.text.NumberFormat
 import java.time.Instant
 import kiwi.lorenz.pdfreader.ui.ActionSheet

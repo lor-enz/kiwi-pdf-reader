@@ -1,7 +1,7 @@
 package kiwi.lorenz.pdfreader.viewer
 
 import androidx.pdf.PdfDocument
-import kiwi.lorenz.pdfreader.info.OutlineItem
+import kiwi.lorenz.pdfreader.pdf.OutlineItem
 
 sealed interface DocumentState {
     data object Empty : DocumentState

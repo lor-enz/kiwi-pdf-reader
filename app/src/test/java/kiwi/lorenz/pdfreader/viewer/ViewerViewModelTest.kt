@@ -10,7 +10,7 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfLoader
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.RenderParams
-import kiwi.lorenz.pdfreader.info.OutlineItem
+import kiwi.lorenz.pdfreader.pdf.OutlineItem
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore

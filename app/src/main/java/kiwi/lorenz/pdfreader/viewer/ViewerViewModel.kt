@@ -22,10 +22,10 @@ import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.ViewerActivity
 import kiwi.lorenz.pdfreader.document.UNSAVED_FORMS_DIR
 import kiwi.lorenz.pdfreader.document.savePdfCopy
-import kiwi.lorenz.pdfreader.info.DocumentInfo
-import kiwi.lorenz.pdfreader.info.PageSize
-import kiwi.lorenz.pdfreader.info.PdfMetadata
-import kiwi.lorenz.pdfreader.info.readDocumentInfo
+import kiwi.lorenz.pdfreader.pdf.DocumentInfo
+import kiwi.lorenz.pdfreader.pdf.PageSize
+import kiwi.lorenz.pdfreader.pdf.PdfMetadata
+import kiwi.lorenz.pdfreader.pdf.readDocumentInfo
 import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile

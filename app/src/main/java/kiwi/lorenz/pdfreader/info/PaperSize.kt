@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader.info
 
+import kiwi.lorenz.pdfreader.pdf.PageSize
 import kotlin.math.abs
 
 /** Common paper sizes, portrait, in millimeters. */

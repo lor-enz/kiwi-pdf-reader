@@ -1,5 +1,6 @@
 package kiwi.lorenz.pdfreader.info
 
+import kiwi.lorenz.pdfreader.pdf.PageSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
