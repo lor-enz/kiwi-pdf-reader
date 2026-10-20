@@ -329,7 +329,8 @@
   clear-package-preferred-activities kiwi.lorenz.pdfreader` clears the app's
   default again; Home only notices on its next resume.
 
-- Launcher shortcuts (`LauncherShortcuts`, long press on the app icon) open
+- Launcher shortcuts (`LauncherShortcuts`, started by `PdfPenguinApp`, so
+  the store doesn't depend on them; long press on the app icon) open
   the four most recent entries, on top of Home so back leads to the list.
   They follow the store's list once it's loaded (`loadedEntries`; the empty
   list before that would wipe them). A shortcut pinned to the home screen

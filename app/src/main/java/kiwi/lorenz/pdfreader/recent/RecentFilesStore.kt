@@ -12,7 +12,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
-import kiwi.lorenz.pdfreader.LauncherShortcuts
 import kiwi.lorenz.pdfreader.info.readDocumentInfo
 import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
@@ -504,10 +503,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         private var instance: RecentFilesStore? = null
 
         fun get(context: Context): RecentFilesStore = instance ?: synchronized(this) {
-            instance ?: RecentFilesStore(context.applicationContext).also {
-                instance = it
-                LauncherShortcuts(context.applicationContext, it).start()
-            }
+            instance ?: RecentFilesStore(context.applicationContext).also { instance = it }
         }
     }
 }
