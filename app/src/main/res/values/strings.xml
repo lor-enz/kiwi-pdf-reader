@@ -76,6 +76,10 @@
     <string name="info_modified">Modified</string>
     <!-- The app the document was made in, e.g. "Microsoft Word" -->
     <string name="info_made_with">Made with</string>
+    <!-- In place of a detail the document doesn't give -->
+    <string name="info_not_set">Not set</string>
+    <!-- In place of a detail that can't be read without the document's password -->
+    <string name="info_protected">Protected by password</string>
     <!-- e.g. "A4, landscape" -->
     <string name="page_size_landscape">%s, landscape</string>
     <string name="page_size_mm">%1$s × %2$s mm</string>

@@ -277,8 +277,10 @@
   (`isTitleRead` false) get theirs when Home starts.
 - "Document info", in the viewer's and the recent entries' sheets, opens a
   sheet of its own with author, subject, pages, page size, file size,
-  created, modified (only when another day) and the app it was made with;
-  its heading shows the title. `androidx.pdf` reads no metadata, so
+  created, modified and the app it was made with; its heading shows the
+  title. Every field shows; a missing one says "Not set", or "Protected by
+  password" when it can't be read without the password, both grey and
+  italic, set apart from the document's data. `androidx.pdf` reads no metadata, so
   `PdfMetadataReader` reads the info dictionary and the first page's size
   itself: xref tables and streams, updates, object streams, Flate with PNG
   predictors, and a scan for objects when the offsets are wrong.
@@ -287,7 +289,7 @@
   with the empty password, so they show everything. Files that need a
   password show their title and such in the viewer, and in the recents
   sheet only when the password is remembered (as with thumbnails);
-  otherwise only pages and sizes. The sheet appears once the file is read:
+  otherwise only pages and sizes are known. The sheet appears once the file is read:
   a `ModalBottomSheet` whose content grows later keeps its old height.
   Sheets skip the half-open state (`skipPartiallyExpanded`): a recreated
   sheet (e.g. on switching to dark mode) returns to it, even after being
@@ -341,7 +343,6 @@
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 
-- Change Document Info so unfilled field still show up with a grey italic "empty" or similar indicator that it's not filled.
 - Go to Penguin PDF Home from Viewer page (behind the 3 dots?)
 - Default check and Make Default also in settings.
 - Dismiss button for Make Default banner on Home. Comes back after 7 days.

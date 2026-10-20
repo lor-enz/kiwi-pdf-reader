@@ -16,9 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.info.DocumentInfo
@@ -56,9 +58,9 @@ private fun Details(info: DocumentInfo, pageCount: Int) {
     val context = LocalContext.current
     val metadata = info.metadata
     val pages = pageCount.takeIf { it > 0 } ?: metadata.pageCount
-    val created = metadata.created?.let { formatDate(context, it) }
-    // Most documents are never changed after they're made.
-    val modified = metadata.modified?.let { formatDate(context, it) }?.takeUnless { it == created }
+    // The document's own fields can't be read without its password; they may well be there.
+    val missing = stringResource(if (metadata.isLocked) R.string.info_protected else R.string.info_not_set)
+    val notSet = stringResource(R.string.info_not_set)
 
     SelectionContainer {
         Column(
@@ -66,23 +68,22 @@ private fun Details(info: DocumentInfo, pageCount: Int) {
             // Lined up with the name in the heading.
             modifier = Modifier.padding(start = 64.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
         ) {
-            Detail(R.string.info_author, metadata.author, TestTags.INFO_AUTHOR)
-            Detail(R.string.info_subject, metadata.subject, TestTags.INFO_SUBJECT)
-            Detail(R.string.info_pages, pages?.toString(), TestTags.INFO_PAGES)
-            Detail(R.string.info_page_size, metadata.pageSize?.let { formatPageSize(context, it) }, TestTags.INFO_PAGE_SIZE)
-            Detail(R.string.info_file_size, info.sizeBytes?.let { Formatter.formatFileSize(context, it) }, TestTags.INFO_FILE_SIZE)
-            Detail(R.string.info_created, created, TestTags.INFO_CREATED)
-            Detail(R.string.info_modified, modified, TestTags.INFO_MODIFIED)
+            Detail(R.string.info_author, metadata.author, missing, TestTags.INFO_AUTHOR)
+            Detail(R.string.info_subject, metadata.subject, missing, TestTags.INFO_SUBJECT)
+            Detail(R.string.info_pages, pages?.toString(), notSet, TestTags.INFO_PAGES)
+            Detail(R.string.info_page_size, metadata.pageSize?.let { formatPageSize(context, it) }, notSet, TestTags.INFO_PAGE_SIZE)
+            Detail(R.string.info_file_size, info.sizeBytes?.let { Formatter.formatFileSize(context, it) }, notSet, TestTags.INFO_FILE_SIZE)
+            Detail(R.string.info_created, metadata.created?.let { formatDate(context, it) }, missing, TestTags.INFO_CREATED)
+            Detail(R.string.info_modified, metadata.modified?.let { formatDate(context, it) }, missing, TestTags.INFO_MODIFIED)
             // The app it was written in says more than the one that turned it into a PDF.
-            Detail(R.string.info_made_with, metadata.creator ?: metadata.producer, TestTags.INFO_MADE_WITH)
+            Detail(R.string.info_made_with, metadata.creator ?: metadata.producer, missing, TestTags.INFO_MADE_WITH)
         }
     }
 }
 
-/** Left out when there's no [value]. */
+/** Without a [value], [missing] says why, set apart from the document's own data. */
 @Composable
-private fun Detail(@StringRes label: Int, value: String?, tag: String) {
-    value ?: return
+private fun Detail(@StringRes label: Int, value: String?, missing: String, tag: String) {
     Column {
         Text(
             text = stringResource(label),
@@ -90,8 +91,10 @@ private fun Detail(@StringRes label: Int, value: String?, tag: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = value,
+            text = value ?: missing,
             style = MaterialTheme.typography.bodyLarge,
+            color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+            fontStyle = if (value == null) FontStyle.Italic else null,
             modifier = Modifier.testTag(tag),
         )
     }

@@ -71,6 +71,8 @@
     <string name="info_modified">Geändert</string>
     <!-- Not "Erstellt mit": it would sit right below "Erstellt" -->
     <string name="info_made_with">Programm</string>
+    <string name="info_not_set">Nicht angegeben</string>
+    <string name="info_protected">Durch Passwort geschützt</string>
     <string name="page_size_landscape">%s, Querformat</string>
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="page_size_inches">%1$s × %2$s Zoll</string>
