@@ -59,6 +59,7 @@
     <string name="save_failed">Die Kopie konnte nicht gespeichert werden.</string>
     <string name="with_filled_in_fields">Mit deinen ausgefüllten Feldern</string>
     <string name="clear_filled_in">Ausgefüllte Felder leeren</string>
+    <string name="go_home">Startseite von PDF Penguin</string>
     <string name="clear_filled_in_title">Ausgefüllte Felder leeren?</string>
     <string name="clear_filled_in_text">Alles, was du in dieses Formular eingegeben hast, wird entfernt. Das lässt sich nicht rückgängig machen.</string>
     <string name="clear">Leeren</string>

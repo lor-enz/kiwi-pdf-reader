@@ -84,6 +84,7 @@ interface ViewerActions {
     fun share()
     fun saveCopy()
     fun clearFilledFields()
+    fun goHome()
     suspend fun documentInfo(): DocumentInfo
     fun messageShown()
 }
@@ -130,6 +131,7 @@ fun ViewerScreen(
             onInfo = { isInfoSheetOpen = true },
             isFilledIn = isFilledIn,
             onClearFilled = { isClearDialogOpen = true },
+            onHome = actions::goHome,
         )
     }
     if (isInfoSheetOpen && loaded != null) {
@@ -329,6 +331,7 @@ private fun ToolsSheet(
     onInfo: () -> Unit,
     isFilledIn: Boolean,
     onClearFilled: () -> Unit,
+    onHome: () -> Unit,
 ) {
     // Says that the filled-in fields come along, so nobody wonders whether they do.
     val note = R.string.with_filled_in_fields.takeIf { isFilledIn }
@@ -342,6 +345,7 @@ private fun ToolsSheet(
         if (isFilledIn) {
             Action(R.drawable.ic_restart, R.string.clear_filled_in, TestTags.TOOL_CLEAR_FILLED, onClick = onClearFilled)
         }
+        Action(R.drawable.ic_home, R.string.go_home, TestTags.TOOL_HOME, onClick = onHome)
     }
 }
 

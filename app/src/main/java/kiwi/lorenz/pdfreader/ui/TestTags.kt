@@ -57,6 +57,7 @@ object TestTags {
     const val TOOL_SAVE_COPY = "tool_save_copy"
     const val TOOL_INFO = "tool_info"
     const val TOOL_CLEAR_FILLED = "tool_clear_filled"
+    const val TOOL_HOME = "tool_home"
     const val CONFIRM_CLEAR_FILLED = "confirm_clear_filled"
 
     const val INFO_SHEET_TITLE = "info_sheet_title"

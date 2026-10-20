@@ -161,7 +161,9 @@
   (`./gradlew :app:dependencies --configuration releaseRuntimeClasspath`).
   Google's `oss-licenses` plugin needs Play Services.
 - The viewer's tools live in a bottom sheet behind the ⋮ button, so the
-  top bar stays calm as tools are added. Presentation mode (one page at a
+  top bar stays calm as tools are added. Its last item leads to Home: the
+  app's own viewer just closes (Home is behind it), a card from another app
+  stays and Home comes up in the main task, closing any viewer there. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
 - The password screen's padlock (`ui/Lock.kt`) is drawn in Compose, like
@@ -347,7 +349,6 @@
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 
-- Go to Penguin PDF Home from Viewer page (behind the 3 dots?)
 - Show Table of contents. Open is where.
 - Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

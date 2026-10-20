@@ -66,6 +66,8 @@
     <string name="save_failed">The copy couldn\'t be saved.</string>
     <string name="with_filled_in_fields">With your filled-in fields</string>
     <string name="clear_filled_in">Clear filled-in fields</string>
+    <!-- Leaves the document for the app's home screen with the recent files -->
+    <string name="go_home">PDF Penguin home</string>
     <string name="clear_filled_in_title">Clear filled-in fields?</string>
     <string name="clear_filled_in_text">Everything you entered in this form is removed. This can\'t be undone.</string>
     <string name="clear">Clear</string>

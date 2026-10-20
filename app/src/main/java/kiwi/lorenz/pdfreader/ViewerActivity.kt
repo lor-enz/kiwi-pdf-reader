@@ -57,6 +57,7 @@ open class ViewerActivity : ComponentActivity() {
             loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) }
         }
         override fun clearFilledFields() = viewModel.clearFilledFields()
+        override fun goHome() = this@ViewerActivity.goHome()
         override suspend fun documentInfo() = viewModel.documentInfo()
         override fun messageShown() = viewModel.onMessageShown()
     }
@@ -122,6 +123,22 @@ open class ViewerActivity : ComponentActivity() {
     /** A card of its own goes away with its document, back to the app that opened it. */
     private fun close() {
         if (isOwnTask) finishAndRemoveTask() else finish()
+    }
+
+    /**
+     * Home is right behind a viewer in the main task. A card of its own stays in the app switcher
+     * with its document; Home comes up in the main task instead, closing any viewer there.
+     */
+    private fun goHome() {
+        if (!isOwnTask) {
+            finish()
+            return
+        }
+        startActivity(
+            Intent(this, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+        )
     }
 
     /** The document is already open in [task]'s viewer: shows that one instead of this one. */
