@@ -158,7 +158,7 @@ class ViewerViewModelTest {
         viewModel.submitPassword("kiwi", remember = true)
 
         awaitState { it is DocumentState.NeedsPassword && it.unlocked != null }
-        waitUntil { runBlocking { store.get(entry.id) }!!.encryptedPassword == FakeEncryption.encrypt("kiwi") }
+        waitUntil { runBlocking { store.get(entry.id)!!.encryptedPassword == FakeEncryption.encrypt("kiwi") } }
     }
 
     @Test
@@ -311,8 +311,8 @@ class ViewerViewModelTest {
 
     /** Keeps passwords readable, as Robolectric has no Android Keystore. */
     private object FakeEncryption : PasswordEncryption {
-        override fun encrypt(password: String) = "encrypted:$password"
-        override fun decrypt(value: String) = value.removePrefix("encrypted:")
+        override suspend fun encrypt(password: String) = "encrypted:$password"
+        override suspend fun decrypt(value: String) = value.removePrefix("encrypted:")
     }
 
     private companion object {

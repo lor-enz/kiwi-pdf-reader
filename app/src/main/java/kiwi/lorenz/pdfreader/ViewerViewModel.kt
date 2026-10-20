@@ -285,10 +285,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             }
             // Before loading, so cleanup leaves the file alone while it opens.
             store.setOpen(taskId, target.entry?.id)
-            // The keystore can be slow, so not on the main thread.
-            val remembered = target.entry?.encryptedPassword?.let {
-                withContext(Dispatchers.Default) { passwords.decrypt(it) }
-            }
+            val remembered = target.entry?.encryptedPassword?.let { passwords.decrypt(it) }
             suspend fun openWithRemembered(target: Target) =
                 open(target, remembered, rememberPassword = remembered != null, isTypedByUser = false)
 
@@ -367,7 +364,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         viewModelScope.launch {
             store.setPageCount(entry.id, document.pageCount)
             if (password != null) {
-                val encrypted = if (rememberPassword) withContext(Dispatchers.Default) { passwords.encrypt(password) } else null
+                val encrypted = if (rememberPassword) passwords.encrypt(password) else null
                 store.setPassword(entry.id, encrypted)
             } else if (entry.isProtected) {
                 store.setUnprotected(entry.id)

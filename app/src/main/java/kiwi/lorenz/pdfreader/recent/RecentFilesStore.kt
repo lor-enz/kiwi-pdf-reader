@@ -204,8 +204,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
      */
     suspend fun readMissingTitles() {
         for (entry in edit { entries -> entries.filter { !it.isTitleRead } }) {
-            // The keystore can be slow, so not on the main thread.
-            val password = entry.encryptedPassword?.let { withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) } }
+            val password = entry.encryptedPassword?.let { PasswordCipher.decrypt(it) }
             val title = if (entry.isProtected && password == null) {
                 null
             } else {

@@ -13,9 +13,7 @@ import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 /** The recent files list; documents open in [ViewerActivity]. */
@@ -47,8 +45,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** A protected entry shows its title and such only when its password is remembered (privacy). */
     suspend fun documentInfo(entry: RecentFile): DocumentInfo {
-        // The keystore can be slow, so not on the main thread.
-        val password = entry.encryptedPassword?.let { withContext(Dispatchers.Default) { PasswordCipher.decrypt(it) } }
+        val password = entry.encryptedPassword?.let { PasswordCipher.decrypt(it) }
         return getApplication<Application>().readDocumentInfo(entry.uri.toUri(), password)
     }
 
