@@ -15,6 +15,10 @@ import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.defaultapp.isDefaultCheck
+import kiwi.lorenz.pdfreader.document.PDF_MIME_TYPE
+import kiwi.lorenz.pdfreader.document.launchSharePdf
+import kiwi.lorenz.pdfreader.document.pdfFileName
+import kiwi.lorenz.pdfreader.document.printPdf
 import kiwi.lorenz.pdfreader.recent.appTasks
 import kiwi.lorenz.pdfreader.ui.setAppContent
 import kiwi.lorenz.pdfreader.viewer.DocumentState

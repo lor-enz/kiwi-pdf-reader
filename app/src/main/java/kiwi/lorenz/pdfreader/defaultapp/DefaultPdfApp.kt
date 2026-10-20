@@ -17,10 +17,10 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
-import kiwi.lorenz.pdfreader.PDF_MIME_TYPE
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.SnackbarMessage
-import kiwi.lorenz.pdfreader.providedUri
+import kiwi.lorenz.pdfreader.document.PDF_MIME_TYPE
+import kiwi.lorenz.pdfreader.document.providedUri
+import kiwi.lorenz.pdfreader.util.SnackbarMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

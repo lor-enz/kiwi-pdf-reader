@@ -5,10 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SettingsActivity
-import kiwi.lorenz.pdfreader.SnackbarMessage
 import kiwi.lorenz.pdfreader.defaultapp.PdfDefaultTracker
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
+import kiwi.lorenz.pdfreader.util.SnackbarMessage
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 

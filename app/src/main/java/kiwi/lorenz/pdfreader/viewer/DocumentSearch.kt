@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.util.size
 import androidx.pdf.PdfDocument
-import kiwi.lorenz.pdfreader.runCatchingCancellable
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

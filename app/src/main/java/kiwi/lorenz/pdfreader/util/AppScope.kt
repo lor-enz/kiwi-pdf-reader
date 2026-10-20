@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.util
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

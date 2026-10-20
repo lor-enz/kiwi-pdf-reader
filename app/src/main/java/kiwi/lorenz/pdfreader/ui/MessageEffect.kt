@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
-import kiwi.lorenz.pdfreader.SnackbarMessage
+import kiwi.lorenz.pdfreader.util.SnackbarMessage
 import kotlinx.coroutines.launch
 
 /**

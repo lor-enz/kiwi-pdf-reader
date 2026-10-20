@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.document
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
@@ -27,6 +27,10 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.pdf.PdfDocument
+import kiwi.lorenz.pdfreader.ExternalViewerActivity
+import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.util.SnackbarMessage
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

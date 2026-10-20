@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.util
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue

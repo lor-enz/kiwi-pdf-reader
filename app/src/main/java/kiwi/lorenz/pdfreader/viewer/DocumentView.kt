@@ -42,7 +42,7 @@ import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.openLink
+import kiwi.lorenz.pdfreader.document.openLink
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest

@@ -12,13 +12,13 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.IconCompat
-import kiwi.lorenz.pdfreader.AppScope
 import kiwi.lorenz.pdfreader.MainActivity
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.ViewerActivity
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
-import kiwi.lorenz.pdfreader.runCatchingCancellable
+import kiwi.lorenz.pdfreader.util.AppScope
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map

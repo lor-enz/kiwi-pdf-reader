@@ -13,7 +13,7 @@ import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
 import kiwi.lorenz.pdfreader.info.readDocumentInfo
-import kiwi.lorenz.pdfreader.runCatchingCancellable
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
