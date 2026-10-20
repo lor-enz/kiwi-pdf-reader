@@ -1,6 +1,5 @@
 package kiwi.lorenz.pdfreader
 
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -40,9 +39,9 @@ class SettingsActivity : ComponentActivity() {
                 onForgetAllPasswords = viewModel::forgetAllPasswords,
                 onClearRecentFiles = viewModel::clearRecentFiles,
                 onCopyVersion = ::copyVersion,
-                onOpenSourceCode = { openLink(SOURCE_URL) },
-                onReportProblem = { openLink(ISSUES_URL) },
-                onOpenPrivacyPolicy = { openLink(PRIVACY_POLICY_URL) },
+                onOpenSourceCode = { openPage(SOURCE_URL) },
+                onReportProblem = { openPage(ISSUES_URL) },
+                onOpenPrivacyPolicy = { openPage(PRIVACY_POLICY_URL) },
                 onOpenLicenses = { startActivity(Intent(this, LicensesActivity::class.java)) },
                 message = viewModel.message.current,
                 onMessageShown = viewModel.message::shown,
@@ -58,12 +57,8 @@ class SettingsActivity : ComponentActivity() {
             .setPrimaryClip(ClipData.newPlainText(getString(R.string.version), text))
     }
 
-    private fun openLink(url: String) {
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-        } catch (_: ActivityNotFoundException) {
-            viewModel.message.show(R.string.link_failed)
-        }
+    private fun openPage(url: String) {
+        if (!openLink(url.toUri())) viewModel.message.show(R.string.link_failed)
     }
 
     private companion object {
