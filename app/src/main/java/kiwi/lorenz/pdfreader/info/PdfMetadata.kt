@@ -6,8 +6,8 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 
 /**
- * What a PDF says about itself in its info dictionary, and the size of its first page.
- * `androidx.pdf` doesn't read either, see [PdfMetadataReader].
+ * What a PDF says about itself in its info dictionary, the size of its first page and its table
+ * of contents. `androidx.pdf` doesn't read any of them, see [PdfMetadataReader].
  */
 data class PdfMetadata(
     val title: String? = null,
@@ -24,6 +24,20 @@ data class PdfMetadata(
     val pageSize: PageSize? = null,
     /** Encrypted, and neither the password given nor the empty one opens it: the strings are left out. */
     val isLocked: Boolean = false,
+    /** The table of contents, see [PdfMetadataReader.read]. */
+    val outline: List<OutlineItem> = emptyList(),
+)
+
+/** An entry in a document's table of contents, which PDFs call its outline. */
+data class OutlineItem(
+    val title: String,
+    /** Where it leads, counted from 0; null if nowhere in this document. */
+    val page: Int?,
+    /** How far below the top of [page] it leads, in points; null for the top. */
+    val top: Float?,
+    /** Shows its [children] at first, as the author left it. */
+    val isOpen: Boolean,
+    val children: List<OutlineItem>,
 )
 
 data class PageSize(val width: Double, val height: Double)

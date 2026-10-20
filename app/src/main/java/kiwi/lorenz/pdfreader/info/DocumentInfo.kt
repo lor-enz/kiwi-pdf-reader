@@ -14,15 +14,20 @@ data class DocumentInfo(val metadata: PdfMetadata, val sizeBytes: Long?)
 
 /**
  * Never fails: a file that can't be read gives empty info. [password] is the one to open a
- * protected file; without it, its title and such are left out.
+ * protected file; without it, its title and such are left out. See [PdfMetadataReader.read] for
+ * [withOutline].
  */
-suspend fun Context.readDocumentInfo(uri: Uri, password: String? = null): DocumentInfo = withContext(Dispatchers.IO) {
+suspend fun Context.readDocumentInfo(
+    uri: Uri,
+    password: String? = null,
+    withOutline: Boolean = false,
+): DocumentInfo = withContext(Dispatchers.IO) {
     try {
         val descriptor = checkNotNull(contentResolver.openFileDescriptor(uri, "r"))
         ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
             val channel = stream.channel
             val size = channel.size()
-            DocumentInfo(PdfMetadataReader(ChannelSource(channel, size), password).read(), size)
+            DocumentInfo(PdfMetadataReader(ChannelSource(channel, size), password).read(withOutline), size)
         }
     } catch (e: CancellationException) {
         throw e

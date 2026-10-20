@@ -56,6 +56,38 @@ def document(name, about, title="Electricity bill", pages=2, media_box=A4, rotat
     return pdf
 
 
+def add_outline(pdf, items, parent=None):
+    """Builds an outline from (title, target, is_open, children) tuples. The target is a
+    destination (array, name or string), an action dictionary or None."""
+    if parent is None:
+        parent = pdf.make_indirect(Dictionary(Type=Name.Outlines))
+        pdf.Root.Outlines = parent
+    previous = None
+    for title, target, is_open, children in items:
+        item = pdf.make_indirect(Dictionary(Title=String(title), Parent=parent))
+        if isinstance(target, Dictionary):
+            item.A = target
+        elif target is not None:
+            item.Dest = target
+        if previous is None:
+            parent.First = item
+        else:
+            previous.Next = item
+            item.Prev = previous
+        previous = item
+        if children:
+            add_outline(pdf, children, item)
+            # Positive when open, negative when closed; only the sign matters here.
+            item.Count = len(children) if is_open else -len(children)
+    if previous is not None:
+        parent.Last = previous
+        parent.Count = len(items)
+
+
+def dest(pdf, page, *location):
+    return Array([pdf.pages[page].obj] + list(location))
+
+
 def save(pdf, name, **options):
     pdf.save(os.path.join(OUT, name), fix_metadata_version=False, **options)
 
@@ -105,16 +137,22 @@ def main():
     # Encrypted. With only a permissions password ("owner") they open without asking; the others
     # need "kiwi" to open, or the permissions password.
     disable = pikepdf.ObjectStreamMode.disable
-    for name, user, revision, aes, streams, method in [
-        ("rc4-40.pdf", "", 2, False, disable, "RC4 40-bit (very old)"),
-        ("rc4-128-password.pdf", PASSWORD, 3, False, disable, "RC4 128-bit"),
-        ("aes-128.pdf", "", 4, True, disable, "AES 128-bit"),
-        ("aes-256.pdf", "", 6, True, pikepdf.ObjectStreamMode.generate, "AES 256-bit, compressed"),
-        ("aes-256-password.pdf", PASSWORD, 6, True, disable, "AES 256-bit"),
+    for name, user, revision, aes, streams, method, has_outline in [
+        ("rc4-40.pdf", "", 2, False, disable, "RC4 40-bit (very old)", False),
+        ("rc4-128-password.pdf", PASSWORD, 3, False, disable, "RC4 128-bit", True),
+        ("aes-128.pdf", "", 4, True, disable, "AES 128-bit", False),
+        ("aes-256.pdf", "", 6, True, pikepdf.ObjectStreamMode.generate, "AES 256-bit, compressed", False),
+        ("aes-256-password.pdf", PASSWORD, 6, True, disable, "AES 256-bit", True),
     ]:
         opening = (f"Needs the password \"{PASSWORD}\" to open (or \"owner\")." if user else
                    "Opens without a password; \"owner\" only guards printing and copying.")
-        save(document(name, [bill, f"Encrypted with {method}.", opening]), name, object_stream_mode=streams,
+        about = [bill, f"Encrypted with {method}.", opening]
+        if has_outline:
+            about.append("Contents: \"Übersicht\" with a check mark, leading to page 2.")
+        pdf = document(name, about)
+        if has_outline:
+            add_outline(pdf, [("Übersicht ✓", dest(pdf, 1, Name.Fit), False, [])])
+        save(pdf, name, object_stream_mode=streams,
              encryption=pikepdf.Encryption(owner="owner", user=user, R=revision, aes=aes, metadata=revision >= 4))
 
     # The cross-reference table's offsets are wrong (as after a careless edit); readers scan.
@@ -127,6 +165,53 @@ def main():
     data = open(path, "rb").read()
     data = re.sub(rb"(\d{10}) (\d{5}) n", lambda m: b"%010d %s n" % (int(m[1]) + 7, m[2]), data)
     open(path, "wb").write(data)
+
+    # A nested outline with every kind of explicit destination.
+    pdf = document("outline.pdf", [
+        "Contents, nested: 1 Introduction (1.1 Motivation, 1.2 Scope), 2 Methods (closed:",
+        "2.1 Data, 2.1.1 Sources), 3 Turned page, Appendix (Website, A Tables).",
+        "Every heading leads to its page; Website and Appendix lead nowhere.",
+    ], pages=6)
+    pdf.pages[4].obj.Rotate = 90
+    add_outline(pdf, [
+        ("1 Introduction", dest(pdf, 0, Name.Fit), True, [
+            ("1.1 Motivation", dest(pdf, 0, Name.XYZ, 72, 600, 0), False, []),
+            ("1.2 Scope", Dictionary(S=Name.GoTo, D=dest(pdf, 1, Name.FitH, 700)), False, []),
+        ]),
+        ("2 Methods", dest(pdf, 2, Name.XYZ, None, None, None), False, [
+            ("2.1 Data", dest(pdf, 3, Name.FitR, 50, 100, 300, 500), True, [
+                ("2.1.1 Sources", dest(pdf, 3, Name.XYZ, 0, 400, 0), False, []),
+            ]),
+        ]),
+        ("3 Turned page", dest(pdf, 4, Name.XYZ, 0, 500, 0), False, []),
+        ("Appendix", None, True, [
+            ("Website", Dictionary(S=Name.URI, URI=String("https://example.com")), False, []),
+            ("A Tables", dest(pdf, 5, Name.Fit), False, []),
+        ]),
+    ])
+    save(pdf, "outline.pdf", object_stream_mode=pikepdf.ObjectStreamMode.disable)
+
+    # Named destinations, compressed: a name tree (newer files) and a dictionary (older ones).
+    pdf = document("outline-named.pdf", [
+        "Contents by named destinations: Name tree (page 2), Old dictionary (page 3),",
+        "Action with name (page 1), Missing name (leads nowhere).",
+    ], pages=3)
+    leaf = pdf.make_indirect(Dictionary(
+        Limits=Array([String("sec.one"), String("sec.two")]),
+        Names=Array([
+            String("sec.one"), pdf.make_indirect(dest(pdf, 1, Name.XYZ, 0, 800, 0)),
+            String("sec.two"), Dictionary(D=dest(pdf, 0, Name.FitH, 841.89)),
+        ]),
+    ))
+    pdf.Root.Names = Dictionary(Dests=Dictionary(Kids=Array([leaf])))
+    pdf.Root.Dests = Dictionary(chapter2=Dictionary(D=dest(pdf, 2, Name.Fit)))
+    add_outline(pdf, [
+        ("Name tree", String("sec.one"), False, []),
+        ("Old dictionary", Name("/chapter2"), False, []),
+        ("Action with name", Dictionary(S=Name.GoTo, D=String("sec.two")), False, []),
+        ("Missing name", String("nowhere"), False, []),
+    ])
+    save(pdf, "outline-named.pdf", object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
     # No info dictionary at all.
     pdf = pikepdf.new()

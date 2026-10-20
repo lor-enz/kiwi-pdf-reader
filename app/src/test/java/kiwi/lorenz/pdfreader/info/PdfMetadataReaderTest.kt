@@ -10,9 +10,9 @@ import java.time.ZoneOffset
 
 /** The fixtures are made by `scripts/test/make-metadata-fixtures.py`. */
 class PdfMetadataReaderTest {
-    private fun read(name: String, password: String? = null): PdfMetadata {
+    private fun read(name: String, password: String? = null, withOutline: Boolean = false): PdfMetadata {
         val bytes = checkNotNull(javaClass.getResourceAsStream("/metadata/$name")).use { it.readBytes() }
-        return PdfMetadataReader(ByteArraySource(bytes), password).read()
+        return PdfMetadataReader(ByteArraySource(bytes), password).read(withOutline)
     }
 
     private val a4 = PageSize(595.276, 841.89)
@@ -130,6 +130,80 @@ class PdfMetadataReaderTest {
         assertEquals("Å", metadata.author)
         assertNull(metadata.subject)
         assertEquals(PageSize(592.0, 772.0), metadata.pageSize)
+    }
+
+    private fun item(title: String, page: Int?, top: Double? = null, isOpen: Boolean = false, vararg children: OutlineItem) =
+        OutlineItem(title, page, top?.toFloat(), isOpen, children.toList())
+
+    @Test
+    fun `reads a nested outline with explicit destinations`() {
+        val a4Top = 841.89
+        val expected = listOf(
+            item(
+                "1 Introduction", 0, isOpen = true, children = arrayOf(
+                    item("1.1 Motivation", 0, a4Top - 600),
+                    // Through a "go to" action.
+                    item("1.2 Scope", 1, a4Top - 700),
+                ),
+            ),
+            item(
+                "2 Methods", 2, children = arrayOf(
+                    item("2.1 Data", 3, a4Top - 500, isOpen = true, item("2.1.1 Sources", 3, a4Top - 400)),
+                ),
+            ),
+            // Measured on a turned page, the top would be somewhere else.
+            item("3 Turned page", 4),
+            item(
+                "Appendix", null, isOpen = true, children = arrayOf(
+                    item("Website", null),
+                    item("A Tables", 5),
+                ),
+            ),
+        )
+        assertEquals(expected, read("outline.pdf", withOutline = true).outline)
+    }
+
+    @Test
+    fun `finds named destinations in name trees and dictionaries`() {
+        val expected = listOf(
+            item("Name tree", 1, 841.89 - 800),
+            item("Old dictionary", 2),
+            item("Action with name", 0, 0.0),
+            item("Missing name", null),
+        )
+        assertEquals(expected, read("outline-named.pdf", withOutline = true).outline)
+    }
+
+    @Test
+    fun `reads the outline only when asked`() {
+        assertEquals(emptyList<OutlineItem>(), read("outline.pdf").outline)
+        assertEquals(emptyList<OutlineItem>(), read("table.pdf", withOutline = true).outline)
+    }
+
+    @Test
+    fun `decrypts the outline of protected files only with their password`() {
+        for (name in listOf("rc4-128-password.pdf", "aes-256-password.pdf")) {
+            assertEquals(name, listOf(item("Übersicht ✓", 1)), read(name, "kiwi", withOutline = true).outline)
+            assertEquals(name, emptyList<OutlineItem>(), read(name, withOutline = true).outline)
+        }
+    }
+
+    @Test
+    fun `an outline that loops ends where it repeats`() {
+        val pdf = """
+            %PDF-1.4
+            1 0 obj << /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >> endobj
+            2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >> endobj
+            3 0 obj << /Type /Page /Parent 2 0 R >> endobj
+            4 0 obj << /First 5 0 R >> endobj
+            5 0 obj << /Title (Start) /Dest [3 0 R /XYZ 0 792 0] /Next 6 0 R /First 5 0 R /Count 1 >> endobj
+            6 0 obj << /Title (Again) /Dest [0 /Fit] /Next 5 0 R >> endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+        """.trimIndent().toByteArray(Charsets.ISO_8859_1)
+        val outline = PdfMetadataReader(ByteArraySource(pdf)).read(withOutline = true).outline
+        // A page number instead of a reference works too.
+        assertEquals(listOf(item("Start", 0, 0.0, isOpen = true), item("Again", 0)), outline)
     }
 
     @Test
