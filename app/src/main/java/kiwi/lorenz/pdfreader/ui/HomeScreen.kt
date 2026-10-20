@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.info.DocumentInfo
@@ -339,15 +340,17 @@ private fun RecentFileRow(
         Thumbnail(entry, thumbnailFile)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            // The title, if the document has one, with the file name smaller below it.
+            // The title, if the document has one, with the file name smaller below it. A title's
+            // lines sit closer together than the file name, so the two lines read as one.
             Text(
                 text = entry.title ?: entry.name,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 20.sp),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.testTag(TestTags.RECENT_TITLE),
             )
             if (entry.title != null) {
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = entry.name,
                     style = MaterialTheme.typography.bodyMedium,

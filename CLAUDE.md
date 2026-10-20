@@ -345,7 +345,6 @@
 - Go to Penguin PDF Home from Viewer page (behind the 3 dots?)
 - Default check and Make Default also in settings.
 - Dismiss button for Make Default banner on Home. Comes back after 7 days.
-- Fix padding in Recent item when title is multiline. Right now second line is closer to filename than to first line of Title.
 - Show Table of contents. Open is where.
 - Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
