@@ -118,8 +118,10 @@
   package-private class in `kotlin.collections` (`IllegalAccessError` at
   startup). R8 now optimizes everything (the default, `**`).
 - Releases: raising `versionCode` in `version.properties` on `main` makes
-  the GitHub Action upload a signed bundle to Play's internal track as a
-  draft (see "Releasing" in the README). Bump it only in its own `🔖`
+  the GitHub Action run the CI checks (it calls `ci.yml`) and then upload a
+  signed bundle to Play's internal track as a draft (see "Releasing" in the
+  README). The Play upload action gets the service account's key, so it's
+  pinned to a commit, not a tag. Bump `versionCode` only in its own `🔖`
   commit, and only when the user asks for a release.
 - The workflows use `gradle/actions/setup-gradle@v6`, whose caching is a
   proprietary component under Gradle's Terms of Use. Accepted on purpose:

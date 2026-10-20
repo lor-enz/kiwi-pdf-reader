@@ -1,24 +1,30 @@
 # Runs the unit tests and lint and builds the release version (shrunk by R8, unsigned) on pushes
-# to main and on pull requests. Lint fails the build on errors only; warnings are listed in the
-# report. The reports are attached to the run when it fails.
+# to main and on pull requests, and before every release (release.yml calls it). Lint fails the
+# build on errors only; warnings are listed in the report. The reports are attached to the run
+# when it fails.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
-# A newer push to the same branch makes the older run pointless
+# A newer push to the same branch makes the older run pointless. Called by release.yml,
+# github.workflow is "Release", so a release's checks never cancel CI's own run, or the other way
+# round.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Ends a hung test run instead of waiting for GitHub's limit of 6 hours
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 

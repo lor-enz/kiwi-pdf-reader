@@ -32,10 +32,10 @@ Releases to Google Play are published by a GitHub Action ([`.github/workflows/re
 
 1. Increase `versionCode` in [`version.properties`](version.properties) by one, and update `versionName` (the version users see, e.g. `1.1`).
 2. Commit it, e.g. `🔖 release version 1.1`, and push to `main`.
-3. The action builds a signed bundle, uploads it to the **internal testing** track as a draft and tags the commit as `v<versionCode>`.
+3. The action runs the CI checks (unit tests, lint, release build); only if they pass does it build a signed bundle, upload it to the **internal testing** track as a draft and tag the commit as `v<versionCode>`.
 4. In the Play Console, review the draft and roll it out, or promote it to closed testing or production.
 
-The action only runs when `version.properties` changes on `main`, and skips a `versionCode` that already has a tag, so every version is released once. Play rejects a `versionCode` that isn't higher than the last upload; the action then fails without publishing anything.
+The action only runs when `version.properties` changes on `main`, and skips a `versionCode` that already has a tag, so every version is released once. Releases run one at a time; a second push waits for the first. Play rejects a `versionCode` that isn't higher than the last upload; the action then fails without publishing anything.
 
 It needs these repository secrets:
 
