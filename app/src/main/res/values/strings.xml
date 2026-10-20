@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">PDF Penguin</string>
+    <string name="app_name" translatable="false">PDF Penguin</string>
 
     <string name="home_tagline">Just use the blue one.</string>
     <string name="open_pdf">Open PDF</string>
