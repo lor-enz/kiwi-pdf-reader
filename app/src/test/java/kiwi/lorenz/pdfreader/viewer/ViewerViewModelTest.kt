@@ -10,6 +10,7 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfLoader
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.RenderParams
+import kiwi.lorenz.pdfreader.info.OutlineItem
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
@@ -70,6 +71,26 @@ class ViewerViewModelTest {
         assertEquals(entry.uri, loaded.document.uri.toString())
         assertEquals(4, viewModel.pendingRestorePage)
         assertEquals(entry.id, runBlocking { store.openIn(TASK) }?.id)
+    }
+
+    @Test
+    fun `a document opens with its title and table of contents`() {
+        val pdf = """
+            %PDF-1.4
+            1 0 obj << /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >> endobj
+            2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >> endobj
+            3 0 obj << /Type /Page /Parent 2 0 R >> endobj
+            4 0 obj << /First 5 0 R >> endobj
+            5 0 obj << /Title (Introduction) /Dest [3 0 R /Fit] >> endobj
+            6 0 obj << /Title (Manual) >> endobj
+            trailer << /Root 1 0 R /Info 6 0 R >>
+            %%EOF
+        """.trimIndent()
+        viewModel.openRecent(copy("manual.pdf", pdf).id)
+
+        val loaded = awaitLoaded()
+        assertEquals("Manual", loaded.title)
+        assertEquals(listOf(OutlineItem("Introduction", 0, null, false, emptyList())), loaded.outline)
     }
 
     @Test

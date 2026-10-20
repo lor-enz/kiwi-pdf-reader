@@ -37,6 +37,8 @@ import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -319,11 +321,16 @@ class ViewerViewModel @VisibleForTesting internal constructor(
     ): DocumentState {
         val entry = target.entry
         return try {
-            val document = loader.openDocument(target.uri, password)
-            // Before the document shows, so the top bar doesn't change. From the original, as
-            // the filled-in version is written by the PDF library.
-            val title = getApplication<Application>()
-                .readDocumentInfo(entry?.uri?.toUri() ?: target.uri, password).metadata.title
+            // Before the document shows, so the top bar doesn't change, and while it opens. From
+            // the original, as the filled-in version is written by the PDF library.
+            val (document, metadata) = coroutineScope {
+                val metadata = async {
+                    getApplication<Application>()
+                        .readDocumentInfo(entry?.uri?.toUri() ?: target.uri, password, withOutline = true).metadata
+                }
+                loader.openDocument(target.uri, password) to metadata.await()
+            }
+            val title = metadata.title
             openPassword = password
             passwordTarget = null
             if (entry != null) onOpened(entry, document, title, password, rememberPassword)
@@ -334,6 +341,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
                 name = target.name,
                 title = title,
                 isProtected = password != null,
+                outline = metadata.outline,
             )
         } catch (e: CancellationException) {
             throw e

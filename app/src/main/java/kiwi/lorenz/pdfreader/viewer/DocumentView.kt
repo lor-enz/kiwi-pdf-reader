@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -22,6 +23,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -43,7 +45,9 @@ import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.document.openLink
+import kiwi.lorenz.pdfreader.info.OutlineItem
 import kiwi.lorenz.pdfreader.ui.TestTags
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,6 +81,12 @@ private const val REVEAL_TIMEOUT_MS = 3000L
 
 private val PlaceholderIconSize = 96.dp
 
+/**
+ * Where the reader is, as a share of the visible area below the bar: a heading in the top part
+ * of the screen is the section being read, see [ReadingPosition].
+ */
+private const val READING_LINE = 0.25f
+
 /** How far the user has to scroll in one direction before the top bar hides or shows. */
 private val BarToggleDistance = 32.dp
 
@@ -88,6 +98,9 @@ internal fun DocumentView(
     pendingRestorePage: Int?,
     onPageRestored: () -> Unit,
     onPageChanged: (Int) -> Unit,
+    jumpTarget: OutlineItem?,
+    onJumped: () -> Unit,
+    readingPosition: ReadingPosition,
     contentPadding: PaddingValues,
     onBarHiddenChange: (Boolean) -> Unit,
     onFormEdit: (FormEditInfo) -> Unit,
@@ -99,6 +112,7 @@ internal fun DocumentView(
     var isRevealed by remember { mutableStateOf(false) }
     val readyPages by rememberReadyPages()
     var viewportHeight by remember { mutableIntStateOf(0) }
+    var viewportWidth by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val topPaddingPx = with(density) { contentPadding.calculateTopPadding().toPx() }
     val toggleDistancePx = with(density) { BarToggleDistance.toPx() }
@@ -127,6 +141,25 @@ internal fun DocumentView(
                 delay(PAGE_SAVE_DELAY_MS)
                 onPageChanged(page)
             }
+    }
+
+    LaunchedEffect(viewerState, isContentLoaded, jumpTarget) {
+        val target = jumpTarget ?: return@LaunchedEffect
+        val page = target.page
+        if (!isContentLoaded || page == null) return@LaunchedEffect
+        val width = runCatchingCancellable { documentState.document.getPageInfo(page).width }.getOrDefault(0)
+        // The view centers the point it scrolls to; this one puts the target just below the bar.
+        val belowTarget = (viewportHeight / 2f - topPaddingPx) / viewerState.zoom
+        viewerState.scrollToPosition(PdfPoint(page, width / 2f, (target.top ?: 0f) + belowTarget))
+        onJumped()
+    }
+
+    DisposableEffect(viewerState, readingPosition) {
+        readingPosition.get = {
+            val line = topPaddingPx + (viewportHeight - topPaddingPx) * READING_LINE
+            viewerState.visibleOffsetToPdfPoint(Offset(viewportWidth / 2f, line))
+        }
+        onDispose { readingPosition.get = { null } }
     }
 
     LaunchedEffect(viewerState) {
@@ -180,7 +213,10 @@ internal fun DocumentView(
             state = viewerState,
             modifier = Modifier
                 .fillMaxSize()
-                .onSizeChanged { viewportHeight = it.height }
+                .onSizeChanged {
+                    viewportWidth = it.width
+                    viewportHeight = it.height
+                }
                 .testTag(TestTags.DOCUMENT),
             // Pages start below the bar and scroll behind it and the navigation bar.
             contentPadding = contentPadding,
@@ -256,6 +292,15 @@ internal fun DocumentPlaceholder(contentPadding: PaddingValues, modifier: Modifi
             modifier = Modifier.size(PlaceholderIconSize),
         )
     }
+}
+
+/**
+ * Where the reader is in the document, read only when needed (the table of contents opens), so
+ * scrolling doesn't recompose anything. Set by the document view while it shows.
+ */
+internal class ReadingPosition {
+    /** A point in the upper part of the screen; null between pages or without a document. */
+    var get: () -> PdfPoint? = { null }
 }
 
 @OptIn(ExperimentalPdfApi::class)

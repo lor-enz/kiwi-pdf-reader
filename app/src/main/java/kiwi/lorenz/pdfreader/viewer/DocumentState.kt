@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader.viewer
 
 import androidx.pdf.PdfDocument
+import kiwi.lorenz.pdfreader.info.OutlineItem
 
 sealed interface DocumentState {
     data object Empty : DocumentState
@@ -12,6 +13,8 @@ sealed interface DocumentState {
         val title: String?,
         /** Opened with a password; other apps can't read the file on their own. */
         val isProtected: Boolean,
+        /** The table of contents, empty if it has none. */
+        val outline: List<OutlineItem> = emptyList(),
     ) : DocumentState
     /**
      * [wrongAttempts] counts the passwords the user entered that didn't work. Once the right one

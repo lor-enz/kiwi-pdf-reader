@@ -164,6 +164,63 @@ def titled(path, title, about):
     c.save()
 
 
+def contents(path, encrypt=None):
+    """A book with a nested table of contents: chapters, sections and subsections, some on the
+    same page, some halfway down one. Chapter 3 starts closed. Each heading is drawn where its
+    entry leads, with a line above it, so a jump that lands too low or too high shows."""
+    c = canvas.Canvas(path, pagesize=A4, encrypt=encrypt)
+    c.setTitle("The Penguin Handbook")
+    chapters = [
+        ("Introduction", ["Why penguins", "How to read this book"]),
+        ("Species", ["Emperor penguin", "King penguin", "Adélie penguin", "Gentoo penguin", "Chinstrap penguin"]),
+        ("Habitat", ["Antarctica", "Sub-Antarctic islands", "South America", "Africa, Australia and New Zealand"]),
+        ("Behaviour", ["Swimming", "Diving: how deep and how long, and what it takes to get there", "Huddling"]),
+        ("Breeding", ["Colonies", "Eggs", "Chicks"]),
+        ("Conservation", ["Threats", "What helps"]),
+    ]
+    page = 1
+
+    def heading(text, size, y, key, level, closed=False):
+        c.setLineWidth(0.5)
+        c.line(60, y + size + 4, W - 60, y + size + 4)
+        c.setFont("Helvetica-Bold", size)
+        c.drawString(60, y, text)
+        c.bookmarkPage(key, fit="XYZ", left=0, top=y + size + 4)
+        c.addOutlineEntry(text, key, level=level, closed=closed)
+
+    def body(y_from, y_to):
+        c.setFont("Helvetica", 12)
+        y = y_from
+        while y > y_to:
+            c.drawString(60, y, f"Page {page}. Text about penguins goes here.")
+            y -= 18
+
+    for number, (chapter, sections) in enumerate(chapters, start=1):
+        heading(f"{number} {chapter}", 26, H - 120, f"c{number}", 0, closed=number == 3)
+        body(H - 170, H - 300)
+        y = H - 360
+        for index, section in enumerate(sections, start=1):
+            if y < 200:
+                c.showPage()
+                page += 1
+                y = H - 100
+            heading(f"{number}.{index} {section}", 16, y, f"c{number}.{index}", 1)
+            body(y - 30, y - 100)
+            if number == 2 and index <= 2:
+                for sub, about in enumerate(["Size", "Diet", "Range"], start=1):
+                    y -= 130
+                    if y < 200:
+                        c.showPage()
+                        page += 1
+                        y = H - 100
+                    heading(f"{number}.{index}.{sub} {about}", 13, y, f"c{number}.{index}.{sub}", 2)
+                    body(y - 25, y - 60)
+            y -= 160
+        c.showPage()
+        page += 1
+    c.save()
+
+
 def broken(out):
     open(os.path.join(out, "not-a-pdf.pdf"), "w").write("Hello, this is plain text, not a PDF.\n")
     with open(os.path.join(out, "damaged.pdf"), "wb") as f:
@@ -179,6 +236,8 @@ def main():
     links(os.path.join(out, "links.pdf"))
     text_pages(os.path.join(out, "long.pdf"), pages=60)
     text_pages(os.path.join(out, "protected.pdf"), pages=5, encrypt=StandardEncryption(PASSWORD, canPrint=1))
+    contents(os.path.join(out, "contents.pdf"))
+    contents(os.path.join(out, "contents-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1))
     scanned(os.path.join(out, "scanned.pdf"))
     heavy(os.path.join(out, "heavy.pdf"))
     form(os.path.join(out, "form.pdf"))

@@ -314,6 +314,23 @@
   dragged up, and the info sheet is meant to be read in full anyway. Page
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
+- The table of contents (the PDF's outline) opens in a drawer from the left
+  (`viewer/ContentsDrawer.kt`, Material's `ModalNavigationDrawer`), by a
+  button left of ⋮ that only shows when the document has one. It opens only
+  by that button: swiping in from the edge is the system's back gesture.
+  `androidx.pdf` can't read outlines, so `PdfMetadataReader` does (only when
+  asked, `read(withOutline)`, as it goes through every page): explicit and
+  named destinations (name tree or old `/Dests` dictionary) and "go to"
+  actions; links to websites or other files lead nowhere. The viewer reads
+  it while the document opens, in parallel, so the button never pops in.
+  Branches start open or closed as the author left them. A jump puts the
+  target's top right below the top bar (`PdfViewerState.scrollToPosition`
+  centers its point, so it's shifted by half the view). The section being
+  read is the last that starts above a line a quarter down the visible
+  area; it's marked, and its closed parents open when the drawer does. To
+  test it, `contents.pdf` from `make-test-pdfs.py` draws a rule where each
+  entry leads.
+
 - Home shows a quiet hint below "Open PDF" while the app isn't the default PDF
   app (`defaultapp/DefaultPdfApp.kt`, checked on every resume). "Not now" hides it for
   7 days (`PdfDefaultTracker`, a timestamp in shared preferences), as
@@ -369,8 +386,6 @@
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 
-- Show Table of contents. Open is where.
 - Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
-  side panel (`androidx.pdf` can't read a PDF's outline, so no table of
-  contents)
+  side panel

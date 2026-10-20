@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,11 +39,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,10 +59,12 @@ import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.InfoSheet
+import kiwi.lorenz.pdfreader.info.OutlineItem
 import kiwi.lorenz.pdfreader.ui.ActionSheet
 import kiwi.lorenz.pdfreader.ui.ConfirmDialog
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
+import kotlinx.coroutines.launch
 
 /** Material 3 small top app bar height. */
 private val TopBarHeight = 64.dp
@@ -165,6 +170,12 @@ fun ViewerScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     MessageEffect(message, actions::messageShown, snackbarHostState, replacesCurrent = true)
 
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var jumpTarget by remember { mutableStateOf<OutlineItem?>(null) }
+    val readingPosition = remember { ReadingPosition() }
+    val outline = loaded?.outline.orEmpty()
+
     // The bar is laid over the content, so hiding it doesn't shift the pages.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val contentPadding = PaddingValues(
@@ -172,133 +183,156 @@ fun ViewerScreen(
         bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+    // Always there, also while the document opens, so the content isn't composed anew once it has
+    // a table of contents.
+    ContentsDrawer(
+        outline = outline,
+        readingPosition = { readingPosition.get() },
+        drawerState = drawerState,
+        onItemClick = { item ->
+            jumpTarget = item
+            scope.launch { drawerState.close() }
+        },
     ) {
-        AnimatedContent(
-            targetState = documentState,
-            contentKey = { it::class },
-            transitionSpec = {
-                // The unlocked document fades in as the opened lock fades out; all else switches at once.
-                if (initialState is DocumentState.NeedsPassword && targetState is DocumentState.Loaded) {
-                    fadeIn(tween(LockMotion.REVEAL_MS)) togetherWith fadeOut(tween(LockMotion.REVEAL_MS))
-                } else {
-                    EnterTransition.None togetherWith ExitTransition.None
-                }
-            },
-            label = "document",
-        ) { state ->
-            when (state) {
-                is DocumentState.Loaded -> DocumentView(
-                    documentState = state,
-                    searchState = searchState,
-                    pendingRestorePage = pendingRestorePage,
-                    onPageRestored = actions::pageRestored,
-                    onPageChanged = actions::pageChanged,
-                    contentPadding = contentPadding,
-                    onBarHiddenChange = { isBarHiddenByScroll = it },
-                    onFormEdit = actions::formEdited,
-                    onLinkFailed = { actions.showMessage(R.string.link_failed) },
-                )
-
-                is DocumentState.NeedsPassword -> PasswordPrompt(
-                    state = state,
-                    onSubmit = actions::submitPassword,
-                    onUnlocked = actions::unlockFinished,
-                    // The keyboard inset includes the navigation bar, which is already padded.
-                    modifier = Modifier
-                        .padding(contentPadding)
-                        .consumeWindowInsets(contentPadding),
-                )
-
-                is DocumentState.Failed -> FailureMessage(
-                    reason = state.reason,
-                    onOpenAnother = actions::openAnother,
-                    onRetry = actions::retry,
-                    modifier = Modifier.padding(contentPadding),
-                )
-
-                DocumentState.Loading, DocumentState.Empty -> DocumentPlaceholder(contentPadding)
-            }
-        }
-
-        Column(Modifier.fillMaxWidth()) {
-            Spacer(
-                Modifier
-                    .fillMaxWidth()
-                    .height(statusBarHeight)
-                    .background(MaterialTheme.colorScheme.surface)
-            )
-            AnimatedVisibility(
-                visible = isBarVisible,
-                enter = expandVertically(expandFrom = Alignment.Top),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top),
-            ) {
-                if (searchState.isActive) {
-                    SearchBar(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            AnimatedContent(
+                targetState = documentState,
+                contentKey = { it::class },
+                transitionSpec = {
+                    // The unlocked document fades in as the opened lock fades out; all else switches at once.
+                    if (initialState is DocumentState.NeedsPassword && targetState is DocumentState.Loaded) {
+                        fadeIn(tween(LockMotion.REVEAL_MS)) togetherWith fadeOut(tween(LockMotion.REVEAL_MS))
+                    } else {
+                        EnterTransition.None togetherWith ExitTransition.None
+                    }
+                },
+                label = "document",
+            ) { state ->
+                when (state) {
+                    is DocumentState.Loaded -> DocumentView(
+                        documentState = state,
                         searchState = searchState,
-                        onClose = actions::closeSearch,
-                        onQueryChange = actions::changeQuery,
-                        onNext = actions::nextMatch,
-                        onPrevious = actions::previousMatch,
+                        pendingRestorePage = pendingRestorePage,
+                        onPageRestored = actions::pageRestored,
+                        onPageChanged = actions::pageChanged,
+                        jumpTarget = jumpTarget,
+                        onJumped = { jumpTarget = null },
+                        readingPosition = readingPosition,
+                        contentPadding = contentPadding,
+                        onBarHiddenChange = { isBarHiddenByScroll = it },
+                        onFormEdit = actions::formEdited,
+                        onLinkFailed = { actions.showMessage(R.string.link_failed) },
                     )
-                } else {
-                    TopAppBar(
-                        title = {
-                            // The document's title, if it has one, with the file name smaller below it.
-                            val documentTitle = loaded?.title
-                            Column {
-                                Text(
-                                    text = documentTitle ?: title,
-                                    style = if (documentTitle != null) MaterialTheme.typography.titleMedium else LocalTextStyle.current,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.testTag(TestTags.TOP_BAR_TITLE),
-                                )
-                                if (documentTitle != null) {
+
+                    is DocumentState.NeedsPassword -> PasswordPrompt(
+                        state = state,
+                        onSubmit = actions::submitPassword,
+                        onUnlocked = actions::unlockFinished,
+                        // The keyboard inset includes the navigation bar, which is already padded.
+                        modifier = Modifier
+                            .padding(contentPadding)
+                            .consumeWindowInsets(contentPadding),
+                    )
+
+                    is DocumentState.Failed -> FailureMessage(
+                        reason = state.reason,
+                        onOpenAnother = actions::openAnother,
+                        onRetry = actions::retry,
+                        modifier = Modifier.padding(contentPadding),
+                    )
+
+                    DocumentState.Loading, DocumentState.Empty -> DocumentPlaceholder(contentPadding)
+                }
+            }
+
+            Column(Modifier.fillMaxWidth()) {
+                Spacer(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(statusBarHeight)
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+                AnimatedVisibility(
+                    visible = isBarVisible,
+                    enter = expandVertically(expandFrom = Alignment.Top),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Top),
+                ) {
+                    if (searchState.isActive) {
+                        SearchBar(
+                            searchState = searchState,
+                            onClose = actions::closeSearch,
+                            onQueryChange = actions::changeQuery,
+                            onNext = actions::nextMatch,
+                            onPrevious = actions::previousMatch,
+                        )
+                    } else {
+                        TopAppBar(
+                            title = {
+                                // The document's title, if it has one, with the file name smaller below it.
+                                val documentTitle = loaded?.title
+                                Column {
                                     Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        text = documentTitle ?: title,
+                                        style = if (documentTitle != null) MaterialTheme.typography.titleMedium else LocalTextStyle.current,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.testTag(TestTags.TOP_BAR_FILE_NAME),
+                                        modifier = Modifier.testTag(TestTags.TOP_BAR_TITLE),
                                     )
+                                    if (documentTitle != null) {
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.testTag(TestTags.TOP_BAR_FILE_NAME),
+                                        )
+                                    }
                                 }
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = actions::back, modifier = Modifier.testTag(TestTags.BACK)) {
-                                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                            }
-                        },
-                        actions = {
-                            if (loaded != null) {
-                                IconButton(
-                                    onClick = { isToolsSheetOpen = true },
-                                    modifier = Modifier.testTag(TestTags.MORE_OPTIONS),
-                                ) {
-                                    Icon(
-                                        painterResource(R.drawable.ic_more_vert),
-                                        stringResource(R.string.more_options),
-                                    )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = actions::back, modifier = Modifier.testTag(TestTags.BACK)) {
+                                    Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
                                 }
-                            }
-                        },
-                        windowInsets = BarInsets,
-                    )
+                            },
+                            actions = {
+                                if (outline.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { scope.launch { drawerState.open() } },
+                                        modifier = Modifier.testTag(TestTags.CONTENTS),
+                                    ) {
+                                        Icon(painterResource(R.drawable.ic_toc), stringResource(R.string.contents))
+                                    }
+                                }
+                                if (loaded != null) {
+                                    IconButton(
+                                        onClick = { isToolsSheetOpen = true },
+                                        modifier = Modifier.testTag(TestTags.MORE_OPTIONS),
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.ic_more_vert),
+                                            stringResource(R.string.more_options),
+                                        )
+                                    }
+                                }
+                            },
+                            windowInsets = BarInsets,
+                        )
+                    }
                 }
             }
-        }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = contentPadding.calculateBottomPadding()),
-        )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = contentPadding.calculateBottomPadding()),
+            )
+        }
     }
 }
 
