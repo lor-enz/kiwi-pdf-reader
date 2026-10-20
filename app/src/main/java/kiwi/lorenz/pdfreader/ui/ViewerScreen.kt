@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -147,7 +145,12 @@ fun ViewerScreen(
     }
 
     if (isClearDialogOpen) {
-        ClearFilledDialog(
+        // Clearing throws away what was typed into the form.
+        ConfirmDialog(
+            title = R.string.clear_filled_in_title,
+            text = R.string.clear_filled_in_text,
+            confirm = R.string.clear,
+            confirmTag = TestTags.CONFIRM_CLEAR_FILLED,
             onConfirm = {
                 isClearDialogOpen = false
                 actions.clearFilledFields()
@@ -329,24 +332,4 @@ private fun ToolsSheet(
         }
         Action(R.drawable.ic_home, R.string.go_home, TestTags.TOOL_HOME, onClick = onHome)
     }
-}
-
-/** Clearing throws away what was typed into the form, so it's confirmed first. */
-@Composable
-private fun ClearFilledDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.clear_filled_in_title)) },
-        text = { Text(stringResource(R.string.clear_filled_in_text)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm, modifier = Modifier.testTag(TestTags.CONFIRM_CLEAR_FILLED)) {
-                Text(stringResource(R.string.clear))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-        // A dialog is a window of its own, so it doesn't inherit exposed test tags from the root.
-        modifier = Modifier.exposeTestTags(),
-    )
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -256,33 +254,6 @@ private fun SettingsRow(
         modifier = Modifier
             .clickable(enabled = enabled, onClick = onClick)
             .testTag(tag),
-    )
-}
-
-/** Deleting what the app stores can't be undone, so it's confirmed first. */
-@Composable
-private fun ConfirmDialog(
-    @StringRes title: Int,
-    @StringRes text: Int,
-    @StringRes confirm: Int,
-    confirmTag: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(title)) },
-        text = { Text(stringResource(text)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm, modifier = Modifier.testTag(confirmTag)) {
-                Text(stringResource(confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-        // A dialog is a window of its own, so it doesn't inherit exposed test tags from the root.
-        modifier = Modifier.exposeTestTags(),
     )
 }
 
