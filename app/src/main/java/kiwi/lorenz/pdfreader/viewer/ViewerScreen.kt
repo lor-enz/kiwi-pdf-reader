@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
@@ -53,10 +53,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.pdf.models.FormEditInfo
-import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.SearchState
 import kiwi.lorenz.pdfreader.info.DocumentInfo
+import kiwi.lorenz.pdfreader.ui.ActionSheet
+import kiwi.lorenz.pdfreader.ui.ConfirmDialog
+import kiwi.lorenz.pdfreader.ui.InfoSheet
+import kiwi.lorenz.pdfreader.ui.MessageEffect
+import kiwi.lorenz.pdfreader.ui.TestTags
 
 /** Material 3 small top app bar height. */
 private val TopBarHeight = 64.dp

@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import android.annotation.SuppressLint
 import android.content.Context

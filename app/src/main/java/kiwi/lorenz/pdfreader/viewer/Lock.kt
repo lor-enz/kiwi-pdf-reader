@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing

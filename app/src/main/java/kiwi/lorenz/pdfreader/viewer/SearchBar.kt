@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.SearchState
+import kiwi.lorenz.pdfreader.ui.TestTags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

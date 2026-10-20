@@ -1,9 +1,10 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.viewer
 
 import android.os.ParcelFileDescriptor
 import androidx.pdf.EditablePdfDocument
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
+import kiwi.lorenz.pdfreader.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

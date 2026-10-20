@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.viewer
 
 import android.app.Application
 import android.content.ContentResolver
@@ -18,6 +18,11 @@ import androidx.pdf.PdfLoader
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.models.FormEditInfo
+import kiwi.lorenz.pdfreader.AppScope
+import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.SnackbarMessage
+import kiwi.lorenz.pdfreader.UNSAVED_FORMS_DIR
+import kiwi.lorenz.pdfreader.ViewerActivity
 import kiwi.lorenz.pdfreader.info.DocumentInfo
 import kiwi.lorenz.pdfreader.info.PageSize
 import kiwi.lorenz.pdfreader.info.PdfMetadata
@@ -26,6 +31,9 @@ import kiwi.lorenz.pdfreader.recent.PasswordCipher
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
+import kiwi.lorenz.pdfreader.renderThumbnail
+import kiwi.lorenz.pdfreader.runCatchingCancellable
+import kiwi.lorenz.pdfreader.savePdfCopy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

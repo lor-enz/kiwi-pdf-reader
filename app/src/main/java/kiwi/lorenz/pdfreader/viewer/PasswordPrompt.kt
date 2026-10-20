@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
@@ -49,8 +49,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 
 @Composable

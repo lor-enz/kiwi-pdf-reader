@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.viewer
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,10 +41,9 @@ import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
-import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.SearchState
 import kiwi.lorenz.pdfreader.openLink
+import kiwi.lorenz.pdfreader.ui.TestTags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged

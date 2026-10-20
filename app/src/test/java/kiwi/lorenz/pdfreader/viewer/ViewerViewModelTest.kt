@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.viewer
 
 import android.app.ActivityManager
 import android.app.Application

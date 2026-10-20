@@ -15,9 +15,11 @@ import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.recent.appTasks
-import kiwi.lorenz.pdfreader.ui.ViewerActions
-import kiwi.lorenz.pdfreader.ui.ViewerScreen
 import kiwi.lorenz.pdfreader.ui.setAppContent
+import kiwi.lorenz.pdfreader.viewer.DocumentState
+import kiwi.lorenz.pdfreader.viewer.ViewerActions
+import kiwi.lorenz.pdfreader.viewer.ViewerScreen
+import kiwi.lorenz.pdfreader.viewer.ViewerViewModel
 import kotlinx.coroutines.launch
 
 /**

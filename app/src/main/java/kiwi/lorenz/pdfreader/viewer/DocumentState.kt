@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.viewer
 
 import androidx.pdf.PdfDocument
 

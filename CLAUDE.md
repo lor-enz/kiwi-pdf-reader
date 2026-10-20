@@ -171,7 +171,7 @@
   stays and Home comes up in the main task, closing any viewer there. Presentation mode (one page at a
   time, swipe left/right) is postponed: `PdfViewer` only scrolls
   continuously, so it needs its own pager-based view.
-- The password screen's padlock (`ui/Lock.kt`) is drawn in Compose, like
+- The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
   the long one, which stays in the body (seen from the front, the shackle

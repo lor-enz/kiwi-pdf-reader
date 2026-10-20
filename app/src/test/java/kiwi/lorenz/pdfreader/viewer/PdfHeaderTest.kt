@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader
+package kiwi.lorenz.pdfreader.viewer
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
