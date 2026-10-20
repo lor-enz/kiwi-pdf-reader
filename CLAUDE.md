@@ -180,9 +180,23 @@
 - The viewer's tools live in a bottom sheet behind the ⋮ button, so the
   top bar stays calm as tools are added. Its last item leads to Home: the
   app's own viewer just closes (Home is behind it), a card from another app
-  stays and Home comes up in the main task, closing any viewer there. Presentation mode (one page at a
-  time, swipe left/right) is postponed: `PdfViewer` only scrolls
-  continuously, so it needs its own pager-based view.
+  stays and Home comes up in the main task, closing any viewer there.
+- Presentation mode ("Present" in the ⋮ sheet, `viewer/Presentation.kt`)
+  shows one page at a time, full screen, as large as fits, on the app's dark
+  background (`NightBackground`) in both themes. `PdfViewer` only scrolls
+  continuously, so it's a `HorizontalPager` of pages rendered by
+  `PdfDocument.getPageBitmapSource`. Swiping settles on a page like a photo
+  gallery: the neighbors only show while swiping, with a gap between them.
+  Keys turn pages too, so presentation clickers work: right, down, Page Down
+  and space go forward, left, up and Page Up back, Home and End to the first
+  and last page. No tapping the edges to turn pages, and volume keys are left
+  alone. System bars are hidden (a swipe from the edge shows them for a
+  moment; Android shows its own hint the first time) and the screen stays
+  on. It starts at the page being read (the one at the table of contents'
+  reading line) and Back returns to scrolling at the page shown last, which
+  is saved as the last page. The view model holds the page (in saved state,
+  so the mode survives process death). The scroll view stays composed
+  below, hidden from screen readers, so it doesn't open anew afterwards.
 - The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
@@ -385,7 +399,8 @@
 # Planned changes
 
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
-- Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
+- Presentation mode: pinch and double-tap zoom (panning, pages turn only at
+  the page's edge), then links; a minimal overlay later.
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

@@ -83,6 +83,7 @@
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="page_size_inches">%1$s × %2$s Zoll</string>
     <string name="search">Suchen</string>
+    <string name="present">Präsentieren</string>
     <string name="search_hint">Im Dokument suchen</string>
     <string name="close_search">Suche schließen</string>
     <string name="previous_match">Vorheriger Treffer</string>

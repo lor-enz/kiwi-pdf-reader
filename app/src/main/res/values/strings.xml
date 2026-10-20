@@ -94,6 +94,7 @@
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="page_size_inches">%1$s × %2$s in</string>
     <string name="search">Search</string>
+    <string name="present">Present</string>
     <string name="search_hint">Search in document</string>
     <string name="close_search">Close search</string>
     <string name="previous_match">Previous match</string>

@@ -56,6 +56,7 @@ object TestTags {
     const val DOCUMENT_LOADING = "document_loading"
     const val TOOLS_SHEET_TITLE = "tools_sheet_title"
     const val TOOL_SEARCH = "tool_search"
+    const val TOOL_PRESENT = "tool_present"
     const val TOOL_PRINT = "tool_print"
     const val TOOL_SHARE = "tool_share"
     const val TOOL_SAVE_COPY = "tool_save_copy"
@@ -75,6 +76,9 @@ object TestTags {
     const val INFO_CREATED = "info_created"
     const val INFO_MODIFIED = "info_modified"
     const val INFO_MADE_WITH = "info_made_with"
+
+    const val PRESENTATION = "presentation"
+    const val PRESENTATION_PAGE = "presentation_page"
 
     const val SEARCH_FIELD = "search_field"
     const val CLOSE_SEARCH = "close_search"

@@ -260,6 +260,31 @@ class ViewerViewModelTest {
         assertFalse(viewModel(SavedStateHandle()).restore())
     }
 
+    @Test
+    fun `presentation mode ends where it was, also after process death`() {
+        val entry = copy("slides.pdf")
+        viewModel.openRecent(entry.id)
+        awaitLoaded()
+
+        viewModel.startPresentation(3)
+        viewModel.onPresentationPageChanged(5)
+        val recreated = viewModel(savedState)
+        assertTrue(recreated.restore())
+        awaitState(recreated) { it is DocumentState.Loaded }
+        assertEquals(5, recreated.presentationPage)
+
+        recreated.endPresentation()
+        assertNull(recreated.presentationPage)
+        assertEquals(5, recreated.pendingRestorePage)
+        waitUntil { runBlocking { store.get(entry.id) }?.lastPage == 5 }
+
+        // Another document opens outside presentation mode.
+        recreated.startPresentation(2)
+        recreated.openRecent(copy("other.pdf").id)
+        assertNull(recreated.presentationPage)
+        assertNull(viewModel(savedState).presentationPage)
+    }
+
     private fun viewModel(savedState: SavedStateHandle) =
         ViewerViewModel(context, savedState, store, loader, FakeEncryption).apply { taskId = TASK }
 

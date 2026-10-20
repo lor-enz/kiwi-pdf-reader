@@ -50,9 +50,11 @@ internal fun ContentsDrawer(
     readingPosition: () -> PdfPoint?,
     drawerState: DrawerState,
     onItemClick: (OutlineItem) -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     ModalNavigationDrawer(
+        modifier = modifier,
         drawerState = drawerState,
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {

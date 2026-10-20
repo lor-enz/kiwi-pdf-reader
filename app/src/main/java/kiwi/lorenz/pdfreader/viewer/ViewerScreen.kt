@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.pdf.models.FormEditInfo
@@ -78,6 +79,9 @@ interface ViewerActions {
     fun unlockFinished()
     fun pageRestored()
     fun pageChanged(page: Int)
+    fun startPresentation(page: Int)
+    fun presentationPageChanged(page: Int)
+    fun endPresentation()
     fun formEdited(edit: FormEditInfo)
     fun openSearch()
     fun closeSearch()
@@ -95,8 +99,9 @@ interface ViewerActions {
 }
 
 /**
- * [pendingRestorePage] is the page to scroll to once the document shows, [isFilledIn] whether it
- * shows filled-in form fields, and [message] a string resource for the snackbar.
+ * [pendingRestorePage] is the page to scroll to once the document shows, [presentationPage] the
+ * page presentation mode shows (null outside it), [isFilledIn] whether the document shows
+ * filled-in form fields, and [message] a string resource for the snackbar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +109,7 @@ fun ViewerScreen(
     documentState: DocumentState,
     searchState: SearchState,
     pendingRestorePage: Int?,
+    presentationPage: Int?,
     isFilledIn: Boolean,
     message: Int?,
     actions: ViewerActions,
@@ -121,6 +127,7 @@ fun ViewerScreen(
     var isBarHiddenByScroll by remember(loaded?.document) { mutableStateOf(false) }
     val isBarVisible = searchState.isActive || loaded == null || !isBarHiddenByScroll
 
+    val readingPosition = remember { ReadingPosition() }
     var isToolsSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isInfoSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isClearDialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -130,6 +137,7 @@ fun ViewerScreen(
             title = loaded.title,
             onDismiss = { isToolsSheetOpen = false },
             onSearch = actions::openSearch,
+            onPresent = { actions.startPresentation(readingPosition.page()) },
             onPrint = actions::print,
             onShare = actions::share,
             onSaveCopy = actions::saveCopy,
@@ -173,7 +181,6 @@ fun ViewerScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var jumpTarget by remember { mutableStateOf<OutlineItem?>(null) }
-    val readingPosition = remember { ReadingPosition() }
     val outline = loaded?.outline.orEmpty()
 
     // The bar is laid over the content, so hiding it doesn't shift the pages.
@@ -183,8 +190,11 @@ fun ViewerScreen(
         bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
     )
 
+    val presentedDocument = loaded?.document.takeIf { presentationPage != null }
+
     // Always there, also while the document opens, so the content isn't composed anew once it has
-    // a table of contents.
+    // a table of contents. Also while presenting, so the document is where it was afterwards; hidden
+    // from screen readers then, as presentation mode covers it.
     ContentsDrawer(
         outline = outline,
         readingPosition = { readingPosition.get() },
@@ -193,6 +203,7 @@ fun ViewerScreen(
             jumpTarget = item
             scope.launch { drawerState.close() }
         },
+        modifier = if (presentedDocument != null) Modifier.clearAndSetSemantics {} else Modifier,
     ) {
         Box(
             modifier = Modifier
@@ -334,6 +345,17 @@ fun ViewerScreen(
             )
         }
     }
+
+    if (presentedDocument != null && presentationPage != null) {
+        key(presentedDocument) {
+            Presentation(
+                document = presentedDocument,
+                page = presentationPage,
+                onPageChanged = actions::presentationPageChanged,
+                onExit = actions::endPresentation,
+            )
+        }
+    }
 }
 
 /** The status bar is handled separately; the bar itself only avoids side cutouts. */
@@ -347,6 +369,7 @@ private fun ToolsSheet(
     title: String?,
     onDismiss: () -> Unit,
     onSearch: () -> Unit,
+    onPresent: () -> Unit,
     onPrint: () -> Unit,
     onShare: () -> Unit,
     onSaveCopy: () -> Unit,
@@ -360,6 +383,7 @@ private fun ToolsSheet(
     ActionSheet(onDismiss) {
         Heading(name, title, TestTags.TOOLS_SHEET_TITLE)
         Action(R.drawable.ic_search, R.string.search, TestTags.TOOL_SEARCH, onClick = onSearch)
+        Action(R.drawable.ic_slideshow, R.string.present, TestTags.TOOL_PRESENT, onClick = onPresent)
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)
         Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, note, onSaveCopy)

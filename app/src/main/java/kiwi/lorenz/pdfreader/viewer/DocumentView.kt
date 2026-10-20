@@ -160,7 +160,11 @@ internal fun DocumentView(
             val line = topPaddingPx + (viewportHeight - topPaddingPx) * READING_LINE
             viewerState.visibleOffsetToPdfPoint(Offset(viewportWidth / 2f, line))
         }
-        onDispose { readingPosition.get = { null } }
+        readingPosition.page = { readingPosition.get()?.pageNum ?: viewerState.centerPage(viewportHeight) }
+        onDispose {
+            readingPosition.get = { null }
+            readingPosition.page = { 0 }
+        }
     }
 
     LaunchedEffect(viewerState) {
@@ -302,6 +306,9 @@ internal fun DocumentPlaceholder(contentPadding: PaddingValues, modifier: Modifi
 internal class ReadingPosition {
     /** A point in the upper part of the screen; null between pages or without a document. */
     var get: () -> PdfPoint? = { null }
+
+    /** The page being read: the one at that point, or between pages the one in the middle. */
+    var page: () -> Int = { 0 }
 }
 
 @OptIn(ExperimentalPdfApi::class)

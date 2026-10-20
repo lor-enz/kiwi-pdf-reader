@@ -73,6 +73,13 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         private set
 
     /**
+     * The page shown in presentation mode (one page at a time, full screen), or null outside it.
+     * Saved, so the mode survives process death.
+     */
+    var presentationPage by mutableStateOf<Int?>(savedState[KEY_PRESENTATION_PAGE])
+        private set
+
+    /**
      * True when the document shows filled-in form fields: stored ones it was opened with, or
      * edits since. Share, print and save a copy then use them, and they can be cleared.
      */
@@ -116,7 +123,10 @@ class ViewerViewModel @VisibleForTesting internal constructor(
      */
     fun restore(): Boolean {
         val id = openEntryId ?: return false
+        // Opening leaves presentation mode, but the restored viewer returns to it.
+        val page = presentationPage
         launchOpen { store.get(id)?.also { store.touch(it.id) }?.let { Target(it) } }
+        present(page)
         return true
     }
 
@@ -194,6 +204,30 @@ class ViewerViewModel @VisibleForTesting internal constructor(
     fun onPageChanged(page: Int) {
         val id = openEntryId ?: return
         viewModelScope.launch { store.setLastPage(id, page) }
+    }
+
+    /** Presentation mode starts at [page], the one being read. */
+    fun startPresentation(page: Int) {
+        present(page)
+        onPageChanged(page)
+    }
+
+    fun onPresentationPageChanged(page: Int) {
+        if (presentationPage == null) return
+        present(page)
+        onPageChanged(page)
+    }
+
+    /** Back to scrolling, at the page presentation mode showed last. */
+    fun endPresentation() {
+        val page = presentationPage ?: return
+        present(null)
+        pendingRestorePage = page
+    }
+
+    private fun present(page: Int?) {
+        presentationPage = page
+        savedState[KEY_PRESENTATION_PAGE] = page
     }
 
     /**
@@ -403,6 +437,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         closeDocument()
         isFilledIn = false
         openEntryId = null
+        present(null)
         pendingRestorePage = null
         passwordTarget = null
         openPassword = null
@@ -439,6 +474,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     private companion object {
         const val KEY_OPEN_ENTRY = "openEntryId"
+        const val KEY_PRESENTATION_PAGE = "presentationPage"
         const val RETRY_DELAY_MS = 500L
     }
 }

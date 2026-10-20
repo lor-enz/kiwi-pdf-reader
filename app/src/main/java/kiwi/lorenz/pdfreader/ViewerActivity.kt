@@ -52,6 +52,9 @@ open class ViewerActivity : ComponentActivity() {
         override fun unlockFinished() = viewModel.unlockFinished()
         override fun pageRestored() = viewModel.onPageRestored()
         override fun pageChanged(page: Int) = viewModel.onPageChanged(page)
+        override fun startPresentation(page: Int) = viewModel.startPresentation(page)
+        override fun presentationPageChanged(page: Int) = viewModel.onPresentationPageChanged(page)
+        override fun endPresentation() = viewModel.endPresentation()
         override fun formEdited(edit: FormEditInfo) = viewModel.applyFormEdit(edit)
         override fun openSearch() = viewModel.search.open()
         override fun closeSearch() = viewModel.search.close()
@@ -109,6 +112,7 @@ open class ViewerActivity : ComponentActivity() {
                 documentState = viewModel.documentState,
                 searchState = viewModel.search.state,
                 pendingRestorePage = viewModel.pendingRestorePage,
+                presentationPage = viewModel.presentationPage,
                 isFilledIn = viewModel.isFilledIn,
                 message = viewModel.message.current,
                 actions = actions,
