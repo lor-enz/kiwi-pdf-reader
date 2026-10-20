@@ -13,7 +13,7 @@ import sys
 import tempfile
 
 from PIL import Image, ImageDraw, ImageFont
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.pdfencrypt import StandardEncryption
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
@@ -92,6 +92,18 @@ def text_pages(path, pages, encrypt=None):
         for line in range(30):
             word = "kiwi" if n % 5 == 0 and line == 10 else "lorem ipsum"
             c.drawString(60, H - 140 - line * 22, f"Line {line + 1} on page {n}: {word} dolor sit amet")
+        c.showPage()
+    c.save()
+
+
+def mixed(path):
+    """Portrait and landscape pages mixed, e.g. for presentation mode's spacing between pages."""
+    c = canvas.Canvas(path)
+    for number, size in enumerate([A4, landscape(A4), A4, A4, landscape(A4), landscape(A4)], start=1):
+        c.setPageSize(size)
+        c.setFont("Helvetica-Bold", 40)
+        c.drawString(60, size[1] - 100, f"Page {number}")
+        c.rect(20, 20, size[0] - 40, size[1] - 40)
         c.showPage()
     c.save()
 
@@ -239,6 +251,7 @@ def main():
     contents(os.path.join(out, "contents.pdf"))
     contents(os.path.join(out, "contents-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1))
     scanned(os.path.join(out, "scanned.pdf"))
+    mixed(os.path.join(out, "mixed.pdf"))
     heavy(os.path.join(out, "heavy.pdf"))
     form(os.path.join(out, "form.pdf"))
     form(os.path.join(out, "form-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1, canModify=1))
