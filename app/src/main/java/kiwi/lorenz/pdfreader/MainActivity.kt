@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        viewModel.pdfDefault.observe(this)
 
         setAppContent {
             val pickPdf = rememberLauncherForActivityResult(
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
                 thumbnailFile = viewModel::thumbnailFile,
                 onOpenPdf = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
                 pdfDefault = viewModel.pdfDefault.pdfDefault,
-                onMakeDefault = ::askToBecomeDefault,
+                onMakeDefault = { viewModel.pdfDefault.ask(this@MainActivity) },
                 onChangeDefault = { openDefaultSettings(it.packageName) },
                 isHintPaused = viewModel.pdfDefault.isHintPaused,
                 onPauseHint = viewModel.pdfDefault::pauseHint,
@@ -56,28 +57,16 @@ class MainActivity : ComponentActivity() {
                 onRemoveRecent = viewModel::removeRecent,
                 onUndoRemoval = viewModel::undoRemoval,
                 onRemovalDone = viewModel::finishRemoval,
-                message = viewModel.message,
-                onMessageShown = viewModel::onMessageShown,
+                message = viewModel.message.current,
+                onMessageShown = viewModel.message::shown,
             )
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Before the first frame, so the hint doesn't flash; and again after the "Open with"
-        // dialog or the other app's settings.
-        viewModel.refreshPdfDefault()
-    }
-
-    private fun askToBecomeDefault() {
-        viewModel.pdfDefault.onAsking()
-        lifecycleScope.launch { askToBecomePdfDefault() }
     }
 
     private fun share(uri: Uri, name: String) {
         lifecycleScope.launch {
             runCatchingCancellable { sharePdf(uri, name) }.onFailure {
-                viewModel.showMessage(R.string.share_failed)
+                viewModel.message.show(R.string.share_failed)
             }
         }
     }

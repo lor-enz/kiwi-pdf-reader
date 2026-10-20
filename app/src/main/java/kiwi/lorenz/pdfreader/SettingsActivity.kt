@@ -12,12 +12,10 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kiwi.lorenz.pdfreader.ui.LicensesScreen
 import kiwi.lorenz.pdfreader.ui.SettingsScreen
 import kiwi.lorenz.pdfreader.ui.setAppContent
-import kotlinx.coroutines.launch
 
 /** Settings and information about the app, opened from the home screen. */
 class SettingsActivity : ComponentActivity() {
@@ -28,6 +26,7 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        viewModel.pdfDefault.observe(this)
 
         setAppContent {
             val recentFiles by viewModel.recentFiles.collectAsStateWithLifecycle()
@@ -35,7 +34,7 @@ class SettingsActivity : ComponentActivity() {
                 recentFiles = recentFiles,
                 versionName = versionName,
                 pdfDefault = viewModel.pdfDefault.pdfDefault,
-                onMakeDefault = ::askToBecomeDefault,
+                onMakeDefault = { viewModel.pdfDefault.ask(this) },
                 onChangeDefault = { openDefaultSettings(it.packageName) },
                 onBack = ::finish,
                 onForgetAllPasswords = viewModel::forgetAllPasswords,
@@ -45,21 +44,10 @@ class SettingsActivity : ComponentActivity() {
                 onReportProblem = { openLink(ISSUES_URL) },
                 onOpenPrivacyPolicy = { openLink(PRIVACY_POLICY_URL) },
                 onOpenLicenses = { startActivity(Intent(this, LicensesActivity::class.java)) },
-                message = viewModel.message,
-                onMessageShown = viewModel::onMessageShown,
+                message = viewModel.message.current,
+                onMessageShown = viewModel.message::shown,
             )
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Before the first frame, and again after the "Open with" dialog or the other app's settings.
-        viewModel.refreshPdfDefault()
-    }
-
-    private fun askToBecomeDefault() {
-        viewModel.pdfDefault.onAsking()
-        lifecycleScope.launch { askToBecomePdfDefault() }
     }
 
     /** For bug reports. Android shows its own confirmation, so there's no snackbar. */
@@ -74,7 +62,7 @@ class SettingsActivity : ComponentActivity() {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         } catch (_: ActivityNotFoundException) {
-            viewModel.showMessage(R.string.link_failed)
+            viewModel.message.show(R.string.link_failed)
         }
     }
 

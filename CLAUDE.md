@@ -322,7 +322,10 @@
   for viewing PDFs. To test it, set or clear defaults on the emulator with
   a plain VIEW intent (`open-pdf.sh` targets the app directly) and Drive's
   PDF viewer. Once the dialog suggests one app ("Open with …"), only that
-  one gets "Always"; the others below it open just once.
+  one gets "Always"; the others below it open just once. "Always" is disabled
+  until an app is selected. `adb shell cmd package
+  clear-package-preferred-activities kiwi.lorenz.pdfreader` clears the app's
+  default again; Home only notices on its next resume.
 
 - Launcher shortcuts (`LauncherShortcuts`, long press on the app icon) open
   the four most recent entries, on top of Home so back leads to the list.

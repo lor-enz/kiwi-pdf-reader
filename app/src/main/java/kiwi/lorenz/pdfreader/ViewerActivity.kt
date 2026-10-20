@@ -59,7 +59,8 @@ open class ViewerActivity : ComponentActivity() {
         override fun clearFilledFields() = viewModel.clearFilledFields()
         override fun goHome() = this@ViewerActivity.goHome()
         override suspend fun documentInfo() = viewModel.documentInfo()
-        override fun messageShown() = viewModel.onMessageShown()
+        override fun showMessage(message: Int) = viewModel.message.show(message)
+        override fun messageShown() = viewModel.message.shown()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +103,7 @@ open class ViewerActivity : ComponentActivity() {
                 searchState = viewModel.search.state,
                 pendingRestorePage = viewModel.pendingRestorePage,
                 isFilledIn = viewModel.isFilledIn,
-                message = viewModel.message,
+                message = viewModel.message.current,
                 actions = actions,
             )
         }
@@ -152,7 +153,7 @@ open class ViewerActivity : ComponentActivity() {
         val name = loadedDocument()?.name ?: return
         lifecycleScope.launch {
             runCatchingCancellable { sharePdf(checkNotNull(viewModel.currentFile()), name) }.onFailure {
-                viewModel.showMessage(R.string.share_failed)
+                viewModel.message.show(R.string.share_failed)
             }
         }
     }

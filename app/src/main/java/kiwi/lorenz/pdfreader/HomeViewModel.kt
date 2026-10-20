@@ -1,7 +1,6 @@
 package kiwi.lorenz.pdfreader
 
 import android.app.Application
-import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -30,12 +29,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     var pendingRemoval by mutableStateOf<RecentFile?>(null)
         private set
 
-    /** A short message for the home screen's snackbar (a string resource), cleared once shown. */
-    var message by mutableStateOf<Int?>(null)
-        private set
+    /** For the home screen's snackbar. */
+    val message = SnackbarMessage()
 
     /** Which app opens PDFs; Home shows a hint unless it's this one. */
-    val pdfDefault = PdfDefaultTracker(application)
+    val pdfDefault = PdfDefaultTracker(application, message)
 
     init {
         viewModelScope.launch {
@@ -74,17 +72,5 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** The thumbnail goes too, as it shows protected content. */
     fun forgetPassword(entry: RecentFile) {
         viewModelScope.launch { store.setPassword(entry.id, null) }
-    }
-
-    fun refreshPdfDefault() {
-        if (pdfDefault.refresh()) showMessage(R.string.now_default_pdf_app)
-    }
-
-    fun showMessage(@StringRes message: Int) {
-        this.message = message
-    }
-
-    fun onMessageShown() {
-        message = null
     }
 }

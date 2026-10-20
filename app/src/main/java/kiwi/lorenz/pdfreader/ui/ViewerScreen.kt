@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -40,12 +41,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,7 +59,6 @@ import kiwi.lorenz.pdfreader.DocumentState
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.SearchState
 import kiwi.lorenz.pdfreader.info.DocumentInfo
-import kotlinx.coroutines.launch
 
 /** Material 3 small top app bar height. */
 private val TopBarHeight = 64.dp
@@ -86,6 +84,7 @@ interface ViewerActions {
     fun clearFilledFields()
     fun goHome()
     suspend fun documentInfo(): DocumentInfo
+    fun showMessage(@StringRes message: Int)
     fun messageShown()
 }
 
@@ -158,19 +157,7 @@ fun ViewerScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    val linkFailedMessage = stringResource(R.string.link_failed)
-    val messageText = message?.let { stringResource(it) }
-    LaunchedEffect(messageText) {
-        messageText ?: return@LaunchedEffect
-        // Cleared right away, so the same message can come again; that restarts this effect,
-        // so the snackbar is shown in the screen's scope.
-        actions.messageShown()
-        scope.launch {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(messageText)
-        }
-    }
+    MessageEffect(message, actions::messageShown, snackbarHostState, replacesCurrent = true)
 
     // The bar is laid over the content, so hiding it doesn't shift the pages.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -207,12 +194,7 @@ fun ViewerScreen(
                     contentPadding = contentPadding,
                     onBarHiddenChange = { isBarHiddenByScroll = it },
                     onFormEdit = actions::formEdited,
-                    onLinkFailed = {
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar(linkFailedMessage)
-                        }
-                    },
+                    onLinkFailed = { actions.showMessage(R.string.link_failed) },
                 )
 
                 is DocumentState.NeedsPassword -> PasswordPrompt(

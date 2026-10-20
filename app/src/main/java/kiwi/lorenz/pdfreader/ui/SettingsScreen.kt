@@ -27,11 +27,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,7 +46,6 @@ import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
-import kotlinx.coroutines.launch
 
 /** What the app keeps on the phone, and where to learn more about it. No preferences (yet). */
 @Composable
@@ -93,14 +90,7 @@ fun SettingsScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = message?.let { stringResource(it) }
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(messageText) {
-        messageText ?: return@LaunchedEffect
-        // Cleared right away, which restarts this effect, so it's shown in the screen's scope.
-        onMessageShown()
-        scope.launch { snackbarHostState.showSnackbar(messageText) }
-    }
+    MessageEffect(message, onMessageShown, snackbarHostState)
 
     SubScreen(R.string.settings, onBack, snackbarHostState) {
         SectionHeader(R.string.stored_on_phone)

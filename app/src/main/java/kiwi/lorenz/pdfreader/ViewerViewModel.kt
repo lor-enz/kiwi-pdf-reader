@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,9 +69,8 @@ class ViewerViewModel @VisibleForTesting internal constructor(
     var isFilledIn by mutableStateOf(false)
         private set
 
-    /** A short message for the viewer's snackbar (a string resource), cleared once shown. */
-    var message by mutableStateOf<Int?>(null)
-        private set
+    /** For the viewer's snackbar. */
+    val message = SnackbarMessage()
 
     /**
      * Another task whose viewer already shows the requested document. A document is open in one
@@ -224,16 +222,8 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             val saved = runCatchingCancellable {
                 getApplication<Application>().savePdfCopy(checkNotNull(currentFile()), to)
             }
-            message = if (saved.isSuccess) R.string.copy_saved else R.string.save_failed
+            message.show(if (saved.isSuccess) R.string.copy_saved else R.string.save_failed)
         }
-    }
-
-    fun showMessage(@StringRes message: Int) {
-        this.message = message
-    }
-
-    fun onMessageShown() {
-        message = null
     }
 
     // Forms

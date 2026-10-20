@@ -8,13 +8,18 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -58,9 +63,10 @@ suspend fun Context.askToBecomePdfDefault() {
 
 /**
  * Which app opens PDFs, for a screen that shows the hint; checked again on every resume. Knows
- * whether the "Open with" dialog was shown, as becoming the default then deserves a confirmation.
+ * whether the "Open with" dialog was shown, as becoming the default then deserves a confirmation
+ * in [message].
  */
-class PdfDefaultTracker(private val context: Context) {
+class PdfDefaultTracker(private val context: Context, private val message: SnackbarMessage) {
     var pdfDefault by mutableStateOf<PdfDefault>(PdfDefault.ThisApp)
         private set
 
@@ -70,19 +76,28 @@ class PdfDefaultTracker(private val context: Context) {
 
     private var isAsking = false
 
-    /** True when the app has just become the default from the "Open with" dialog. */
-    fun refresh(): Boolean {
+    /**
+     * Checks on every resume of [activity]: before the first frame, so the hint doesn't flash,
+     * and again after the "Open with" dialog or the other app's settings.
+     */
+    fun observe(activity: ComponentActivity) {
+        activity.lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refresh()
+        })
+    }
+
+    /** Shows the "Open with" dialog, see [askToBecomePdfDefault]. */
+    fun ask(activity: ComponentActivity) {
+        isAsking = true
+        activity.lifecycleScope.launch { activity.askToBecomePdfDefault() }
+    }
+
+    private fun refresh() {
         pdfDefault = context.pdfDefault()
         val pausedAt = context.hintPreferences().getLong(HINT_PAUSED_AT, 0)
         isHintPaused = System.currentTimeMillis() - pausedAt in 0..<HINT_PAUSE_MILLIS
-        val isNowDefault = isAsking && pdfDefault == PdfDefault.ThisApp
+        if (isAsking && pdfDefault == PdfDefault.ThisApp) message.show(R.string.now_default_pdf_app)
         isAsking = false
-        return isNowDefault
-    }
-
-    /** Before showing the "Open with" dialog ([askToBecomePdfDefault]). */
-    fun onAsking() {
-        isAsking = true
     }
 
     fun pauseHint() {

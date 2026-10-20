@@ -1,10 +1,6 @@
 package kiwi.lorenz.pdfreader
 
 import android.app.Application
-import androidx.annotation.StringRes
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.recent.RecentFile
@@ -18,12 +14,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val recentFiles: StateFlow<List<RecentFile>> = store.entries
 
-    /** A short message for the snackbar (a string resource), cleared once shown. */
-    var message by mutableStateOf<Int?>(null)
-        private set
+    /** For the snackbar. */
+    val message = SnackbarMessage()
 
     /** Which app opens PDFs; Settings always shows it, with a way to change it. */
-    val pdfDefault = PdfDefaultTracker(application)
+    val pdfDefault = PdfDefaultTracker(application, message)
 
     init {
         // Loads the list, which may not be loaded yet after process death.
@@ -37,19 +32,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun clearRecentFiles() {
         viewModelScope.launch {
-            if (store.clear() > 0) message = R.string.open_files_kept
+            if (store.clear() > 0) message.show(R.string.open_files_kept)
         }
-    }
-
-    fun refreshPdfDefault() {
-        if (pdfDefault.refresh()) showMessage(R.string.now_default_pdf_app)
-    }
-
-    fun showMessage(@StringRes message: Int) {
-        this.message = message
-    }
-
-    fun onMessageShown() {
-        message = null
     }
 }

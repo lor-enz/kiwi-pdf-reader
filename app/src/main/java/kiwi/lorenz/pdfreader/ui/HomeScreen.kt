@@ -41,7 +41,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,7 +65,6 @@ import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -131,16 +129,8 @@ fun HomeScreen(
         }
     }
 
-    val scope = rememberCoroutineScope()
-    val messageText = message?.let { stringResource(it) }
-    LaunchedEffect(messageText) {
-        messageText ?: return@LaunchedEffect
-        // Cleared right away, so the same message can come again; that restarts this effect,
-        // so the snackbar is shown in the screen's scope. It waits for an undo snackbar instead
-        // of dismissing it, which would end the undo.
-        onMessageShown()
-        scope.launch { snackbarHostState.showSnackbar(messageText) }
-    }
+    // Waits for an undo snackbar instead of dismissing it, which would end the undo.
+    MessageEffect(message, onMessageShown, snackbarHostState)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
