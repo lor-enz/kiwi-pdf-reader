@@ -323,13 +323,31 @@
   shortcut intents name `MainActivity` and `ViewerActivity`, so pinned ones
   break if those are renamed.
 
+- The app is in English and German (`values-de`). The German addresses
+  the user with "du", as Android does, and says "Smartphone". "Remember" is
+  "speichern" (forgetting a password is "entfernen", since "Passwort
+  vergessen" reads as "forgot password"), the recent files list is "Zuletzt
+  geöffnet". Prefer a few short words over long compounds ("Infos zum
+  Dokument", not "Dokumenteigenschaften"). The tagline refers to the app:
+  "Nimm einfach die Blaue." The app name isn't translated (`translatable="false"`). The
+  system's per-app language setting lists both languages
+  (`generateLocaleConfig`, default locale in `res/resources.properties`).
+  Add every new string to both files; lint fails on a missing translation.
+
 # Planned changes
 
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
 - Fullscreen (hide system bars) first; One page at a time, swipe left/right, pinch-zoom (own pager view)
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
+
+- Change Document Info so unfilled field still show up with a grey italic "empty" or similar indicator that it's not filled.
+- Go to Penguin PDF Home from Viewer page (behind the 3 dots?)
+- Default check and Make Default also in settings.
+- Dismiss button for Make Default banner on Home. Comes back after 7 days.
+- Fix padding in Recent item when title is multiline. Right now second line is closer to filename than to first line of Title.
+- Show Table of contents. Open is where.
+- Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
   side panel (`androidx.pdf` can't read a PDF's outline, so no table of
   contents)
-- Change Document Info so unfilled field still show up with a grey "no info" or similar indicator that it's not filled.
