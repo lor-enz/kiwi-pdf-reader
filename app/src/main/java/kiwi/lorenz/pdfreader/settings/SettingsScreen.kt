@@ -1,4 +1,4 @@
-package kiwi.lorenz.pdfreader.ui
+package kiwi.lorenz.pdfreader.settings
 
 import android.text.format.Formatter
 import androidx.annotation.DrawableRes
@@ -43,6 +43,10 @@ import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
+import kiwi.lorenz.pdfreader.ui.ConfirmDialog
+import kiwi.lorenz.pdfreader.ui.DefaultHint
+import kiwi.lorenz.pdfreader.ui.MessageEffect
+import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 
 /** What the app keeps on the phone, and where to learn more about it. No preferences (yet). */

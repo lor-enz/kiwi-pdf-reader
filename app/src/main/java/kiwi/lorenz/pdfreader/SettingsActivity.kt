@@ -12,8 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kiwi.lorenz.pdfreader.ui.LicensesScreen
-import kiwi.lorenz.pdfreader.ui.SettingsScreen
+import kiwi.lorenz.pdfreader.settings.LicensesScreen
+import kiwi.lorenz.pdfreader.settings.SettingsScreen
+import kiwi.lorenz.pdfreader.settings.SettingsViewModel
 import kiwi.lorenz.pdfreader.ui.setAppContent
 
 /** Settings and information about the app, opened from the home screen. */
