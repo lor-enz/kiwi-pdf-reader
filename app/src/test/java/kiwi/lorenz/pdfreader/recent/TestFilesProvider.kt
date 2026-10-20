@@ -20,7 +20,7 @@ class TestFilesProvider : ContentProvider() {
     override fun query(uri: Uri, projection: Array<out String>?, selection: String?, args: Array<out String>?, sort: String?): Cursor {
         val file = file(uri)
         val columns = arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED)
-        return MatrixCursor(columns).apply { addRow(arrayOf(file.name, file.length(), file.lastModified())) }
+        return MatrixCursor(columns).apply { addRow(arrayOf<Any>(file.name, file.length(), file.lastModified())) }
     }
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
