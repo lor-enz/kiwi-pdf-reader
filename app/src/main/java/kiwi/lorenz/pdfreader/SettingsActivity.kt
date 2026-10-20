@@ -12,10 +12,12 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kiwi.lorenz.pdfreader.ui.LicensesScreen
 import kiwi.lorenz.pdfreader.ui.SettingsScreen
 import kiwi.lorenz.pdfreader.ui.setAppContent
+import kotlinx.coroutines.launch
 
 /** Settings and information about the app, opened from the home screen. */
 class SettingsActivity : ComponentActivity() {
@@ -32,6 +34,9 @@ class SettingsActivity : ComponentActivity() {
             SettingsScreen(
                 recentFiles = recentFiles,
                 versionName = versionName,
+                pdfDefault = viewModel.pdfDefault.pdfDefault,
+                onMakeDefault = ::askToBecomeDefault,
+                onChangeDefault = { openDefaultSettings(it.packageName) },
                 onBack = ::finish,
                 onForgetAllPasswords = viewModel::forgetAllPasswords,
                 onClearRecentFiles = viewModel::clearRecentFiles,
@@ -44,6 +49,17 @@ class SettingsActivity : ComponentActivity() {
                 onMessageShown = viewModel::onMessageShown,
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Before the first frame, and again after the "Open with" dialog or the other app's settings.
+        viewModel.refreshPdfDefault()
+    }
+
+    private fun askToBecomeDefault() {
+        viewModel.pdfDefault.onAsking()
+        lifecycleScope.launch { askToBecomePdfDefault() }
     }
 
     /** For bug reports. Android shows its own confirmation, so there's no snackbar. */

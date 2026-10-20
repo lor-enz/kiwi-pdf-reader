@@ -42,9 +42,11 @@ class MainActivity : ComponentActivity() {
                 recentFiles = recentFiles,
                 thumbnailFile = viewModel::thumbnailFile,
                 onOpenPdf = { pickPdf.launch(arrayOf(PDF_MIME_TYPE)) },
-                pdfDefault = viewModel.pdfDefault,
+                pdfDefault = viewModel.pdfDefault.pdfDefault,
                 onMakeDefault = ::askToBecomeDefault,
                 onChangeDefault = { openDefaultSettings(it.packageName) },
+                isHintPaused = viewModel.pdfDefault.isHintPaused,
+                onPauseHint = viewModel.pdfDefault::pauseHint,
                 onOpenSettings = { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) },
                 onOpenRecent = { startActivity(ViewerActivity.recentIntent(this@MainActivity, it.id)) },
                 pendingRemoval = viewModel.pendingRemoval,
@@ -68,7 +70,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun askToBecomeDefault() {
-        viewModel.onAskingForDefault()
+        viewModel.pdfDefault.onAsking()
         lifecycleScope.launch { askToBecomePdfDefault() }
     }
 

@@ -22,6 +22,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     var message by mutableStateOf<Int?>(null)
         private set
 
+    /** Which app opens PDFs; Settings always shows it, with a way to change it. */
+    val pdfDefault = PdfDefaultTracker(application)
+
     init {
         // Loads the list, which may not be loaded yet after process death.
         viewModelScope.launch { store.cleanup() }
@@ -36,6 +39,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             if (store.clear() > 0) message = R.string.open_files_kept
         }
+    }
+
+    fun refreshPdfDefault() {
+        if (pdfDefault.refresh()) showMessage(R.string.now_default_pdf_app)
     }
 
     fun showMessage(@StringRes message: Int) {

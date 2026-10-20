@@ -34,12 +34,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     var message by mutableStateOf<Int?>(null)
         private set
 
-    /** Which app opens PDFs; Home shows a hint unless it's this one. Checked on every return. */
-    var pdfDefault by mutableStateOf<PdfDefault>(PdfDefault.ThisApp)
-        private set
-
-    /** The "Open with" dialog was shown, so becoming the default deserves a confirmation. */
-    private var isAskingForDefault = false
+    /** Which app opens PDFs; Home shows a hint unless it's this one. */
+    val pdfDefault = PdfDefaultTracker(application)
 
     init {
         viewModelScope.launch {
@@ -81,14 +77,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshPdfDefault() {
-        pdfDefault = getApplication<Application>().pdfDefault()
-        if (isAskingForDefault && pdfDefault == PdfDefault.ThisApp) showMessage(R.string.now_default_pdf_app)
-        isAskingForDefault = false
-    }
-
-    /** Before showing the "Open with" dialog ([askToBecomePdfDefault]). */
-    fun onAskingForDefault() {
-        isAskingForDefault = true
+        if (pdfDefault.refresh()) showMessage(R.string.now_default_pdf_app)
     }
 
     fun showMessage(@StringRes message: Int) {

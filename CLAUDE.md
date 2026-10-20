@@ -152,7 +152,7 @@
 - Settings (cog on Home, `SettingsActivity`) has no preferences so far,
   only what the app stores and information: forget all passwords, clear
   recent files (both confirmed by a dialog, as there's no undo; open
-  documents stay, as in cleanup), version (tap copies it with the Android
+  documents stay, as in cleanup), the default PDF app hint, version (tap copies it with the Android
   version and device for bug reports), source, issues, privacy policy and
   licenses. No "Open by default" link: that system page is about web links
   and can only clear defaults (see the default PDF app hint). Every runtime dependency is Apache 2.0, so the
@@ -297,8 +297,12 @@
   sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
 - Home shows a quiet hint below "Open PDF" while the app isn't the default PDF
-  app (`DefaultPdfApp.kt`, checked on every resume). It can't be dismissed:
-  without being the default the app is barely used. Android has no role for
+  app (`DefaultPdfApp.kt`, checked on every resume). "Not now" hides it for
+  7 days (`PdfDefaultTracker`, a timestamp in shared preferences), as
+  without being the default the app is barely used. Settings shows the same
+  banner (`ui/DefaultHint.kt`) without "Not now", below "Clear recent
+  files", or a quiet line once the app is the default, so it's always
+  found there. Android has no role for
   PDFs, so an app can't ask to become the default: only "Always" in the
   system's "Open with" dialog sets it, and only the default app's "Open by
   default" page clears it ("Clear default preferences", below the web
@@ -344,8 +348,6 @@
   glares at night. Inverting would also shift images and form colors
 
 - Go to Penguin PDF Home from Viewer page (behind the 3 dots?)
-- Default check and Make Default also in settings.
-- Dismiss button for Make Default banner on Home. Comes back after 7 days.
 - Show Table of contents. Open is where.
 - Check if Privacy Policy could be trimmed.
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

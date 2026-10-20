@@ -8,6 +8,10 @@
     <string name="other_default_pdf_app">A different app is set as the default PDF app.</string>
     <string name="clear_other_default">Clear other default</string>
     <string name="now_default_pdf_app">PDFs now open in PDF Penguin.</string>
+    <!-- Hides the hint above for a week -->
+    <string name="not_now">Not now</string>
+    <!-- In settings, where the hint above shows otherwise -->
+    <string name="is_default_pdf_app">PDF Penguin is your default PDF app.</string>
     <string name="recent_files">Recent</string>
     <string name="just_now">Just now</string>
     <string name="page_of">Page %1$d of %2$d</string>

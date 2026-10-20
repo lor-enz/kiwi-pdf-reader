@@ -8,7 +8,11 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -52,6 +56,43 @@ suspend fun Context.askToBecomePdfDefault() {
     startActivity(viewIntent(FileProvider.getUriForFile(this, "$packageName.files", file)))
 }
 
+/**
+ * Which app opens PDFs, for a screen that shows the hint; checked again on every resume. Knows
+ * whether the "Open with" dialog was shown, as becoming the default then deserves a confirmation.
+ */
+class PdfDefaultTracker(private val context: Context) {
+    var pdfDefault by mutableStateOf<PdfDefault>(PdfDefault.ThisApp)
+        private set
+
+    /** "Not now" on Home's hint, which then stays away for [HINT_PAUSE_MILLIS]. */
+    var isHintPaused by mutableStateOf(false)
+        private set
+
+    private var isAsking = false
+
+    /** True when the app has just become the default from the "Open with" dialog. */
+    fun refresh(): Boolean {
+        pdfDefault = context.pdfDefault()
+        val pausedAt = context.hintPreferences().getLong(HINT_PAUSED_AT, 0)
+        isHintPaused = System.currentTimeMillis() - pausedAt in 0..<HINT_PAUSE_MILLIS
+        val isNowDefault = isAsking && pdfDefault == PdfDefault.ThisApp
+        isAsking = false
+        return isNowDefault
+    }
+
+    /** Before showing the "Open with" dialog ([askToBecomePdfDefault]). */
+    fun onAsking() {
+        isAsking = true
+    }
+
+    fun pauseHint() {
+        context.hintPreferences().edit { putLong(HINT_PAUSED_AT, System.currentTimeMillis()) }
+        isHintPaused = true
+    }
+}
+
+private fun Context.hintPreferences() = getSharedPreferences("default_hint", Context.MODE_PRIVATE)
+
 /** The file opened by [askToBecomePdfDefault]. */
 fun Context.isDefaultCheck(uri: Uri?) = uri == defaultCheckUri()
 
@@ -90,3 +131,5 @@ private fun writeDefaultCheckPdf(file: File) {
 }
 
 private const val DEFAULT_CHECK_DIR = "default-check"
+private const val HINT_PAUSED_AT = "paused_at"
+private const val HINT_PAUSE_MILLIS = 7 * 24 * 60 * 60 * 1000L

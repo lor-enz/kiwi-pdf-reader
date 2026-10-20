@@ -6,6 +6,8 @@
     <string name="other_default_pdf_app">Eine andere App ist als Standard-App für PDFs festgelegt.</string>
     <string name="clear_other_default">Anderen Standard aufheben</string>
     <string name="now_default_pdf_app">PDFs öffnen sich jetzt in PDF Penguin.</string>
+    <string name="not_now">Nicht jetzt</string>
+    <string name="is_default_pdf_app">PDF Penguin ist deine Standard-App für PDFs.</string>
     <string name="recent_files">Zuletzt geöffnet</string>
     <string name="just_now">Gerade eben</string>
     <string name="page_of">Seite %1$d von %2$d</string>

@@ -3,6 +3,7 @@ package kiwi.lorenz.pdfreader.ui
 import android.text.format.Formatter
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,6 +44,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kiwi.lorenz.pdfreader.PdfDefault
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
@@ -53,6 +55,9 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     recentFiles: List<RecentFile>,
     versionName: String,
+    pdfDefault: PdfDefault,
+    onMakeDefault: () -> Unit,
+    onChangeDefault: (PdfDefault.OtherApp) -> Unit,
     onBack: () -> Unit,
     onForgetAllPasswords: () -> Unit,
     onClearRecentFiles: () -> Unit,
@@ -126,6 +131,24 @@ fun SettingsScreen(
             enabled = recentFiles.isNotEmpty(),
             onClick = { isClearDialogOpen = true },
         )
+        // Can't be dismissed here: this is where it's always found.
+        DefaultHint(
+            pdfDefault = pdfDefault,
+            isVisible = pdfDefault != PdfDefault.ThisApp,
+            onMakeDefault = onMakeDefault,
+            onChangeDefault = onChangeDefault,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        )
+        AnimatedVisibility(visible = pdfDefault == PdfDefault.ThisApp) {
+            Text(
+                text = stringResource(R.string.is_default_pdf_app),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag(TestTags.IS_DEFAULT),
+            )
+        }
 
         SectionHeader(R.string.about)
         SettingsRow(R.drawable.ic_info, R.string.version, versionName, TestTags.VERSION, onClick = onCopyVersion)
@@ -286,6 +309,9 @@ private fun SettingsScreenPreview() {
                 RecentFile("2", "", "b.pdf", false, lastOpenedMillis = 0),
             ),
             versionName = "1.5",
+            pdfDefault = PdfDefault.None,
+            onMakeDefault = {},
+            onChangeDefault = {},
             onBack = {},
             onForgetAllPasswords = {},
             onClearRecentFiles = {},
