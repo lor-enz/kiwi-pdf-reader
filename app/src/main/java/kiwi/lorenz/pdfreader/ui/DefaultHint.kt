@@ -43,21 +43,23 @@ fun DefaultHint(
     // Keeps showing the last state while it disappears.
     var shown by remember { mutableStateOf(pdfDefault) }
     if (pdfDefault != PdfDefault.ThisApp) shown = pdfDefault
-    AnimatedVisibility(visible = isVisible, modifier = modifier) {
+    AnimatedVisibility(visible = isVisible) {
         val other = shown as? PdfDefault.OtherApp
         HintBox(
             isOtherApp = other != null,
             onClick = { if (other != null) onChangeDefault(other) else onMakeDefault() },
             onNotNow = onNotNow,
+            // Inside, so the spacing collapses along with the hint.
+            modifier = modifier,
         )
     }
 }
 
 /** Material's banner: icon and text side by side, the actions at the end below them. */
 @Composable
-private fun HintBox(isOtherApp: Boolean, onClick: () -> Unit, onNotNow: (() -> Unit)?) {
+private fun HintBox(isOtherApp: Boolean, onClick: () -> Unit, onNotNow: (() -> Unit)?, modifier: Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceContainer)
