@@ -15,6 +15,17 @@
   phone may be connected via adb too (target with `adb -s <serial>`).
 - Give new UI elements a test tag (`ui/TestTags.kt`) in the same change
   that adds them, so they can be driven by adb (see Testing).
+- Packages are by feature, each with its screens and logic: `viewer`,
+  `home`, `settings`, `defaultapp`, `info`, `recent`, `document` (open,
+  print, share). `ui` holds only what several features share (sheets,
+  dialogs, `TestTags`, theme), `util` small helpers. The root holds only
+  `PdfPenguinApp` and the activities, which keep their names and package
+  (manifest, launcher, pinned shortcuts). Put a new file in the package of
+  its feature, or propose a new one when it fits none.
+- Check the package of every file you touch: a file used by only one
+  feature belongs in that feature's package, one used by several goes up to
+  `ui` or `util`. If a move is advised, ask the user first, and move in a
+  `🚚` commit of its own (moves only, so blame follows the rename).
 - Record decisions and findings in this file as they come up, and update it
   and the readme in the commit they belong to (e.g. the milestones), not in a
   separate one.
