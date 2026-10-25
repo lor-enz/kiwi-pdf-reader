@@ -44,6 +44,25 @@
     <string name="no_recent_files">No recent files</string>
     <string name="clear_recent_files_title">Clear recent files?</string>
     <string name="clear_recent_files_text">The list is emptied, and the copies of files from other apps and your filled-in forms are deleted. Your own files stay where they are.</string>
+    <string name="keep_unused">Keep recent files</string>
+    <string name="keep_unused_text">How long a file stays in the list after you last opened it. Your own files stay where they are.</string>
+    <string name="keep_week">1 week</string>
+    <string name="keep_three_months">3 months</string>
+    <string name="keep_year">1 year</string>
+    <string name="storage_limit">Storage limit</string>
+    <string name="storage_limit_text">Files from other apps and your filled-in forms are stored as copies. Above the limit, the ones opened longest ago are deleted first.</string>
+    <string name="storage_100_mb" translatable="false">100 MB</string>
+    <string name="storage_500_mb" translatable="false">500 MB</string>
+    <string name="storage_2_gb" translatable="false">2 GB</string>
+    <!-- Snackbar with Undo after choosing a stricter limit -->
+    <plurals name="limits_removed_entries">
+        <item quantity="one">%d file removed from the list</item>
+        <item quantity="other">%d files removed from the list</item>
+    </plurals>
+    <plurals name="limits_dropped_filled">
+        <item quantity="one">%d filled-in form deleted</item>
+        <item quantity="other">%d filled-in forms deleted</item>
+    </plurals>
     <string name="open_files_kept">Files that are open right now stay in the list.</string>
     <string name="about">About</string>
     <string name="version">Version</string>

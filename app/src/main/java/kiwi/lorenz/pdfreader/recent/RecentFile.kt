@@ -58,49 +58,63 @@ data class RecentFile(
 /** What [CleanupRules.plan] decided: entries to remove, and filled-in versions to drop. */
 data class Cleanup(val removeEntries: Set<String>, val dropFilled: Set<String>)
 
+/** How long an entry stays in the list without being opened. Chosen in Settings. */
+enum class KeepUnused(val millis: Long) {
+    WEEK(7 * DAY_MILLIS),
+    THREE_MONTHS(91 * DAY_MILLIS),
+    YEAR(365 * DAY_MILLIS),
+}
+
 /**
- * The limits for what the app stores itself: copies of files from other apps and filled-in
- * forms. Both go after 30 days without being opened, and above 250 MB in total, least recently
- * opened first. A copy goes with its entry; a picked file only loses its filled-in version.
+ * How much the app may store itself: copies of files from other apps and filled-in forms.
+ * Decimal, like the sizes Android shows. Chosen in Settings.
+ */
+enum class StorageLimit(val bytes: Long) {
+    MB_100(100_000_000),
+    MB_500(500_000_000),
+    GB_2(2_000_000_000),
+}
+
+data class CleanupLimits(
+    val keepUnused: KeepUnused = KeepUnused.THREE_MONTHS,
+    val storageLimit: StorageLimit = StorageLimit.MB_500,
+)
+
+/**
+ * Entries go once they haven't been opened for [CleanupLimits.keepUnused]. Above the
+ * [CleanupLimits.storageLimit], what the app stores goes too, least recently opened first: a copy
+ * with its entry, a picked file only loses its filled-in version.
  */
 object CleanupRules {
-    const val STORED_MAX_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000
-    const val STORED_MAX_TOTAL_BYTES = 250L * 1024 * 1024
-    const val MAX_ENTRIES = 20
-
     /** [openIds] are the documents open in a viewer, which are left alone. */
-    fun plan(entries: List<RecentFile>, nowMillis: Long, openIds: Set<String>): Cleanup {
-        val removed = mutableSetOf<String>()
-        val dropped = mutableSetOf<String>()
+    fun plan(entries: List<RecentFile>, nowMillis: Long, openIds: Set<String>, limits: CleanupLimits): Cleanup {
         val newestFirst = entries.sortedByDescending { it.lastOpenedMillis }
         val removable = newestFirst.filter { it.id !in openIds }
 
-        fun release(entry: RecentFile) {
-            if (entry.isCopy) removed += entry.id else dropped += entry.id
-        }
+        // Not opened for too long.
+        val removed = removable
+            .filter { nowMillis - it.lastOpenedMillis > limits.keepUnused.millis }
+            .mapTo(mutableSetOf()) { it.id }
+
+        // Above the storage limit, least recently opened first.
+        val dropped = mutableSetOf<String>()
         fun isStored(entry: RecentFile) = entry.id !in removed && entry.id !in dropped && entry.storedBytes > 0
-
-        // Not opened for 30 days.
-        removable
-            .filter { isStored(it) && nowMillis - it.lastOpenedMillis > STORED_MAX_AGE_MILLIS }
-            .forEach(::release)
-
-        // Above the size budget, least recently opened first.
         var storedBytes = newestFirst.filter(::isStored).sumOf { it.storedBytes }
         for (entry in removable.asReversed()) {
-            if (storedBytes <= STORED_MAX_TOTAL_BYTES) break
+            if (storedBytes <= limits.storageLimit.bytes) break
             if (isStored(entry)) {
-                storedBytes -= if (entry.isCopy) entry.storedBytes else entry.filledBytes
-                release(entry)
+                if (entry.isCopy) {
+                    storedBytes -= entry.storedBytes
+                    removed += entry.id
+                } else {
+                    storedBytes -= entry.filledBytes
+                    dropped += entry.id
+                }
             }
         }
 
-        // Keep the list short: drop the oldest entries beyond the limit.
-        newestFirst.filter { it.id !in removed }
-            .drop(MAX_ENTRIES)
-            .filter { it.id !in openIds }
-            .mapTo(removed) { it.id }
-
-        return Cleanup(removed, dropped - removed)
+        return Cleanup(removed, dropped)
     }
 }
+
+private const val DAY_MILLIS = 24L * 60 * 60 * 1000

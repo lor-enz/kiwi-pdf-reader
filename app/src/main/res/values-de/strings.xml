@@ -37,6 +37,21 @@
     <string name="no_recent_files">Keine zuletzt geöffneten Dateien</string>
     <string name="clear_recent_files_title">Liste „Zuletzt geöffnet“ leeren?</string>
     <string name="clear_recent_files_text">Die Liste wird geleert, und die Kopien von Dateien aus anderen Apps und deine ausgefüllten Formulare werden gelöscht. Deine eigenen Dateien bleiben, wo sie sind.</string>
+    <string name="keep_unused">In der Liste behalten</string>
+    <string name="keep_unused_text">Wie lange eine Datei nach dem letzten Öffnen in der Liste bleibt. Deine eigenen Dateien bleiben, wo sie sind.</string>
+    <string name="keep_week">1 Woche</string>
+    <string name="keep_three_months">3 Monate</string>
+    <string name="keep_year">1 Jahr</string>
+    <plurals name="limits_removed_entries">
+        <item quantity="one">%d Datei aus der Liste entfernt</item>
+        <item quantity="other">%d Dateien aus der Liste entfernt</item>
+    </plurals>
+    <plurals name="limits_dropped_filled">
+        <item quantity="one">%d ausgefülltes Formular gelöscht</item>
+        <item quantity="other">%d ausgefüllte Formulare gelöscht</item>
+    </plurals>
+    <string name="storage_limit">Speicherlimit</string>
+    <string name="storage_limit_text">Dateien aus anderen Apps und deine ausgefüllten Formulare werden als Kopie gespeichert. Über dem Limit werden die am längsten nicht geöffneten zuerst gelöscht.</string>
     <string name="open_files_kept">Gerade geöffnete Dateien bleiben in der Liste.</string>
     <string name="about">Über</string>
     <string name="version">Version</string>

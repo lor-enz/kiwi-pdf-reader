@@ -122,9 +122,17 @@
   restricted `fastScrollVisibility`. Drop it once `androidx.pdf` fixes this.
   To reproduce on the emulator, install a dummy accessibility service.
 - Files opened from other apps lose their permission once closed, so the
-  app keeps private copies for the recent files list. The limits (30 days
-  since last opened, 250 MB in total, 20 entries) are deliberate and not
-  configurable.
+  app keeps private copies for the recent files list. Cleanup (`CleanupRules`)
+  has two limits, each chosen in Settings from three presets, as no single
+  default suits both short-lived files (tickets, documents to sign) and
+  reference material (manuals, contracts). Age: an entry not opened for
+  1 week, 3 months (default) or 1 year leaves the list, picked files too
+  (their permission is released), or the list would only grow. Storage: the
+  copies and filled-in forms may take 100 MB, 500 MB (default, about a
+  hundred everyday PDFs) or 2 GB (decimal, as Android shows sizes); above it
+  the least recently opened go first, a copy with its entry, a picked file
+  only losing its filled-in version. There's no limit on the number of
+  entries. Stored in shared preferences (`cleanup`).
 - Don't set `optimization.packageScope` in the release build. The template's
   `androidx/kotlin/kotlinx` scope made R8 produce a class extending a
   package-private class in `kotlin.collections` (`IllegalAccessError` at
@@ -168,10 +176,27 @@
   (their icons, the heading and the action labels); 16 dp hugged the edge,
   and a gap as large as the status bar looked odd on phones with a tall one
   (Pixel).
-- Settings (cog on Home, `SettingsActivity`) has no preferences so far,
-  only what the app stores and information: forget all passwords, clear
-  recent files (both confirmed by a dialog, as there's no undo; open
-  documents stay, as in cleanup), the default PDF app hint, version (tap copies it with the Android
+- The cleanup limits are chosen on the Settings screen itself, no dialog:
+  a heading row explains each, a full-width Material `Slider` with three
+  stops (`StopSlider`) sits below it, and the stops' labels below that
+  (tappable too, the selected one in the accent color). The choice counts
+  when the thumb is let go, so dragging past "1 week" deletes nothing. The
+  thumb slides to a stop (200 ms) instead of jumping; that needs a
+  `SliderState` with `shouldAutoSnap` off, as the plain `Slider(value, …)`
+  snaps every value of the animation to the nearest stop. To check
+  animations on the emulator, set `animator_duration_scale` to 1 and record
+  with `screenrecord` (and back to 0 afterwards). A
+  choice that would remove something (`previewCleanup`) is held as
+  `pendingLimits` behind a snackbar with Undo ("2 files removed from the
+  list", or filled-in forms deleted when only those go), and applied once
+  the snackbar ends or the screen is left, like removing an entry on Home.
+  The Undo stays in Settings, not on Home: there it would come out of
+  context, and it's easily missed. A dialog with a choice that applied on
+  tapping was dropped as it deleted without any way back.
+- Settings (cog on Home, `SettingsActivity`) shows what the app stores and
+  information: forget all passwords, clear recent files (both confirmed by
+  a dialog, as there's no undo; open documents stay, as in cleanup), how
+  long recent files are kept and the storage limit, the default PDF app hint, version (tap copies it with the Android
   version and device for bug reports), source, issues, privacy policy and
   licenses. No "Open by default" link: that system page is about web links
   and can only clear defaults (see the default PDF app hint). Every runtime dependency is Apache 2.0, so the
@@ -435,7 +460,9 @@
 
 # Planned changes
 
-- Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
+- Search the recent files list: only matters once it gets long (no count
+  limit anymore, and "1 year" keeps a lot), so the search field could
+  appear only then.
 - Presentation mode: a minimal overlay.
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors

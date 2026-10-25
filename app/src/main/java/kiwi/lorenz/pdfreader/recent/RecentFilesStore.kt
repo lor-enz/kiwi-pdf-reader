@@ -9,6 +9,7 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.AtomicFile
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.util.readText
 import androidx.core.util.writeText
@@ -69,6 +70,12 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
     /** [entries], but only once they've been read from disk: before that, the list isn't known. */
     val loadedEntries: Flow<List<RecentFile>> =
         combine(loaded, _entries) { isLoaded, entries -> entries.takeIf { isLoaded } }.filterNotNull()
+
+    private val preferences = context.getSharedPreferences("cleanup", Context.MODE_PRIVATE)
+    private val _limits = MutableStateFlow(readLimits())
+
+    /** What [cleanup] keeps, chosen in Settings. */
+    val limits: StateFlow<CleanupLimits> = _limits.asStateFlow()
 
     suspend fun get(id: String): RecentFile? = edit { entries -> entries.find { it.id == id } }
 
@@ -341,9 +348,34 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         }
     }
 
+    /** What [cleanup] would remove under [limits], so the change can be undone before it's applied. */
+    suspend fun previewCleanup(limits: CleanupLimits): Cleanup = edit { entries ->
+        CleanupRules.plan(entries, now(), openTasks.live().values.toSet(), limits)
+    }
+
+    /** Applies new [limits] right away. */
+    suspend fun setLimits(limits: CleanupLimits) {
+        preferences.edit {
+            putString(KEEP_UNUSED, limits.keepUnused.name)
+            putString(STORAGE_LIMIT, limits.storageLimit.name)
+        }
+        _limits.value = limits
+        cleanup()
+    }
+
+    private fun readLimits(): CleanupLimits {
+        val defaults = CleanupLimits()
+        return CleanupLimits(
+            keepUnused = KeepUnused.entries.find { it.name == preferences.getString(KEEP_UNUSED, null) }
+                ?: defaults.keepUnused,
+            storageLimit = StorageLimit.entries.find { it.name == preferences.getString(STORAGE_LIMIT, null) }
+                ?: defaults.storageLimit,
+        )
+    }
+
     /** Applies [CleanupRules], sparing open documents, and deletes files that no entry refers to. */
     suspend fun cleanup() = edit { entries ->
-        val plan = CleanupRules.plan(entries, now(), openTasks.live().values.toSet())
+        val plan = CleanupRules.plan(entries, now(), openTasks.live().values.toSet(), _limits.value)
         entries.filter { it.id in plan.removeEntries }.forEach { entries.remove(it); deleteFiles(it, entries) }
         entries.filter { it.id in plan.dropFilled }.forEach {
             filledFile(it.id).delete()
@@ -495,6 +527,8 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         private const val THUMBNAIL_QUALITY = 80
         private const val STALE_IMPORT_MILLIS = 60L * 60 * 1000
         private const val HASH_BUFFER_BYTES = 64 * 1024
+        private const val KEEP_UNUSED = "keep_unused"
+        private const val STORAGE_LIMIT = "storage_limit"
 
         // Holds only the application context, which lives as long as the process anyway.
         @SuppressLint("StaticFieldLeak")

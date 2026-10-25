@@ -32,8 +32,14 @@ class SettingsActivity : ComponentActivity() {
 
         setAppContent {
             val recentFiles by viewModel.recentFiles.collectAsStateWithLifecycle()
+            val cleanupLimits by viewModel.cleanupLimits.collectAsStateWithLifecycle()
             SettingsScreen(
                 recentFiles = recentFiles,
+                cleanupLimits = cleanupLimits,
+                pendingLimits = viewModel.pendingLimits,
+                onChooseLimits = viewModel::chooseLimits,
+                onUndoLimits = viewModel::undoLimits,
+                onApplyLimits = viewModel::applyLimits,
                 versionName = versionName,
                 pdfDefault = viewModel.pdfDefault.pdfDefault,
                 onMakeDefault = { viewModel.pdfDefault.ask(this) },

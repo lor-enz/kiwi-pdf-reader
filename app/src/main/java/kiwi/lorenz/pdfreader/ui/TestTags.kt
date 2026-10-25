@@ -37,6 +37,10 @@ object TestTags {
     const val CONFIRM_FORGET_ALL_PASSWORDS = "confirm_forget_all_passwords"
     const val CLEAR_RECENT_FILES = "clear_recent_files"
     const val CONFIRM_CLEAR_RECENT_FILES = "confirm_clear_recent_files"
+    const val KEEP_UNUSED = "keep_unused"
+    const val STORAGE_LIMIT = "storage_limit"
+    /** A label below a slider's stop, which selects it; find it by its text. */
+    const val SLIDER_STOP = "slider_stop"
     const val VERSION = "version"
     const val SOURCE_CODE = "source_code"
     const val REPORT_PROBLEM = "report_problem"

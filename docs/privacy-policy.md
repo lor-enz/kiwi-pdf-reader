@@ -4,7 +4,7 @@ title: PDF Penguin – Privacy Policy
 
 # Privacy Policy
 
-**PDF Penguin** · Last updated: October 20, 2026
+**PDF Penguin** · Last updated: October 25, 2026
 
 This policy describes how PDF Penguin ("the app"), developed by Lorenz
 Burghardt, handles your data. In short: the app collects no personal data,
@@ -41,11 +41,13 @@ This data is excluded from Android backups and device-to-device transfers.
 
 ## Retention and deletion
 
-Stored data is deleted automatically: the recent files list keeps at most 20
-documents, and copies and filled-in forms are deleted after 30 days without
-use or once they take up more than 250 MB in total. You can remove single
-documents from the list, or use "Clear recent files" and "Forget all
-passwords" in the app's settings. Uninstalling the app or clearing its
+Stored data is deleted automatically: documents leave the recent files list,
+with their copies and filled-in forms, once they haven't been opened for
+3 months, and copies and filled-in forms are deleted once they take up more
+than 500 MB in total, the least recently opened first. You can choose other
+limits in the app's settings (1 week or 1 year, 100 MB or 2 GB). You can
+remove single documents from the list, or use "Clear recent files" and
+"Forget all passwords" in the app's settings. Uninstalling the app or clearing its
 storage deletes all of its data.
 
 ## Permissions

@@ -126,7 +126,7 @@ class RecentFilesStoreTest {
         val other = store.importCopy(provide("other.pdf", "other"), "other.pdf")!!
         runningTasks(5)
         store.setOpen(5, open.id)
-        age(open.id, other.id, days = 31)
+        age(open.id, other.id, days = 100)
 
         store.cleanup()
         assertEquals(listOf(open.id), store.entries.value.map { it.id })
@@ -408,15 +408,37 @@ class RecentFilesStoreTest {
     }
 
     @Test
-    fun `an expired filled-in version goes, the picked file stays`() = runBlocking {
+    fun `an unused picked file goes with its filled-in version and permission`() = runBlocking {
         val entry = store.addPicked(provide("form.pdf", "form"), "form.pdf")!!
         store.saveFilled(entry.id) { it.writeText("filled in") }
-        age(entry.id, days = 31)
+        age(entry.id, days = 100)
 
         store.cleanup()
 
-        assertEquals(listOf(entry.id), listed().map { it.id })
-        assertNull(store.filledVersion(entry.id))
+        assertEquals(emptyList<RecentFile>(), listed())
+        assertEquals(emptyList<File>(), filledDir.listFiles().orEmpty().toList())
+        assertEquals(emptyList<Uri>(), persistedUris())
+    }
+
+    @Test
+    fun `chosen limits can be previewed, apply right away and survive a restart`() = runBlocking {
+        val fresh = store.importCopy(provide("fresh.pdf", "fresh"), "fresh.pdf")!!
+        val old = store.importCopy(provide("old.pdf", "old"), "old.pdf")!!
+        age(old.id, days = 10)
+        store.cleanup()
+        assertEquals(setOf(fresh.id, old.id), listed().map { it.id }.toSet())
+
+        val limits = CleanupLimits(KeepUnused.WEEK, StorageLimit.GB_2)
+        assertEquals(Cleanup(setOf(old.id), emptySet()), store.previewCleanup(limits))
+        assertEquals(2, listed().size)
+        assertTrue(copyFile(old.id).exists())
+
+        store.setLimits(limits)
+
+        assertEquals(listOf(fresh.id), listed().map { it.id })
+        assertFalse(copyFile(old.id).exists())
+        restart()
+        assertEquals(limits, store.limits.value)
     }
 
     @Test

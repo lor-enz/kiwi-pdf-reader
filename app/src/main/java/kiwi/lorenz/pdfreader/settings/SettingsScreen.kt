@@ -1,16 +1,21 @@
 package kiwi.lorenz.pdfreader.settings
 
 import android.text.format.Formatter
+import android.view.HapticFeedbackConstants
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -19,40 +24,63 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.defaultapp.DefaultHint
 import kiwi.lorenz.pdfreader.defaultapp.PdfDefault
+import kiwi.lorenz.pdfreader.recent.CleanupLimits
+import kiwi.lorenz.pdfreader.recent.KeepUnused
 import kiwi.lorenz.pdfreader.recent.RecentFile
+import kiwi.lorenz.pdfreader.recent.StorageLimit
 import kiwi.lorenz.pdfreader.ui.ConfirmDialog
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
+import kotlin.math.roundToInt
 
-/** What the app keeps on the phone, and where to learn more about it. No preferences (yet). */
+/** What the app keeps on the phone, for how long, and where to learn more about it. */
 @Composable
 fun SettingsScreen(
     recentFiles: List<RecentFile>,
+    cleanupLimits: CleanupLimits,
+    pendingLimits: PendingLimits?,
+    onChooseLimits: (CleanupLimits) -> Unit,
+    onUndoLimits: (PendingLimits) -> Unit,
+    onApplyLimits: (PendingLimits) -> Unit,
     versionName: String,
     pdfDefault: PdfDefault,
     onMakeDefault: () -> Unit,
@@ -92,6 +120,27 @@ fun SettingsScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val removedMessage = pendingLimits?.let {
+        if (it.removedEntries > 0) {
+            pluralStringResource(R.plurals.limits_removed_entries, it.removedEntries, it.removedEntries)
+        } else {
+            pluralStringResource(R.plurals.limits_dropped_filled, it.droppedFilled, it.droppedFilled)
+        }
+    }
+    val undoLabel = stringResource(R.string.undo)
+    LaunchedEffect(pendingLimits) {
+        val pending = pendingLimits ?: return@LaunchedEffect
+        var isUndone = false
+        try {
+            // With an action, the default duration would be indefinite.
+            val result = snackbarHostState.showSnackbar(removedMessage!!, undoLabel, duration = SnackbarDuration.Long)
+            isUndone = result == SnackbarResult.ActionPerformed
+        } finally {
+            // Also when leaving the screen: files are only deleted once undo is impossible.
+            if (isUndone) onUndoLimits(pending) else onApplyLimits(pending)
+        }
+    }
+    // Waits for an undo snackbar instead of dismissing it, which would end the undo.
     MessageEffect(message, onMessageShown, snackbarHostState)
 
     SubScreen(R.string.settings, onBack, snackbarHostState) {
@@ -122,6 +171,24 @@ fun SettingsScreen(
             tag = TestTags.CLEAR_RECENT_FILES,
             enabled = recentFiles.isNotEmpty(),
             onClick = { isClearDialogOpen = true },
+        )
+        // The pending choice shows until it's undone.
+        val limits = pendingLimits?.limits ?: cleanupLimits
+        SettingsRow(R.drawable.ic_history, R.string.keep_unused, stringResource(R.string.keep_unused_text))
+        StopSlider(
+            options = KeepUnused.entries,
+            selected = limits.keepUnused,
+            label = { it.label },
+            onSelect = { onChooseLimits(limits.copy(keepUnused = it)) },
+            tag = TestTags.KEEP_UNUSED,
+        )
+        SettingsRow(R.drawable.ic_storage, R.string.storage_limit, stringResource(R.string.storage_limit_text))
+        StopSlider(
+            options = StorageLimit.entries,
+            selected = limits.storageLimit,
+            label = { it.label },
+            onSelect = { onChooseLimits(limits.copy(storageLimit = it)) },
+            tag = TestTags.STORAGE_LIMIT,
         )
         // Can't be dismissed here: this is where it's always found.
         DefaultHint(
@@ -233,6 +300,94 @@ private fun SectionHeader(@StringRes text: Int) {
     )
 }
 
+/** A row that only describes, like the heading of a [StopSlider]. */
+@Composable
+private fun SettingsRow(@DrawableRes icon: Int, @StringRes label: Int, summary: String) {
+    ListItem(
+        headlineContent = { Text(stringResource(label)) },
+        supportingContent = { Text(summary) },
+        leadingContent = { Icon(painterResource(icon), contentDescription = null) },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            supportingColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            leadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    )
+}
+
+/**
+ * Picks one of a few [options] in order, like a switch with more than two positions: the thumb
+ * snaps to a stop, and the choice is made when it's let go. The labels below can be tapped too.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun <T> StopSlider(
+    options: List<T>,
+    selected: T,
+    label: (T) -> Int,
+    onSelect: (T) -> Unit,
+    tag: String,
+) {
+    val selectedIndex = options.indexOf(selected)
+    // The stop the thumb is headed for; the thumb slides there instead of jumping.
+    var target by remember(selectedIndex) { mutableIntStateOf(selectedIndex) }
+    val state = remember {
+        SliderState(selectedIndex.toFloat(), steps = options.size - 2, valueRange = 0f..options.lastIndex.toFloat())
+            // Would snap every value of the slide to a stop, so the thumb would still jump.
+            .apply { shouldAutoSnap = false }
+    }
+    LaunchedEffect(target) {
+        animate(state.value, target.toFloat(), animationSpec = tween(STOP_SLIDE_MILLIS)) { value, _ ->
+            state.value = value
+        }
+    }
+    val view = LocalView.current
+    fun moveTo(index: Int) {
+        if (index != target) view.performHapticFeedback(HapticFeedbackConstants.SEGMENT_FREQUENT_TICK)
+        target = index
+    }
+    // Drags and taps report the stop they're at, which the thumb then slides to.
+    state.onValueChange = { moveTo(it.roundToInt()) }
+    state.onValueChangeFinished = { onSelect(options[target]) }
+    val stateDescription = stringResource(label(options[target]))
+    Column(Modifier.padding(horizontal = 16.dp)) {
+        Slider(
+            state = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { this.stateDescription = stateDescription }
+                .testTag(tag),
+        )
+        Box(Modifier.fillMaxWidth()) {
+            options.forEachIndexed { index, option ->
+                val isSelected = index == target
+                Text(
+                    text = stringResource(label(option)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        // The ends sit at the track's ends, the others centered below their stop.
+                        .align(
+                            when (index) {
+                                0 -> Alignment.CenterStart
+                                options.lastIndex -> Alignment.CenterEnd
+                                else -> BiasAlignment(-1f + 2f * index / options.lastIndex, 0f)
+                            },
+                        )
+                        .clip(MaterialTheme.shapes.small)
+                        .selectable(selected = isSelected, role = Role.RadioButton) {
+                            moveTo(index)
+                            onSelect(option)
+                        }
+                        .padding(horizontal = 8.dp, vertical = 12.dp)
+                        .testTag(TestTags.SLIDER_STOP),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun SettingsRow(
     @DrawableRes icon: Int,
@@ -261,6 +416,23 @@ private fun SettingsRow(
     )
 }
 
+private val KeepUnused.label
+    get() = when (this) {
+        KeepUnused.WEEK -> R.string.keep_week
+        KeepUnused.THREE_MONTHS -> R.string.keep_three_months
+        KeepUnused.YEAR -> R.string.keep_year
+    }
+
+private val StorageLimit.label
+    get() = when (this) {
+        StorageLimit.MB_100 -> R.string.storage_100_mb
+        StorageLimit.MB_500 -> R.string.storage_500_mb
+        StorageLimit.GB_2 -> R.string.storage_2_gb
+    }
+
+/** How long a [StopSlider]'s thumb takes from one stop to the next. */
+private const val STOP_SLIDE_MILLIS = 200
+
 /** Material's opacity for disabled content. */
 private const val DISABLED_ALPHA = 0.38f
 
@@ -273,6 +445,11 @@ private fun SettingsScreenPreview() {
                 RecentFile("1", "", "a.pdf", true, sizeBytes = 2_400_000, lastOpenedMillis = 0, encryptedPassword = "x"),
                 RecentFile("2", "", "b.pdf", false, lastOpenedMillis = 0),
             ),
+            cleanupLimits = CleanupLimits(),
+            pendingLimits = null,
+            onChooseLimits = {},
+            onUndoLimits = {},
+            onApplyLimits = {},
             versionName = "1.5",
             pdfDefault = PdfDefault.None,
             onMakeDefault = {},
