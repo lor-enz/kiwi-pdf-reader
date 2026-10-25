@@ -269,6 +269,12 @@
   model holds the opened document back (`NeedsPassword.unlocked`) until the
   lock has opened, then it fades in. The password is only known to be right
   once the document opened, so the animation can't start any earlier.
+  When the window is wider than tall (at least 600 dp), the lock and file
+  name sit on the left and the field, checkbox and button on the right.
+  Stacked, a phone in landscape has room for the field only once the
+  keyboard is up (not even all of it), so the rest was out of sight. There,
+  submitting closes the keyboard, or it would cover the lock opening or
+  shaking and the wrong password message; tapping the field brings it back.
 - The viewer covers the document (background and a large PDF symbol,
   `DocumentPlaceholder`, as in the loading state; opening is too quick for a
   spinner to read as progress) until the visible pages, at most two, are rendered, and a

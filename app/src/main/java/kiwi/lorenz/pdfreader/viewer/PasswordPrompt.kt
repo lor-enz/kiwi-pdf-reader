@@ -5,13 +5,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
@@ -37,7 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -67,7 +76,19 @@ internal fun PasswordPrompt(
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
     val isUnlocking = state.unlocked != null
     val canSubmit = password.isNotEmpty() && !state.isChecking && !isUnlocking
-    val submit = { if (canSubmit) onSubmit(password, rememberPassword) }
+    // In landscape, stacked, the keyboard leaves room for the field only: the lock and the button
+    // would be out of sight. Side by side, without the keyboard all fits.
+    val window = LocalWindowInfo.current.containerSize
+    val isSideBySide = window.width > window.height && with(LocalDensity.current) { window.width.toDp() >= 600.dp }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val submit = {
+        if (canSubmit) {
+            // Side by side, the keyboard would cover the lock opening or shaking, and the message
+            // below the field. Tapping the field brings it back for another try.
+            if (isSideBySide) keyboard?.hide()
+            onSubmit(password, rememberPassword)
+        }
+    }
 
     val lock = rememberLockState()
     LaunchedEffect(isUnlocking) {
@@ -87,15 +108,7 @@ internal fun PasswordPrompt(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    val intro = @Composable {
         Lock(lock, Modifier.testTag(TestTags.PASSWORD_LOCK))
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -122,7 +135,8 @@ internal fun PasswordPrompt(
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(24.dp))
+    }
+    val form = @Composable {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -183,6 +197,55 @@ internal fun PasswordPrompt(
             } else {
                 Text(stringResource(R.string.open))
             }
+        }
+    }
+
+    if (isSideBySide) {
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                // In landscape, cutouts and the navigation bar's buttons are at the sides.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .padding(horizontal = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Not moved by the keyboard, so the lock doesn't jump when it closes.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                intro()
+            }
+            Spacer(Modifier.width(32.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                form()
+            }
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            intro()
+            Spacer(Modifier.height(24.dp))
+            form()
         }
     }
 }
