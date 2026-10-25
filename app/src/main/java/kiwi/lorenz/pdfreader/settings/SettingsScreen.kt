@@ -144,7 +144,44 @@ fun SettingsScreen(
     MessageEffect(message, onMessageShown, snackbarHostState)
 
     SubScreen(R.string.settings, onBack, snackbarHostState) {
+        // Can't be dismissed here: this is where it's always found.
+        DefaultHint(
+            pdfDefault = pdfDefault,
+            isVisible = pdfDefault != PdfDefault.ThisApp,
+            onMakeDefault = onMakeDefault,
+            onChangeDefault = onChangeDefault,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        )
+        AnimatedVisibility(visible = pdfDefault == PdfDefault.ThisApp) {
+            Text(
+                text = stringResource(R.string.is_default_pdf_app),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag(TestTags.IS_DEFAULT),
+            )
+        }
+
         SectionHeader(R.string.stored_on_phone)
+        // The pending choice shows until it's undone.
+        val limits = pendingLimits?.limits ?: cleanupLimits
+        SettingsRow(R.drawable.ic_history, R.string.keep_unused, stringResource(R.string.keep_unused_text))
+        StopSlider(
+            options = KeepUnused.entries,
+            selected = limits.keepUnused,
+            label = { it.label },
+            onSelect = { onChooseLimits(limits.copy(keepUnused = it)) },
+            tag = TestTags.KEEP_UNUSED,
+        )
+        SettingsRow(R.drawable.ic_storage, R.string.storage_limit, stringResource(R.string.storage_limit_text))
+        StopSlider(
+            options = StorageLimit.entries,
+            selected = limits.storageLimit,
+            label = { it.label },
+            onSelect = { onChooseLimits(limits.copy(storageLimit = it)) },
+            tag = TestTags.STORAGE_LIMIT,
+        )
         val passwords = recentFiles.count { it.encryptedPassword != null }
         SettingsRow(
             icon = R.drawable.ic_key_off,
@@ -172,42 +209,6 @@ fun SettingsScreen(
             enabled = recentFiles.isNotEmpty(),
             onClick = { isClearDialogOpen = true },
         )
-        // The pending choice shows until it's undone.
-        val limits = pendingLimits?.limits ?: cleanupLimits
-        SettingsRow(R.drawable.ic_history, R.string.keep_unused, stringResource(R.string.keep_unused_text))
-        StopSlider(
-            options = KeepUnused.entries,
-            selected = limits.keepUnused,
-            label = { it.label },
-            onSelect = { onChooseLimits(limits.copy(keepUnused = it)) },
-            tag = TestTags.KEEP_UNUSED,
-        )
-        SettingsRow(R.drawable.ic_storage, R.string.storage_limit, stringResource(R.string.storage_limit_text))
-        StopSlider(
-            options = StorageLimit.entries,
-            selected = limits.storageLimit,
-            label = { it.label },
-            onSelect = { onChooseLimits(limits.copy(storageLimit = it)) },
-            tag = TestTags.STORAGE_LIMIT,
-        )
-        // Can't be dismissed here: this is where it's always found.
-        DefaultHint(
-            pdfDefault = pdfDefault,
-            isVisible = pdfDefault != PdfDefault.ThisApp,
-            onMakeDefault = onMakeDefault,
-            onChangeDefault = onChangeDefault,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-        )
-        AnimatedVisibility(visible = pdfDefault == PdfDefault.ThisApp) {
-            Text(
-                text = stringResource(R.string.is_default_pdf_app),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .testTag(TestTags.IS_DEFAULT),
-            )
-        }
 
         SectionHeader(R.string.about)
         SettingsRow(R.drawable.ic_info, R.string.version, versionName, TestTags.VERSION, onClick = onCopyVersion)

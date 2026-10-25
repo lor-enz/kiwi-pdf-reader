@@ -194,9 +194,11 @@
   context, and it's easily missed. A dialog with a choice that applied on
   tapping was dropped as it deleted without any way back.
 - Settings (cog on Home, `SettingsActivity`) shows what the app stores and
-  information: forget all passwords, clear recent files (both confirmed by
-  a dialog, as there's no undo; open documents stay, as in cleanup), how
-  long recent files are kept and the storage limit, the default PDF app hint, version (tap copies it with the Android
+  information, in this order: the default PDF app hint at the top (it
+  matters most), how long recent files are kept and the storage limit, then
+  forget all passwords and clear recent files (both confirmed by a dialog,
+  as there's no undo; open documents stay, as in cleanup; settings before
+  one-off actions, the broadest last), version (tap copies it with the Android
   version and device for bug reports), source, issues, privacy policy and
   licenses. No "Open by default" link: that system page is about web links
   and can only clear defaults (see the default PDF app hint). Every runtime dependency is Apache 2.0, so the
@@ -414,8 +416,8 @@
   app (`defaultapp/DefaultPdfApp.kt`, checked on every resume). "Not now" hides it for
   7 days (`PdfDefaultTracker`, a timestamp in shared preferences), as
   without being the default the app is barely used. Settings shows the same
-  banner (`defaultapp/DefaultHint.kt`) without "Not now", below "Clear recent
-  files", or a quiet line once the app is the default, so it's always
+  banner (`defaultapp/DefaultHint.kt`) without "Not now", at the top of
+  the screen, or a quiet line once the app is the default, so it's always
   found there. Android has no role for
   PDFs, so an app can't ask to become the default: only "Always" in the
   system's "Open with" dialog sets it, and only the default app's "Open by
