@@ -11,3 +11,11 @@ if [ -z "${ANDROID_SERIAL:-}" ]; then
 fi
 
 PACKAGE=kiwi.lorenz.pdfreader
+
+# run-as only works for a debug build; without it reading the app's files would look like an empty
+# list. Call it before using run-as.
+check_run_as() {
+    local error
+    error=$(adb shell run-as $PACKAGE true 2>&1) ||
+        { echo "Can't run commands as the app (${error%$'\r'}). Install a debug build with install.sh." >&2; exit 1; }
+}

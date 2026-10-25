@@ -14,6 +14,7 @@ usage() { sed -n 's/^# \{0,1\}//; 2,9p' "$0"; exit 1; }
 
 case "${1:-}" in
     cards)
+        check_run_as
         RECENTS=$(adb shell dumpsys activity recents) \
         ACTIVITIES=$(adb shell dumpsys activity activities) \
         OPEN=$(adb shell run-as $PACKAGE cat files/recent/open.json 2>/dev/null || echo '{}') \
@@ -46,6 +47,7 @@ EOF
             | sed -E 's/.* ([^ ]+) (t[0-9]+)$/\1 in task #\2/; s/#t/#/'
         ;;
     kill)
+        check_run_as
         adb shell input keyevent HOME
         sleep 1
         pid=$(adb shell pidof $PACKAGE || true)

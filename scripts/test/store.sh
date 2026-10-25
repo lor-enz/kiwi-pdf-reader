@@ -16,6 +16,7 @@ index() { adb shell run-as $PACKAGE cat files/recent/index.json 2>/dev/null || e
 
 case "${1:-}" in
     show)
+        check_run_as
         INDEX=$(index) OPEN=$(adb shell run-as $PACKAGE cat files/recent/open.json 2>/dev/null || echo '{}') \
         python3 -I - <<'EOF'
 import json, os, time
@@ -49,6 +50,7 @@ EOF
         ;;
     age)
         [ $# -eq 3 ] || usage
+        check_run_as
         "$(dirname "$0")/app.sh" kill >/dev/null
         changed=$(index | NAME=$2 DAYS=$3 python3 -I -c '
 import json, os, sys, time
