@@ -72,7 +72,8 @@ private val PageGap = 16.dp
  * the pages, which settle centered as in a photo gallery; so do the keyboard and presentation
  * clickers, which send its keys. Each page fits the screen and the space around it stays empty:
  * the neighbors wait right behind the screen's edges, so they slide in as soon as a swipe starts.
- * Starts at [page] and reports each page it settles on.
+ * The page shown zooms (see [pageZoom]), and shows whole again once it's turned. Starts at [page]
+ * and reports each page it settles on.
  */
 @Composable
 internal fun Presentation(
@@ -133,6 +134,11 @@ internal fun Presentation(
                 pagerState.requestScrollToPage(pagerState.settledPage)
             }
         }
+        // The page that zooms. The pager settles on the next page as soon as it starts snapping
+        // to it, so until it has stopped, the one it left keeps its zoom while it slides away.
+        var restingPage by remember { mutableIntStateOf(pagerState.settledPage) }
+        val zoomablePage = if (pagerState.isScrollInProgress) restingPage else pagerState.settledPage
+        SideEffect { restingPage = zoomablePage }
         // So the first and last page can be centered too.
         val margin = with(density) { ((width - slot) / 2).toDp() }
         val pageSize = remember(slot) {
@@ -164,6 +170,9 @@ internal fun Presentation(
                 document = document,
                 index = index,
                 size = pageSizes[index]?.fitInto(width, height),
+                viewport = IntSize(width, height),
+                // Only the page shown: the others' zoom would cover its edges.
+                isZoomable = index == zoomablePage,
                 modifier = Modifier.graphicsLayer {
                     translationX = layout.shift(index, pagerState.currentPage + pagerState.currentPageOffsetFraction, slot)
                 },
@@ -251,10 +260,18 @@ private fun FullScreen() {
 
 /**
  * One page at [size] (null while unknown), on white like paper (pages without a background are
- * transparent). A page wider than its slot overflows it, centered.
+ * transparent). A page wider than its slot overflows it, centered. When [isZoomable], the whole
+ * [viewport] (the screen) takes the zoom gestures, also beside the page.
  */
 @Composable
-private fun PresentationPage(document: PdfDocument, index: Int, size: IntSize?, modifier: Modifier = Modifier) {
+private fun PresentationPage(
+    document: PdfDocument,
+    index: Int,
+    size: IntSize?,
+    viewport: IntSize,
+    isZoomable: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (size == null) return@Box
         // Keeps the previous rendering (stretched) while the page renders anew, e.g. on rotation.
@@ -263,16 +280,27 @@ private fun PresentationPage(document: PdfDocument, index: Int, size: IntSize?, 
                 document.getPageBitmapSource(index).use { it.getBitmap(Size(size.width, size.height)) }
             }.onSuccess { value = it.asImageBitmap() }
         }
+        // Dropped once the page isn't shown anymore, so it's whole again when it comes back.
+        val zoom = if (isZoomable) rememberPageZoom(size) else null
+        val sharpPart = zoom?.let { rememberSharpPart(it, document, index, size, viewport) }
         val description = stringResource(R.string.page_of, index + 1, document.pageCount)
         val density = LocalDensity.current
         Box(
             Modifier
-                .requiredSize(with(density) { size.width.toDp() }, with(density) { size.height.toDp() })
-                .background(Color.White)
-                .semantics { contentDescription = description }
-                .testTag(TestTags.PRESENTATION_PAGE),
+                .requiredSize(with(density) { viewport.width.toDp() }, with(density) { viewport.height.toDp() })
+                .then(if (zoom != null) Modifier.pageZoom(zoom) else Modifier),
+            contentAlignment = Alignment.Center,
         ) {
-            bitmap?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
+            Box(
+                Modifier
+                    .requiredSize(with(density) { size.width.toDp() }, with(density) { size.height.toDp() })
+                    .background(Color.White)
+                    .drawSharpPart { sharpPart }
+                    .semantics { contentDescription = description }
+                    .testTag(TestTags.PRESENTATION_PAGE),
+            ) {
+                bitmap?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
+            }
         }
     }
 }

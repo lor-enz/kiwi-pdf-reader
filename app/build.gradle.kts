@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.pdf.compose)
     implementation(libs.androidx.pdf.document.service)
+    implementation(libs.telephoto.zoomable)
     // Only for the XML theme: the PDF viewer opens Material dialogs (see themes.xml)
     implementation(libs.material)
     testImplementation(libs.junit)

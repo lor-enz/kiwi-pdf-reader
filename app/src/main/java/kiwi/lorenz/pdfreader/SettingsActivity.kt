@@ -92,6 +92,9 @@ class LicensesActivity : ComponentActivity() {
         /** Everything in the release build's runtime classpath, all under the Apache License 2.0. */
         val COMPONENTS = listOf(
             "Android Jetpack (AndroidX, Jetpack Compose, PDF)",
+            "Compose Multiplatform",
+            "Telephoto (zoomable)",
+            "Poko",
             "Material Components for Android",
             "Material Icons",
             "Kotlin and kotlinx.coroutines",

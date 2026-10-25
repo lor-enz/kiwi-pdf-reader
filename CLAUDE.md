@@ -197,6 +197,24 @@
   is saved as the last page. The view model holds the page (in saved state,
   so the mode survives process death). The scroll view stays composed
   below, hidden from screen readers, so it doesn't open anew afterwards.
+- Presentation mode zooms (`viewer/PageZoom.kt`) with Telephoto's
+  `Modifier.zoomable` (a library, as gestures inside a pager are tricky):
+  pinch, double-tap (2.5× and back) and double-tap and hold, up to 5×. A
+  drag decides at its start: if the page can pan that way, it pans and stops
+  at the edge; only a drag that starts at the edge turns the page, so panning
+  never does by accident (Telephoto's own behavior). Only the page shown
+  zooms; its gesture area is the whole screen, so pinching beside a narrow
+  page works, and the neighbors take no gestures. The pager moves its
+  settled page to the target as soon as it starts snapping, so the page
+  that zooms only changes once it has stopped: the page being left keeps its
+  zoom while it slides away. Its zoom is dropped then, so it's whole again
+  when it comes back. Keys still turn pages (Telephoto's shortcuts are off),
+  and the zoom isn't saved, so rotation and process death show the whole
+  page. While zooming the page is stretched; once it's still, the visible
+  part is rendered again at the zoom (one screen's worth, a whole page at 5×
+  would be far too large). To test on the emulator, double-tap with
+  `cmd input tap x y; sleep 0.1; cmd input tap x y` in one `adb shell`:
+  `input tap` is too slow for a double tap, and without the pause too fast.
 - The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
@@ -404,8 +422,7 @@
 # Planned changes
 
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
-- Presentation mode: pinch and double-tap zoom (panning, pages turn only at
-  the page's edge), then links; a minimal overlay later.
+- Presentation mode: links, then a minimal overlay.
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
