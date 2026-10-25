@@ -105,8 +105,9 @@
 - The app was called Kiwi PDF Reader until that name turned out to be
   taken. The package and `applicationId` stay `kiwi.lorenz.pdfreader`
   (the developer's domain; users don't see it, and changing it would need
-  a new Play listing), as do the GitHub repo URLs and the test data's
-  `kiwi`.
+  a new Play listing), as does the test data's `kiwi`. The GitHub repo
+  was renamed to `pdf-penguin-android` (October 2026); GitHub Pages
+  doesn't redirect old URLs, so the privacy policy moved with it.
 - `androidx.pdf` is beta, and the Compose `PdfViewer` is still
   `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.

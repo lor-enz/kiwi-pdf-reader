@@ -71,9 +71,9 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val SOURCE_URL = "https://github.com/lor-enz/kiwi-pdf-reader"
+        const val SOURCE_URL = "https://github.com/lor-enz/pdf-penguin-android"
         const val ISSUES_URL = "$SOURCE_URL/issues"
-        const val PRIVACY_POLICY_URL = "https://lor-enz.github.io/kiwi-pdf-reader/privacy-policy"
+        const val PRIVACY_POLICY_URL = "https://lor-enz.github.io/pdf-penguin-android/privacy-policy"
     }
 }
 
