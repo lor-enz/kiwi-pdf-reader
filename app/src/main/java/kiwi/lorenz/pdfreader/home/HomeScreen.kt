@@ -9,23 +9,31 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -165,50 +173,79 @@ fun HomeScreen(
                     )
                 }
             } else {
-                Box(Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = topInset,
-                            bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    // Side by side when wider than tall: stacked, the header would fill a phone's
+                    // screen in landscape and the list only start below it.
+                    val isSideBySide = maxWidth > maxHeight && maxWidth >= 600.dp
+                    val bottomInset = innerPadding.calculateBottomPadding()
+                    Row(
+                        Modifier
+                            .fillMaxSize()
+                            // In landscape, cutouts and the navigation bar's buttons are at the sides.
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
                     ) {
-                        item {
-                            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                                SettingsButton(
-                                    onClick = onOpenSettings,
-                                    modifier = Modifier
-                                        .align(Alignment.End)
-                                        // Into the list's 16 dp side padding.
-                                        .offset(x = 4.dp),
-                                )
-                                Spacer(Modifier.height(24.dp))
+                        if (isSideBySide) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(2f)
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(top = topInset, bottom = bottomInset)
+                                    .padding(24.dp),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
                                 Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault, isHintPaused, onPauseHint)
                             }
                         }
-                        item {
-                            Text(
-                                text = stringResource(R.string.recent_files).uppercase(),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 24.dp, bottom = 4.dp, start = 4.dp),
-                            )
-                        }
-                        items(recentFiles, key = { it.id }) { entry ->
-                            RecentFileRow(
-                                entry = entry,
-                                thumbnailFile = thumbnailFile,
-                                onClick = { onOpenRecent(entry) },
-                                onLongClick = { sheetEntryId = entry.id },
-                                // Removed entries fade out and the rest moves up, reordered ones slide.
-                                modifier = Modifier.animateItem(),
-                            )
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(3f)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = topInset,
+                                bottom = bottomInset + 16.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            if (isSideBySide) {
+                                item {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        RecentLabel(Modifier.weight(1f).padding(start = 4.dp))
+                                        SettingsButton(onClick = onOpenSettings, modifier = Modifier.offset(x = 4.dp))
+                                    }
+                                }
+                            } else {
+                                item {
+                                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        SettingsButton(
+                                            onClick = onOpenSettings,
+                                            modifier = Modifier
+                                                .align(Alignment.End)
+                                                // Into the list's 16 dp side padding.
+                                                .offset(x = 4.dp),
+                                        )
+                                        Spacer(Modifier.height(24.dp))
+                                        Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault, isHintPaused, onPauseHint)
+                                    }
+                                }
+                                item {
+                                    RecentLabel(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 4.dp, start = 4.dp))
+                                }
+                            }
+                            items(recentFiles, key = { it.id }) { entry ->
+                                RecentFileRow(
+                                    entry = entry,
+                                    thumbnailFile = thumbnailFile,
+                                    onClick = { onOpenRecent(entry) },
+                                    onLongClick = { sheetEntryId = entry.id },
+                                    // Removed entries fade out and the rest moves up, reordered ones slide.
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
                         }
                     }
                     // Keeps the scrolled list from showing behind the status bar's icons.
@@ -222,6 +259,16 @@ fun HomeScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RecentLabel(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.recent_files).uppercase(),
+        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.labelSmall,
+        modifier = modifier,
+    )
 }
 
 @Composable

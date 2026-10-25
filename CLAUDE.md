@@ -175,7 +175,10 @@
   header. Its icon is 24 dp from the right edge, like the sheets' content
   (their icons, the heading and the action labels); 16 dp hugged the edge,
   and a gap as large as the status bar looked odd on phones with a tall one
-  (Pixel).
+  (Pixel). When the window is wider than tall (at least 600 dp, e.g. a phone
+  in landscape) and there are recent files, the header sits on the left and
+  the list on the right, "Recent" beside the cog: stacked, the header filled
+  the screen and the list started below it, so it looked empty.
 - The cleanup limits are chosen on the Settings screen itself, no dialog:
   a heading row explains each, a full-width Material `Slider` with three
   stops (`StopSlider`) sits below it, and the stops' labels below that
