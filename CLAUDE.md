@@ -475,6 +475,27 @@
   (`generateLocaleConfig`, default locale in `res/resources.properties`).
   Add every new string to both files; lint fails on a missing translation.
 
+# Known issues
+
+Found in a review of the app in landscape (October 2026), not yet fixed:
+
+- Password screen in landscape: with the keyboard up, only about 43 dp
+  are left above it (emulator), less than the field's 56 dp, so the
+  field's label is cut off. No layout can fit more; the keyboard's ✓
+  submits.
+- Home without recent files ignores side cutouts: in landscape the
+  default app hint reaches under the camera (the side-by-side layout with
+  recent files keeps clear of it).
+- Wide windows stretch content to the full width: the Settings texts
+  (about 150 characters a line) and sliders, and the default app hint
+  on Home. Capping it at about 600 dp, as the sheets do (640 dp), would
+  read better.
+- Viewer in landscape: the status and top bars take about 28% of the
+  height. Hiding the top bar while scrolling down would leave more room
+  for the document.
+- The viewer's ⋮ sheet doesn't fit in landscape: "Document info" and
+  "PDF Penguin home" need scrolling.
+
 # Planned changes
 
 - Search the recent files list: only matters once it gets long (no count
