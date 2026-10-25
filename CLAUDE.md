@@ -448,6 +448,12 @@
   symbol when there's none (protected without remembered password). The
   shortcut intents name `MainActivity` and `ViewerActivity`, so pinned ones
   break if those are renamed.
+- `androidx.pdf` renders in an isolated process of its own
+  (`PdfDocumentServiceImpl`), which also runs `PdfPenguinApp.onCreate`. It
+  can't reach the app's files or shared preferences (`getSharedPreferences`
+  throws), so `PdfPenguinApp` does nothing there (`Process.isIsolated()`).
+  Otherwise the service crashes and no document opens, while the viewer
+  shows no error.
 
 - The app is in English and German (`values-de`). The German addresses
   the user with "du", as Android does, and says "Smartphone". "Remember" is
