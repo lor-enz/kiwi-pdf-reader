@@ -152,7 +152,9 @@
   both themes. On the light background its text is only 3:1, accepted on
   purpose: a darker orange (`#B8462A`, 5:1) looked too dark. Every color role
   a component may use is set, or it falls back to Material's lavender
-  (snackbars use the inverse colors). `outline` is for field borders (3:1),
+  (snackbars use the inverse colors; in presentation mode, whose background is
+  `NightBackground` in both themes, they take dark mode's, or in light mode
+  they'd vanish into it). `outline` is for field borders (3:1),
   `outlineVariant` for cards. In dark mode bottom sheets are darker than the
   background (`NightSheet` as `surfaceContainerLow`), in light mode they
   keep the background color.
@@ -215,6 +217,18 @@
   would be far too large). To test on the emulator, double-tap with
   `cmd input tap x y; sleep 0.1; cmd input tap x y` in one `adb shell`:
   `input tap` is too slow for a double tap, and without the pause too fast.
+- Links work in presentation mode too (`viewer/PageLinks.kt`): Telephoto
+  reports single taps (once they can't start a double tap, about 300 ms, as
+  in the scroll view), converted through the zoom to the page's points and
+  looked up in `PdfDocument.getPageLinks`. A tap within 8 dp of a link
+  counts, unless it's right on another one. A link within the document jumps
+  to its page directly, without flicking through the pages in between, and
+  shows it whole (position and zoom of the target are ignored). Other links
+  open like the scroll view's (`openLink`), and a failure shows in the
+  viewer's snackbar, which lies above presentation mode. Coming back from
+  the app a link opened hides the system bars again. Bare `/Dest` links
+  don't work here either: the library doesn't report them, and supporting
+  them only here would make the two views differ.
 - The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
@@ -422,7 +436,7 @@
 # Planned changes
 
 - Search the recent files list: only matters once it gets close to 20 entries, so the search field could appear only then.
-- Presentation mode: links, then a minimal overlay.
+- Presentation mode: a minimal overlay.
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

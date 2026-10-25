@@ -69,10 +69,11 @@ internal fun rememberPageZoom(size: IntSize): ZoomableState {
 /**
  * Pinch, double-tap, and double-tap and hold to zoom; a zoomed page pans. A drag that starts at
  * the page's edge (or on a page that isn't zoomed) turns the page instead; one that starts
- * elsewhere stops at the edge, so panning doesn't turn the page by accident.
+ * elsewhere stops at the edge, so panning doesn't turn the page by accident. [onTap] gets single
+ * taps, on the screen, once they can't be the start of a double tap anymore.
  */
-internal fun Modifier.pageZoom(state: ZoomableState): Modifier =
-    zoomable(state, onDoubleClick = DoubleClickToZoomListener.cycle(DOUBLE_TAP_ZOOM))
+internal fun Modifier.pageZoom(state: ZoomableState, onTap: (Offset) -> Unit): Modifier =
+    zoomable(state, onClick = onTap, onDoubleClick = DoubleClickToZoomListener.cycle(DOUBLE_TAP_ZOOM))
 
 /** The visible part of a zoomed page, rendered at that zoom; [bounds] in the page's own pixels. */
 internal class SharpPart(val bitmap: ImageBitmap, val bounds: Rect, val zoom: Float)

@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -55,8 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.pdf.PdfDocument
 import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.document.openLink
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.NightBackground
 import kiwi.lorenz.pdfreader.util.runCatchingCancellable
@@ -67,13 +70,17 @@ import kotlin.math.roundToInt
 /** The space between two pages while swiping from one to the other. */
 private val PageGap = 16.dp
 
+/** How close to a link a tap still counts: links are often thin lines of small text. */
+private val LinkTolerance = 8.dp
+
 /**
  * Presentation mode: the document one page at a time, full screen. Swiping left and right turns
  * the pages, which settle centered as in a photo gallery; so do the keyboard and presentation
  * clickers, which send its keys. Each page fits the screen and the space around it stays empty:
  * the neighbors wait right behind the screen's edges, so they slide in as soon as a swipe starts.
- * The page shown zooms (see [pageZoom]), and shows whole again once it's turned. Starts at [page]
- * and reports each page it settles on.
+ * The page shown zooms (see [pageZoom]), and shows whole again once it's turned. Its links work:
+ * a link within the document jumps to its page, others open as in the scroll view
+ * ([onLinkFailed] when no app opens them). Starts at [page] and reports each page it settles on.
  */
 @Composable
 internal fun Presentation(
@@ -81,6 +88,7 @@ internal fun Presentation(
     page: Int,
     onPageChanged: (Int) -> Unit,
     onExit: () -> Unit,
+    onLinkFailed: () -> Unit,
 ) {
     BackHandler(onBack = onExit)
     FullScreen()
@@ -94,6 +102,14 @@ internal fun Presentation(
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val onLink: (PageLink) -> Unit = { link ->
+        when (link) {
+            // Directly, without flicking through the pages in between.
+            is PageLink.ToPage -> scope.launch { pagerState.scrollToPage(link.page) }
+            is PageLink.ToUri -> if (!context.openLink(link.uri)) onLinkFailed()
+        }
+    }
 
     // Page sizes in points, for the pages around the current one.
     val pageSizes = remember(document) { mutableStateMapOf<Int, IntSize>() }
@@ -169,10 +185,12 @@ internal fun Presentation(
             PresentationPage(
                 document = document,
                 index = index,
+                pointSize = pageSizes[index],
                 size = pageSizes[index]?.fitInto(width, height),
                 viewport = IntSize(width, height),
                 // Only the page shown: the others' zoom would cover its edges.
                 isZoomable = index == zoomablePage,
+                onLink = onLink,
                 modifier = Modifier.graphicsLayer {
                     translationX = layout.shift(index, pagerState.currentPage + pagerState.currentPageOffsetFraction, slot)
                 },
@@ -228,21 +246,25 @@ private fun PagerState.keyTarget(key: Key): Int? {
 
 /**
  * Hides the system bars (a swipe from the edge shows them for a moment) and keeps the screen on,
- * as nobody touches it while presenting.
+ * as nobody touches it while presenting. Hidden again whenever the app comes back, e.g. from a
+ * link opened in the browser.
  */
 @Composable
 private fun FullScreen() {
     val view = LocalView.current
     val window = LocalActivity.current?.window
-    DisposableEffect(view, window) {
-        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+    val controller = remember(view, window) { window?.let { WindowCompat.getInsetsController(it, view) } }
+    LifecycleResumeEffect(controller) {
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        onPauseOrDispose {}
+    }
+    DisposableEffect(controller) {
         // Light icons on the dark background, when the bars come up for a moment.
         val wereLightBars = controller?.isAppearanceLightStatusBars
         controller?.apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             isAppearanceLightStatusBars = false
             isAppearanceLightNavigationBars = false
-            hide(WindowInsetsCompat.Type.systemBars())
         }
         view.keepScreenOn = true
         onDispose {
@@ -261,19 +283,22 @@ private fun FullScreen() {
 /**
  * One page at [size] (null while unknown), on white like paper (pages without a background are
  * transparent). A page wider than its slot overflows it, centered. When [isZoomable], the whole
- * [viewport] (the screen) takes the zoom gestures, also beside the page.
+ * [viewport] (the screen) takes the zoom gestures, also beside the page, and taps on its links go
+ * to [onLink]. [pointSize] is the page's own size, in points.
  */
 @Composable
 private fun PresentationPage(
     document: PdfDocument,
     index: Int,
+    pointSize: IntSize?,
     size: IntSize?,
     viewport: IntSize,
     isZoomable: Boolean,
+    onLink: (PageLink) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (size == null) return@Box
+        if (size == null || pointSize == null) return@Box
         // Keeps the previous rendering (stretched) while the page renders anew, e.g. on rotation.
         val bitmap by produceState<ImageBitmap?>(null, document, index, size) {
             runCatchingCancellable {
@@ -285,10 +310,31 @@ private fun PresentationPage(
         val sharpPart = zoom?.let { rememberSharpPart(it, document, index, size, viewport) }
         val description = stringResource(R.string.page_of, index + 1, document.pageCount)
         val density = LocalDensity.current
+        val tolerance = with(density) { LinkTolerance.toPx() }
+        val scope = rememberCoroutineScope()
         Box(
             Modifier
                 .requiredSize(with(density) { viewport.width.toDp() }, with(density) { viewport.height.toDp() })
-                .then(if (zoom != null) Modifier.pageZoom(zoom) else Modifier),
+                .then(
+                    if (zoom == null) {
+                        Modifier
+                    } else {
+                        Modifier.pageZoom(zoom) { tap ->
+                            // From the screen to the page's points, through the zoom.
+                            val bounds = zoom.transformedContentBounds
+                            if (bounds.isEmpty) return@pageZoom
+                            val points = pointSize.width / bounds.width
+                            scope.launch {
+                                document.linkAt(
+                                    page = index,
+                                    x = (tap.x - bounds.left) * points,
+                                    y = (tap.y - bounds.top) * points,
+                                    tolerance = tolerance * points,
+                                )?.let(onLink)
+                            }
+                        }
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Box(
