@@ -170,6 +170,11 @@
 - The privacy policy for Google Play is `docs/privacy-policy.md`, served by
   GitHub Pages from `/docs`. Update it whenever the app starts storing,
   sending or requesting anything new (permissions, network, backups).
+- Home's header shows the logo above the app name: the launcher icon's
+  foreground (`ic_launcher_foreground`, scaled back up from the 70% that fits
+  the icon masks) on a Penguin Blue circle, as the white page would vanish on
+  the light background. It gives the tagline ("the blue one") its meaning.
+  The logo sources are in `logos-and-marketing-images/`.
 - Home has no top bar, so scrolling shows only the list (a strip in the
   background color covers the status bar). The settings cog sits in the
   top right corner, just below the status bar, and scrolls away with the

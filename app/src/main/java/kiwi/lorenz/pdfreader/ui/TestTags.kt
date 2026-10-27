@@ -15,6 +15,7 @@ fun Modifier.exposeTestTags() = semantics { testTagsAsResourceId = true }
  * `uiautomator dump`, because the root sets `testTagsAsResourceId`.
  */
 object TestTags {
+    const val HOME_LOGO = "home_logo"
     const val OPEN_PDF = "open_pdf"
     const val DEFAULT_HINT = "default_hint"
     const val MAKE_DEFAULT = "make_default"

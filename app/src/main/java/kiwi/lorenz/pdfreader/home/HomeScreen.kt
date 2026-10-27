@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -54,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -75,6 +77,7 @@ import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.ActionSheet
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
+import kiwi.lorenz.pdfreader.ui.theme.PenguinBlue
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 import kotlinx.coroutines.Dispatchers
@@ -278,6 +281,25 @@ private fun SettingsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * The launcher icon's penguin on its blue, as a circle. On the light background the white page
+ * would vanish without the blue. Decorative: the app's name follows.
+ */
+@Composable
+private fun Logo() {
+    Image(
+        painter = painterResource(R.drawable.ic_launcher_foreground),
+        contentDescription = null,
+        modifier = Modifier
+            .testTag(TestTags.HOME_LOGO)
+            .size(72.dp)
+            .clip(CircleShape)
+            .background(PenguinBlue)
+            // The launcher's foreground shrinks the penguin to 70% to fit the icon masks.
+            .scale(1 / 0.7f),
+    )
+}
+
 @Composable
 private fun Header(
     onOpenPdf: () -> Unit,
@@ -288,6 +310,8 @@ private fun Header(
     onPauseHint: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Logo()
+        Spacer(Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displaySmall,
