@@ -6,6 +6,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 
 /** The app's filled button, calmer in dark mode (see [LocalButtonColor]). */
 @Composable
@@ -13,12 +14,13 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    shape: Shape = MaterialTheme.shapes.small,
     content: @Composable RowScope.() -> Unit,
 ) = Button(
     onClick = onClick,
     modifier = modifier,
     enabled = enabled,
-    shape = MaterialTheme.shapes.small,
+    shape = shape,
     colors = ButtonDefaults.buttonColors(containerColor = LocalButtonColor.current, contentColor = OffWhite),
     content = content,
 )

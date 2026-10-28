@@ -337,6 +337,7 @@ private fun Header(
         PrimaryButton(
             onClick = onOpenPdf,
             modifier = Modifier.testTag(TestTags.OPEN_PDF),
+            shape = CircleShape,
         ) {
             Text(stringResource(R.string.open_pdf))
         }
