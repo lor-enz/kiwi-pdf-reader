@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -181,6 +182,7 @@ fun HomeScreen(
                     // screen in landscape and the list only start below it.
                     val isSideBySide = maxWidth > maxHeight && maxWidth >= 600.dp
                     val bottomInset = innerPadding.calculateBottomPadding()
+                    val headerMinHeight = (maxHeight - topInset - bottomInset - 48.dp).coerceAtLeast(0.dp)
                     Row(
                         Modifier
                             .fillMaxSize()
@@ -188,17 +190,26 @@ fun HomeScreen(
                             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
                     ) {
                         if (isSideBySide) {
+                            // The cog sits in the header's top left corner: beside "Recent" it looked
+                            // like an option of the list, and it scrolled away with it.
                             Column(
                                 modifier = Modifier
                                     .weight(2f)
                                     .fillMaxHeight()
                                     .verticalScroll(rememberScrollState())
-                                    .padding(top = topInset, bottom = bottomInset)
-                                    .padding(24.dp),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                                    .padding(top = topInset, bottom = bottomInset),
                             ) {
-                                Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault, isHintPaused, onPauseHint)
+                                SettingsButton(onClick = onOpenSettings, modifier = Modifier.padding(start = 12.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = headerMinHeight)
+                                        .padding(24.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Header(onOpenPdf, pdfDefault, onMakeDefault, onChangeDefault, isHintPaused, onPauseHint)
+                                }
                             }
                         }
                         LazyColumn(
@@ -216,9 +227,9 @@ fun HomeScreen(
                         ) {
                             if (isSideBySide) {
                                 item {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        RecentLabel(Modifier.weight(1f).padding(start = 4.dp))
-                                        SettingsButton(onClick = onOpenSettings, modifier = Modifier.offset(x = 4.dp))
+                                    // As tall as the cog, so "Recent" lines up with it.
+                                    Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.CenterStart) {
+                                        RecentLabel(Modifier.padding(start = 4.dp))
                                     }
                                 }
                             } else {

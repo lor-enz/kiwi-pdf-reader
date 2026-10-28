@@ -183,8 +183,10 @@
   and a gap as large as the status bar looked odd on phones with a tall one
   (Pixel). When the window is wider than tall (at least 600 dp, e.g. a phone
   in landscape) and there are recent files, the header sits on the left and
-  the list on the right, "Recent" beside the cog: stacked, the header filled
-  the screen and the list started below it, so it looked empty.
+  the list on the right: stacked, the header filled the screen and the list
+  started below it, so it looked empty. The cog then sits in the header's top
+  left corner, level with "Recent" (24 dp from the left edge): beside
+  "Recent" it looked like an option of the list, and it scrolled away with it.
 - The cleanup limits are chosen on the Settings screen itself, no dialog:
   a heading row explains each, a full-width Material `Slider` with three
   stops (`StopSlider`) sits below it, and the stops' labels below that
