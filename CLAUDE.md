@@ -267,7 +267,7 @@
   them only here would make the two views differ.
 - Presentation mode's overlay (`viewer/PresentationOverlay.kt`): a back
   arrow with the title and file name at the top (as in the viewer's top
-  bar), the page number ("3 / 11") at the bottom. A tap that hits no link
+  bar), the page number ("3 / 11") and a slider at the bottom. A tap that hits no link
   shows or hides it, zoomed in too; the system bars come and go with it,
   as in a photo gallery, which also makes Back easy to find. It shows for
   1 s when the mode starts, so the controls are seen, and hides 3 s after a
@@ -284,6 +284,22 @@
   to the text and faded only beyond it looked like a hard band.
   Its padding uses `systemBarsIgnoringVisibility`, so it doesn't move when
   the bars come and go.
+- The overlay's slider turns the pages while it's dragged, not only once
+  it's let go: a page is found by looking at it, and the number alone made
+  that tedious. Each page jumps directly (`requestScrollToPage`) with a
+  light tick (`SEGMENT_FREQUENT_TICK`, as the Settings sliders), and while
+  it's held the pager renders only the page shown (no neighbors ahead), so
+  rendering keeps up. A heavy page shows white until it has rendered. The
+  overlay stays while the slider is held; grabbed while the overlay fades
+  out (right after the mode starts), it brings it back, and once let go it
+  stays the full 3 s. The track is slim (4 dp; Material's 16 dp competed
+  with the page). It has a step per page (screen
+  readers move one page) without drawing the ticks, and it never takes the
+  focus, or a clicker's arrow keys would move it instead of turning the
+  page. The number beside it keeps the width of the widest one, with
+  tabular digits, so the slider's length doesn't change. A one-page
+  document has no slider. To drag it on the emulator, use `input
+  motionevent DOWN/MOVE/UP` in one `adb shell` within the overlay's 3 s.
 - The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
@@ -526,8 +542,6 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
 - Search the recent files list: only matters once it gets long (no count
   limit anymore, and "1 year" keeps a lot), so the search field could
   appear only then.
-- Presentation mode: a slider in the overlay to jump to a page (the page
-  changes when it's let go, as with the Settings sliders).
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

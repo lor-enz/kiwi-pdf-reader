@@ -63,6 +63,7 @@ import kiwi.lorenz.pdfreader.document.openLink
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.NightBackground
 import kiwi.lorenz.pdfreader.util.runCatchingCancellable
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -120,7 +121,8 @@ internal fun Presentation(
     // Page sizes in points, for the pages around the current one.
     val pageSizes = remember(document) { mutableStateMapOf<Int, IntSize>() }
     LaunchedEffect(document, pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { current ->
+        // Latest only: sliding passes pages faster than their sizes are read.
+        snapshotFlow { pagerState.currentPage }.collectLatest { current ->
             for (index in (current - 2..current + 2).filter { it in 0 until document.pageCount }) {
                 if (index in pageSizes) continue
                 runCatchingCancellable { document.getPageInfo(index) }
@@ -174,8 +176,9 @@ internal fun Presentation(
                 pageSize = pageSize,
                 contentPadding = PaddingValues(horizontal = margin),
                 pageSpacing = PageGap,
-                // Rendered ahead, so the next page is there when it slides in.
-                beyondViewportPageCount = 1,
+                // Rendered ahead, so the next page is there when it slides in. Not while the slider
+                // is held: it turns the pages faster than they render, so only the one shown does.
+                beyondViewportPageCount = if (overlay.isHeld) 0 else 1,
                 modifier = Modifier
                     .fillMaxSize()
                     .onKeyEvent { event ->
@@ -206,11 +209,13 @@ internal fun Presentation(
             }
         }
         PresentationOverlay(
-            isVisible = overlay.isVisible,
+            state = overlay,
             title = title,
             fileName = fileName,
             page = pagerState.currentPage,
             pageCount = document.pageCount,
+            // Directly, like a link: the pages in between would all have to render.
+            onPageSelected = { pagerState.requestScrollToPage(it) },
             onExit = onExit,
         )
     }

@@ -89,6 +89,7 @@ object TestTags {
     const val PRESENTATION_TITLE = "presentation_title"
     const val PRESENTATION_FILE_NAME = "presentation_file_name"
     const val PRESENTATION_PAGE_NUMBER = "presentation_page_number"
+    const val PRESENTATION_SLIDER = "presentation_slider"
 
     const val SEARCH_FIELD = "search_field"
     const val CLOSE_SEARCH = "close_search"
