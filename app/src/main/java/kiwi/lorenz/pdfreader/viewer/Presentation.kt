@@ -80,20 +80,25 @@ private val LinkTolerance = 8.dp
  * the neighbors wait right behind the screen's edges, so they slide in as soon as a swipe starts.
  * The page shown zooms (see [pageZoom]), and shows whole again once it's turned. Its links work:
  * a link within the document jumps to its page, others open as in the scroll view
- * ([onLinkFailed] when no app opens them). Starts at [page] and reports each page it settles on.
+ * ([onLinkFailed] when no app opens them). A tap anywhere else shows or hides the overlay, with the
+ * document's [title] and [fileName] (see [PresentationOverlay]); the system bars come and go with it.
+ * Starts at [page] and reports each page it settles on.
  */
 @Composable
 internal fun Presentation(
     document: PdfDocument,
+    title: String?,
+    fileName: String,
     page: Int,
     onPageChanged: (Int) -> Unit,
     onExit: () -> Unit,
     onLinkFailed: () -> Unit,
 ) {
     BackHandler(onBack = onExit)
-    FullScreen()
 
     val pagerState = rememberPagerState(initialPage = page) { document.pageCount }
+    val overlay = rememberOverlayState(isScrolling = pagerState.isScrollInProgress)
+    FullScreen(showsBars = overlay.isVisible)
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect(onPageChanged)
     }
@@ -103,11 +108,12 @@ internal fun Presentation(
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val onLink: (PageLink) -> Unit = { link ->
+    val onTap: (PageLink?) -> Unit = { link ->
         when (link) {
             // Directly, without flicking through the pages in between.
             is PageLink.ToPage -> scope.launch { pagerState.scrollToPage(link.page) }
             is PageLink.ToUri -> if (!context.openLink(link.uri)) onLinkFailed()
+            null -> overlay.toggle()
         }
     }
 
@@ -123,79 +129,90 @@ internal fun Presentation(
         }
     }
 
-    BoxWithConstraints(
+    Box(
         Modifier
             .fillMaxSize()
             // The app's dark background, whatever the theme: the page stands out the most.
-            .background(NightBackground)
-            .windowInsetsPadding(WindowInsets.displayCutout),
+            .background(NightBackground),
     ) {
-        val width = constraints.maxWidth
-        val height = constraints.maxHeight
-        val density = LocalDensity.current
-        val gap = with(density) { PageGap.roundToPx() }
-        val layout = PresentationLayout(width, gap) { index ->
-            pageSizes[index]?.fitInto(width, height)?.width
-        }
-        // Half the screen and half the page: centered, its neighbors are right behind the edges.
-        // Fixed while scrolling: changed under a swipe (settling on a page of another width as the
-        // next swipe starts), it would move the pages under the finger and throw off the snapping.
-        var centeredSlot by remember { mutableIntStateOf(layout.slotWidth(pagerState.settledPage)) }
-        val slot = if (pagerState.isScrollInProgress) centeredSlot else layout.slotWidth(pagerState.settledPage)
-        // The pager keeps its offset in pixels, which no longer centers the page once its slot
-        // changes. Before layout, so nothing jumps.
-        SideEffect {
-            if (slot != centeredSlot) {
-                centeredSlot = slot
-                pagerState.requestScrollToPage(pagerState.settledPage)
+        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)) {
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val density = LocalDensity.current
+            val gap = with(density) { PageGap.roundToPx() }
+            val layout = PresentationLayout(width, gap) { index ->
+                pageSizes[index]?.fitInto(width, height)?.width
             }
-        }
-        // The page that zooms. The pager settles on the next page as soon as it starts snapping
-        // to it, so until it has stopped, the one it left keeps its zoom while it slides away.
-        var restingPage by remember { mutableIntStateOf(pagerState.settledPage) }
-        val zoomablePage = if (pagerState.isScrollInProgress) restingPage else pagerState.settledPage
-        SideEffect { restingPage = zoomablePage }
-        // So the first and last page can be centered too.
-        val margin = with(density) { ((width - slot) / 2).toDp() }
-        val pageSize = remember(slot) {
-            object : PageSize {
-                override fun Density.calculateMainAxisPageSize(availableSpace: Int, pageSpacing: Int) = slot
-            }
-        }
-
-        HorizontalPager(
-            state = pagerState,
-            pageSize = pageSize,
-            contentPadding = PaddingValues(horizontal = margin),
-            pageSpacing = PageGap,
-            // Rendered ahead, so the next page is there when it slides in.
-            beyondViewportPageCount = 1,
-            modifier = Modifier
-                .fillMaxSize()
-                .onKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                    val target = pagerState.keyTarget(event.key) ?: return@onKeyEvent false
-                    scope.launch { pagerState.animateScrollToPage(target) }
-                    true
+            // Half the screen and half the page: centered, its neighbors are right behind the edges.
+            // Fixed while scrolling: changed under a swipe (settling on a page of another width as the
+            // next swipe starts), it would move the pages under the finger and throw off the snapping.
+            var centeredSlot by remember { mutableIntStateOf(layout.slotWidth(pagerState.settledPage)) }
+            val slot = if (pagerState.isScrollInProgress) centeredSlot else layout.slotWidth(pagerState.settledPage)
+            // The pager keeps its offset in pixels, which no longer centers the page once its slot
+            // changes. Before layout, so nothing jumps.
+            SideEffect {
+                if (slot != centeredSlot) {
+                    centeredSlot = slot
+                    pagerState.requestScrollToPage(pagerState.settledPage)
                 }
-                .focusRequester(focusRequester)
-                .focusable()
-                .testTag(TestTags.PRESENTATION),
-        ) { index ->
-            PresentationPage(
-                document = document,
-                index = index,
-                pointSize = pageSizes[index],
-                size = pageSizes[index]?.fitInto(width, height),
-                viewport = IntSize(width, height),
-                // Only the page shown: the others' zoom would cover its edges.
-                isZoomable = index == zoomablePage,
-                onLink = onLink,
-                modifier = Modifier.graphicsLayer {
-                    translationX = layout.shift(index, pagerState.currentPage + pagerState.currentPageOffsetFraction, slot)
-                },
-            )
+            }
+            // The page that zooms. The pager settles on the next page as soon as it starts snapping
+            // to it, so until it has stopped, the one it left keeps its zoom while it slides away.
+            var restingPage by remember { mutableIntStateOf(pagerState.settledPage) }
+            val zoomablePage = if (pagerState.isScrollInProgress) restingPage else pagerState.settledPage
+            SideEffect { restingPage = zoomablePage }
+            // So the first and last page can be centered too.
+            val margin = with(density) { ((width - slot) / 2).toDp() }
+            val pageSize = remember(slot) {
+                object : PageSize {
+                    override fun Density.calculateMainAxisPageSize(availableSpace: Int, pageSpacing: Int) = slot
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                pageSize = pageSize,
+                contentPadding = PaddingValues(horizontal = margin),
+                pageSpacing = PageGap,
+                // Rendered ahead, so the next page is there when it slides in.
+                beyondViewportPageCount = 1,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                        val target = pagerState.keyTarget(event.key) ?: return@onKeyEvent false
+                        // A clicker: presenting, without controls in the way.
+                        overlay.hide()
+                        scope.launch { pagerState.animateScrollToPage(target) }
+                        true
+                    }
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .testTag(TestTags.PRESENTATION),
+            ) { index ->
+                PresentationPage(
+                    document = document,
+                    index = index,
+                    pointSize = pageSizes[index],
+                    size = pageSizes[index]?.fitInto(width, height),
+                    viewport = IntSize(width, height),
+                    // Only the page shown: the others' zoom would cover its edges.
+                    isZoomable = index == zoomablePage,
+                    onTap = onTap,
+                    modifier = Modifier.graphicsLayer {
+                        translationX = layout.shift(index, pagerState.currentPage + pagerState.currentPageOffsetFraction, slot)
+                    },
+                )
+            }
         }
+        PresentationOverlay(
+            isVisible = overlay.isVisible,
+            title = title,
+            fileName = fileName,
+            page = pagerState.currentPage,
+            pageCount = document.pageCount,
+            onExit = onExit,
+        )
     }
 }
 
@@ -245,17 +262,21 @@ private fun PagerState.keyTarget(key: Key): Int? {
 }
 
 /**
- * Hides the system bars (a swipe from the edge shows them for a moment) and keeps the screen on,
- * as nobody touches it while presenting. Hidden again whenever the app comes back, e.g. from a
- * link opened in the browser.
+ * Hides the system bars unless [showsBars] (a swipe from the edge shows them for a moment) and
+ * keeps the screen on, as nobody touches it while presenting. Hidden again whenever the app comes
+ * back, e.g. from a link opened in the browser.
  */
 @Composable
-private fun FullScreen() {
+private fun FullScreen(showsBars: Boolean) {
     val view = LocalView.current
     val window = LocalActivity.current?.window
     val controller = remember(view, window) { window?.let { WindowCompat.getInsetsController(it, view) } }
-    LifecycleResumeEffect(controller) {
-        controller?.hide(WindowInsetsCompat.Type.systemBars())
+    LifecycleResumeEffect(controller, showsBars) {
+        if (showsBars) {
+            controller?.show(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller?.hide(WindowInsetsCompat.Type.systemBars())
+        }
         onPauseOrDispose {}
     }
     DisposableEffect(controller) {
@@ -283,8 +304,8 @@ private fun FullScreen() {
 /**
  * One page at [size] (null while unknown), on white like paper (pages without a background are
  * transparent). A page wider than its slot overflows it, centered. When [isZoomable], the whole
- * [viewport] (the screen) takes the zoom gestures, also beside the page, and taps on its links go
- * to [onLink]. [pointSize] is the page's own size, in points.
+ * [viewport] (the screen) takes the zoom gestures, also beside the page, and taps go to [onTap],
+ * with the link they hit, if any. [pointSize] is the page's own size, in points.
  */
 @Composable
 private fun PresentationPage(
@@ -294,7 +315,7 @@ private fun PresentationPage(
     size: IntSize?,
     viewport: IntSize,
     isZoomable: Boolean,
-    onLink: (PageLink) -> Unit,
+    onTap: (PageLink?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -322,15 +343,17 @@ private fun PresentationPage(
                         Modifier.pageZoom(zoom) { tap ->
                             // From the screen to the page's points, through the zoom.
                             val bounds = zoom.transformedContentBounds
-                            if (bounds.isEmpty) return@pageZoom
+                            if (bounds.isEmpty) return@pageZoom onTap(null)
                             val points = pointSize.width / bounds.width
                             scope.launch {
-                                document.linkAt(
-                                    page = index,
-                                    x = (tap.x - bounds.left) * points,
-                                    y = (tap.y - bounds.top) * points,
-                                    tolerance = tolerance * points,
-                                )?.let(onLink)
+                                onTap(
+                                    document.linkAt(
+                                        page = index,
+                                        x = (tap.x - bounds.left) * points,
+                                        y = (tap.y - bounds.top) * points,
+                                        tolerance = tolerance * points,
+                                    ),
+                                )
                             }
                         }
                     },

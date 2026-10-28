@@ -265,6 +265,25 @@
   the app a link opened hides the system bars again. Bare `/Dest` links
   don't work here either: the library doesn't report them, and supporting
   them only here would make the two views differ.
+- Presentation mode's overlay (`viewer/PresentationOverlay.kt`): a back
+  arrow with the title and file name at the top (as in the viewer's top
+  bar), the page number ("3 / 11") at the bottom. A tap that hits no link
+  shows or hides it, zoomed in too; the system bars come and go with it,
+  as in a photo gallery, which also makes Back easy to find. It shows for
+  1 s when the mode starts, so the controls are seen, and hides 3 s after a
+  tap (or longer if the accessibility timeout setting asks for it). It stays
+  while swiping, so the number changes in front of the user, and the timer
+  starts again once the swipe settles. A key that turns the page hides it
+  at once (a clicker means presenting). With touch exploration on it always
+  shows, as a screen reader can't tap to bring it up. Back still leaves the
+  mode, and the overlay isn't saved. It's laid over the page, so nothing
+  moves, on a scrim of `NightBackground` that fades from 90% at the
+  screen's edge to nothing 160 dp beyond the text, along a smoothstep
+  curve so it has no visible edge. A shorter, linear one left the file name
+  and page number barely readable on a white page; one that stayed dark up
+  to the text and faded only beyond it looked like a hard band.
+  Its padding uses `systemBarsIgnoringVisibility`, so it doesn't move when
+  the bars come and go.
 - The password screen's padlock (`viewer/Lock.kt`) is drawn in Compose, like
   Material's lock icon, so its shackle can move: once the password is
   right it lifts until the short leg is free and swings half a turn around
@@ -507,7 +526,8 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
 - Search the recent files list: only matters once it gets long (no count
   limit anymore, and "1 year" keeps a lot), so the search field could
   appear only then.
-- Presentation mode: a minimal overlay.
+- Presentation mode: a slider in the overlay to jump to a page (the page
+  changes when it's let go, as with the Settings sliders).
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: two pages side by side (`pagesPerRow`), or a thumbnail

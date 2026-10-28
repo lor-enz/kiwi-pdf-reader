@@ -348,6 +348,8 @@ fun ViewerScreen(
             key(presentedDocument) {
                 Presentation(
                     document = presentedDocument,
+                    title = loaded?.title,
+                    fileName = title,
                     page = presentationPage,
                     onPageChanged = actions::presentationPageChanged,
                     onExit = actions::endPresentation,
