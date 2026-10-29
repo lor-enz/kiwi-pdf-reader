@@ -121,7 +121,7 @@ fun ViewerScreen(
     pendingRestorePage: Int?,
     presentationPage: Int?,
     isFilledIn: Boolean,
-    createdNotice: Int?,
+    createdNotice: CreatedNotice?,
     message: Int?,
     actions: ViewerActions,
 ) {
@@ -193,10 +193,11 @@ fun ViewerScreen(
     val scope = rememberCoroutineScope()
     // A PDF made from shared images or PDFs exists only in the app until it's saved somewhere else.
     if (createdNotice != null) {
-        val text = if (createdNotice == 0) {
+        val skipped = createdNotice.skippedImages
+        val text = if (skipped == 0) {
             stringResource(R.string.pdf_created)
         } else {
-            pluralStringResource(R.plurals.pdf_created_skipped, createdNotice, createdNotice)
+            pluralStringResource(R.plurals.pdf_created_skipped, skipped, skipped)
         }
         val saveLabel = stringResource(R.string.save)
         LaunchedEffect(createdNotice) {

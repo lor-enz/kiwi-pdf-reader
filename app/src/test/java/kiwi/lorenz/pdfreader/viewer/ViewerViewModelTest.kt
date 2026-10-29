@@ -131,7 +131,7 @@ class ViewerViewModelTest {
         assertTrue(loaded.name, loaded.name.startsWith("Images ") && loaded.name.endsWith(".pdf"))
         assertEquals(2, PdfMetadataReader(ByteArraySource(File(loaded.document.uri.path!!).readBytes())).read().pageCount)
         // Offered to be saved, as it exists only in the app.
-        assertEquals(0, viewModel.createdNotice)
+        assertEquals(CreatedNotice(), viewModel.createdNotice)
     }
 
     @Test
@@ -148,7 +148,7 @@ class ViewerViewModelTest {
         val notes = provide("notes.jpg", "Just some notes")
         viewModel.openImages(listOf(provide("IMG_1.jpg", jpeg()), notes))
         awaitLoaded()
-        assertEquals(1, viewModel.createdNotice)
+        assertEquals(CreatedNotice(skippedImages = 1), viewModel.createdNotice)
 
         // Each share gets a card of its own.
         runningTasks(TASK, OTHER_TASK)
@@ -172,7 +172,7 @@ class ViewerViewModelTest {
         assertEquals(3, merged.pageCount)
         assertEquals(listOf("bill", "scan"), merged.outline.map { it.title })
         // Offered to be saved, as it exists only in the app.
-        assertEquals(0, viewModel.createdNotice)
+        assertEquals(CreatedNotice(), viewModel.createdNotice)
     }
 
     @Test

@@ -50,3 +50,6 @@ enum class FailureReason {
     /** PDFs were shared to merge them, but one couldn't be read. */
     MERGE_UNREADABLE,
 }
+
+/** A PDF the app just made of shared images or PDFs; [skippedImages] couldn't be read and were left out. */
+data class CreatedNotice(val skippedImages: Int = 0)

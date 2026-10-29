@@ -96,10 +96,9 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     /**
      * Set once a PDF made from shared images or PDFs has opened, so the viewer offers to save
-     * it: it exists only in the app until then. How many images couldn't be read and were left
-     * out (0 for a merge).
+     * it: it exists only in the app until then.
      */
-    var createdNotice by mutableStateOf<Int?>(null)
+    var createdNotice by mutableStateOf<CreatedNotice?>(null)
         private set
 
     /**
@@ -175,26 +174,16 @@ class ViewerViewModel @VisibleForTesting internal constructor(
      * Images shared by another app: they're made into a PDF, which is kept like a copy of a file
      * from another app.
      */
-    fun openImages(uris: List<Uri>) {
-        if (uris.any { it.scheme != ContentResolver.SCHEME_CONTENT }) {
-            resetForOpen()
-            documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
-            return
+    fun openImages(uris: List<Uri>) = openCreated(uris) { file ->
+        val app = getApplication<Application>()
+        val created = app.createPdfFromImages(uris, file)
+        if (created.pageCount == 0) throw CannotOpen(FailureReason.NO_IMAGES)
+        val name = if (uris.size == 1) {
+            displayName(uris.single()).substringBeforeLast('.') + ".pdf"
+        } else {
+            app.getString(R.string.images_pdf_name, createdTime())
         }
-        launchOpen {
-            // Made before, see openFromOtherApp.
-            store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
-            val app = getApplication<Application>()
-            val file = createdFile()
-            val created = app.createPdfFromImages(uris, file)
-            if (created.pageCount == 0) throw CannotOpen(FailureReason.NO_IMAGES)
-            val name = if (uris.size == 1) {
-                displayName(uris.single()).substringBeforeLast('.') + ".pdf"
-            } else {
-                app.getString(R.string.images_pdf_name, createdTime())
-            }
-            keepCreated(file, name, skippedImages = created.skipped)
-        }
+        Created(name, CreatedNotice(skippedImages = created.skipped))
     }
 
     /**
@@ -202,7 +191,26 @@ class ViewerViewModel @VisibleForTesting internal constructor(
      * another app. Protected ones need a remembered password, as asking for several would be a
      * chore; without one nothing is made, and the viewer says which file it was.
      */
-    fun mergePdfs(uris: List<Uri>) {
+    fun mergePdfs(uris: List<Uri>) = openCreated(uris) { file ->
+        val app = getApplication<Application>()
+        val failure = app.mergePdfs(uris, uris.map { displayName(it) }, file) { uri ->
+            store.encryptedPasswordFor(uri)?.let { passwords.decrypt(it) }
+        }
+        if (failure != null) {
+            val reason = when (failure.reason) {
+                MergeFailure.Reason.NEEDS_PASSWORD -> FailureReason.MERGE_NEEDS_PASSWORD
+                MergeFailure.Reason.UNREADABLE -> FailureReason.MERGE_UNREADABLE
+            }
+            throw CannotOpen(reason, failure.name, failure.others)
+        }
+        Created(app.getString(R.string.merged_pdf_name, createdTime()), CreatedNotice())
+    }
+
+    /**
+     * Opens a PDF the app makes of what another app shared at [uris]: [make] writes it to the
+     * file it's given, which is then kept like a copy of a file from another app.
+     */
+    private fun openCreated(uris: List<Uri>, make: suspend (File) -> Created) {
         if (uris.any { it.scheme != ContentResolver.SCHEME_CONTENT }) {
             resetForOpen()
             documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
@@ -211,35 +219,20 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         launchOpen {
             // Made before, see openFromOtherApp.
             store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
-            val app = getApplication<Application>()
-            val file = createdFile()
-            val failure = app.mergePdfs(uris, uris.map { displayName(it) }, file) { uri ->
-                store.encryptedPasswordFor(uri)?.let { passwords.decrypt(it) }
-            }
-            if (failure != null) {
-                val reason = when (failure.reason) {
-                    MergeFailure.Reason.NEEDS_PASSWORD -> FailureReason.MERGE_NEEDS_PASSWORD
-                    MergeFailure.Reason.UNREADABLE -> FailureReason.MERGE_UNREADABLE
-                }
-                throw CannotOpen(reason, failure.name, failure.others)
-            }
-            keepCreated(file, app.getString(R.string.merged_pdf_name, createdTime()), skippedImages = 0)
+            val file = File(File(getApplication<Application>().cacheDir, CREATED_DIR).apply { mkdirs() }, "$taskId.pdf")
+            val created = make(file)
+            val entry = store.importCopy(Uri.fromFile(file), created.name)
+            // Without an entry (e.g. storage full) it opens from the cache.
+            if (entry == null) return@launchOpen Target(null, Uri.fromFile(file), created.name, createdNotice = created.notice)
+            file.delete()
+            Target(entry, entry.uri.toUri(), entry.name, createdNotice = created.notice)
         }
     }
 
-    /** Where a PDF the app makes is written, before it's kept as a copy. */
-    private fun createdFile() = File(File(getApplication<Application>().cacheDir, CREATED_DIR).apply { mkdirs() }, "$taskId.pdf")
+    /** What [openCreated]'s make gives: the new PDF's name, and what the viewer says about it. */
+    private class Created(val name: String, val notice: CreatedNotice)
 
     private fun createdTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH.mm"))
-
-    /** Keeps the PDF the app made in [file] like a copy of a file from another app. */
-    private suspend fun keepCreated(file: File, name: String, skippedImages: Int): Target {
-        val entry = store.importCopy(Uri.fromFile(file), name)
-        // Without an entry (e.g. storage full) it opens from the cache.
-        if (entry == null) return Target(null, Uri.fromFile(file), name, skippedImages = skippedImages)
-        file.delete()
-        return Target(entry, entry.uri.toUri(), entry.name, skippedImages = skippedImages)
-    }
 
     /** Opens the document again after a failure that's most likely passing. */
     fun retry() {
@@ -393,14 +386,14 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     /**
      * What to open: a recent entry, or a bare URI when it couldn't be added to the list.
-     * [skippedImages] is set for a PDF just made from images or PDFs, see [createdNotice].
+     * [createdNotice] is set for a PDF just made from images or PDFs.
      */
     private class Target(
         val entry: RecentFile?,
         val uri: Uri,
         val name: String,
         val isFilledIn: Boolean = false,
-        val skippedImages: Int? = null,
+        val createdNotice: CreatedNotice? = null,
     ) {
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
@@ -474,7 +467,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             if (entry != null) onOpened(entry, document, title, password, rememberPassword)
             form = (document as? EditablePdfDocument)?.let { FormAutosave(it, entry?.id, store, viewModelScope) }
             isFilledIn = target.isFilledIn
-            createdNotice = target.skippedImages
+            createdNotice = target.createdNotice
             DocumentState.Loaded(
                 document = document,
                 name = target.name,
