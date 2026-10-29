@@ -190,6 +190,17 @@ class RecentFilesStoreTest {
     }
 
     @Test
+    fun `a remembered password is found by the content of another file`() = runBlocking {
+        val entry = store.importCopy(provide("a.pdf", "protected"), "a.pdf")!!
+        assertNull(store.encryptedPasswordFor(provide("shared.pdf", "protected")))
+
+        store.setPassword(entry.id, "encrypted")
+
+        assertEquals("encrypted", store.encryptedPasswordFor(provide("shared.pdf", "protected")))
+        assertNull(store.encryptedPasswordFor(provide("other.pdf", "other content")))
+    }
+
+    @Test
     fun `forgetting the password drops the thumbnail`() = runBlocking {
         val entry = store.importCopy(provide("a.pdf", "a"), "a.pdf")!!
         store.saveThumbnail(entry.id, Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888))

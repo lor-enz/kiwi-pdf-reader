@@ -18,7 +18,7 @@
 - Packages are by feature, each with its screens and logic: `viewer`,
   `home`, `settings`, `defaultapp`, `info`, `recent`, `document` (open,
   print, share), `pdf` (reads what `androidx.pdf` can't: metadata, the
-  table of contents), `create` (makes PDFs of shared images). `ui` holds only what several features share (sheets,
+  table of contents), `create` (makes PDFs of shared images, merges shared PDFs). `ui` holds only what several features share (sheets,
   dialogs, `TestTags`, theme), `util` small helpers. The root holds only
   `PdfPenguinApp` and the activities, which keep their names and package
   (manifest, launcher, pinned shortcuts). Put a new file in the package of
@@ -541,6 +541,29 @@
   JPEGs; transparency becomes white. Images that can't be read are left
   out; with none left, the viewer shows "Couldn't make a PDF". Two PDFs of
   the same images differ (creation date), so each gets an entry.
+
+- Several PDFs shared to the app (`SEND_MULTIPLE` with `application/pdf`;
+  one is simply opened) are merged (`create/PdfMerger.kt`) in the order
+  shared, no reorder screen, and kept and offered to save like a PDF of
+  images ("Merged <date>.pdf", in English in every language: German's
+  "Zusammengeführt" sounded terrible). `PdfMerger` copies each page with
+  everything it uses, streams as they are (no quality lost), on top of
+  `PdfFile`, which the metadata reader uses too; PdfBox was too large and
+  slow, and rendering pages to images would lose text, links and forms.
+  Named links become explicit ones, so names can't collide, and links with
+  a bare `/Dest` get a "go to" action, so they work in the merged file
+  (unlike in the original, see links below). Form fields are merged, a
+  name an earlier file took getting a number (`name_2`), or equal forms
+  would share their values; layers keep their state. The outline gets an
+  entry per file, named by its file name without `.pdf`: the user knows
+  the files by those, and titles are often generic ("untitled",
+  "Microsoft Word - …"). Tags for screen readers, page labels and
+  attachments are left out. A merge is all or nothing: if a file is
+  damaged, or protected and no entry with the same content (hash) has its
+  password remembered, nothing is made and the viewer names it (damaged
+  ones first, no password helps them). Asking for each password would be a
+  chore; opening the file once remembers it. A 200 MB file merges in a few
+  seconds, as streams are copied in chunks.
 
 # Known issues
 

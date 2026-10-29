@@ -23,16 +23,19 @@ suspend fun Context.readDocumentInfo(
     withOutline: Boolean = false,
 ): DocumentInfo = withContext(Dispatchers.IO) {
     try {
-        val descriptor = checkNotNull(contentResolver.openFileDescriptor(uri, "r"))
-        ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
-            val channel = stream.channel
-            val size = channel.size()
-            DocumentInfo(PdfMetadataReader(ChannelSource(channel, size), password).read(withOutline), size)
-        }
+        readSource(uri) { source -> DocumentInfo(PdfMetadataReader(source, password).read(withOutline), source.size) }
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {
         DocumentInfo(PdfMetadata(), null)
+    }
+}
+
+/** Runs [block] with random access to the file at [uri]; throws if it can't be opened. */
+internal fun <T> Context.readSource(uri: Uri, block: (ByteSource) -> T): T {
+    val descriptor = checkNotNull(contentResolver.openFileDescriptor(uri, "r"))
+    return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
+        block(ChannelSource(stream.channel, stream.channel.size()))
     }
 }
 

@@ -20,7 +20,9 @@ import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.ViewerActivity
+import kiwi.lorenz.pdfreader.create.MergeFailure
 import kiwi.lorenz.pdfreader.create.createPdfFromImages
+import kiwi.lorenz.pdfreader.create.mergePdfs
 import kiwi.lorenz.pdfreader.document.UNSAVED_FORMS_DIR
 import kiwi.lorenz.pdfreader.document.savePdfCopy
 import kiwi.lorenz.pdfreader.pdf.DocumentInfo
@@ -93,8 +95,9 @@ class ViewerViewModel @VisibleForTesting internal constructor(
     val message = SnackbarMessage()
 
     /**
-     * Set once a PDF made from shared images has opened, so the viewer offers to save it: it
-     * exists only in the app until then. How many images couldn't be read and were left out.
+     * Set once a PDF made from shared images or PDFs has opened, so the viewer offers to save
+     * it: it exists only in the app until then. How many images couldn't be read and were left
+     * out (0 for a merge).
      */
     var createdNotice by mutableStateOf<Int?>(null)
         private set
@@ -182,24 +185,60 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             // Made before, see openFromOtherApp.
             store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
             val app = getApplication<Application>()
-            val file = File(File(app.cacheDir, CREATED_DIR).apply { mkdirs() }, "$taskId.pdf")
+            val file = createdFile()
             val created = app.createPdfFromImages(uris, file)
             if (created.pageCount == 0) throw CannotOpen(FailureReason.NO_IMAGES)
             val name = if (uris.size == 1) {
                 displayName(uris.single()).substringBeforeLast('.') + ".pdf"
             } else {
-                val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH.mm"))
-                app.getString(R.string.images_pdf_name, time)
+                app.getString(R.string.images_pdf_name, createdTime())
             }
-            val entry = store.importCopy(Uri.fromFile(file), name)
-            // Without an entry (e.g. storage full) it opens from the cache.
-            if (entry != null) file.delete()
-            if (entry == null) {
-                Target(null, Uri.fromFile(file), name, skippedImages = created.skipped)
-            } else {
-                Target(entry, entry.uri.toUri(), entry.name, skippedImages = created.skipped)
-            }
+            keepCreated(file, name, skippedImages = created.skipped)
         }
+    }
+
+    /**
+     * PDFs shared by another app: they're merged into one, kept like a copy of a file from
+     * another app. Protected ones need a remembered password, as asking for several would be a
+     * chore; without one nothing is made, and the viewer says which file it was.
+     */
+    fun mergePdfs(uris: List<Uri>) {
+        if (uris.any { it.scheme != ContentResolver.SCHEME_CONTENT }) {
+            resetForOpen()
+            documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
+            return
+        }
+        launchOpen {
+            // Made before, see openFromOtherApp.
+            store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
+            val app = getApplication<Application>()
+            val file = createdFile()
+            val failure = app.mergePdfs(uris, uris.map { displayName(it) }, file) { uri ->
+                store.encryptedPasswordFor(uri)?.let { passwords.decrypt(it) }
+            }
+            if (failure != null) {
+                val reason = when (failure.reason) {
+                    MergeFailure.Reason.NEEDS_PASSWORD -> FailureReason.MERGE_NEEDS_PASSWORD
+                    MergeFailure.Reason.UNREADABLE -> FailureReason.MERGE_UNREADABLE
+                }
+                throw CannotOpen(reason, failure.name, failure.others)
+            }
+            keepCreated(file, app.getString(R.string.merged_pdf_name, createdTime()), skippedImages = 0)
+        }
+    }
+
+    /** Where a PDF the app makes is written, before it's kept as a copy. */
+    private fun createdFile() = File(File(getApplication<Application>().cacheDir, CREATED_DIR).apply { mkdirs() }, "$taskId.pdf")
+
+    private fun createdTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH.mm"))
+
+    /** Keeps the PDF the app made in [file] like a copy of a file from another app. */
+    private suspend fun keepCreated(file: File, name: String, skippedImages: Int): Target {
+        val entry = store.importCopy(Uri.fromFile(file), name)
+        // Without an entry (e.g. storage full) it opens from the cache.
+        if (entry == null) return Target(null, Uri.fromFile(file), name, skippedImages = skippedImages)
+        file.delete()
+        return Target(entry, entry.uri.toUri(), entry.name, skippedImages = skippedImages)
     }
 
     /** Opens the document again after a failure that's most likely passing. */
@@ -354,7 +393,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     /**
      * What to open: a recent entry, or a bare URI when it couldn't be added to the list.
-     * [skippedImages] is set for a PDF just made from images, see [createdNotice].
+     * [skippedImages] is set for a PDF just made from images or PDFs, see [createdNotice].
      */
     private class Target(
         val entry: RecentFile?,
@@ -366,8 +405,8 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
 
-    /** Thrown by [launchOpen]'s resolve when there's nothing to open, for [reason]. */
-    private class CannotOpen(val reason: FailureReason) : Exception()
+    /** Thrown by [launchOpen]'s resolve when there's nothing to open, see [DocumentState.Failed]. */
+    private class CannotOpen(val reason: FailureReason, val fileName: String? = null, val others: Int = 0) : Exception()
 
     private fun loadedDocument() = documentState as? DocumentState.Loaded
 
@@ -379,7 +418,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             val target = try {
                 resolve()
             } catch (e: CannotOpen) {
-                documentState = DocumentState.Failed(e.reason)
+                documentState = DocumentState.Failed(e.reason, e.fileName, e.others)
                 return@launch
             }
             if (target == null) {

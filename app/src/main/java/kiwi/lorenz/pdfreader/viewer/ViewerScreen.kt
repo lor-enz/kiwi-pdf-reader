@@ -110,7 +110,7 @@ interface ViewerActions {
 /**
  * [pendingRestorePage] is the page to scroll to once the document shows, [presentationPage] the
  * page presentation mode shows (null outside it), [isFilledIn] whether the document shows
- * filled-in form fields, [createdNotice] set when a PDF was just made from images (see
+ * filled-in form fields, [createdNotice] set when a PDF was just made from images or PDFs (see
  * [ViewerViewModel.createdNotice]), and [message] a string resource for the snackbar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +191,7 @@ fun ViewerScreen(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // A PDF made from shared images exists only in the app until it's saved somewhere else.
+    // A PDF made from shared images or PDFs exists only in the app until it's saved somewhere else.
     if (createdNotice != null) {
         val text = if (createdNotice == 0) {
             stringResource(R.string.pdf_created)
@@ -280,7 +280,7 @@ fun ViewerScreen(
                         )
 
                         is DocumentState.Failed -> FailureMessage(
-                            reason = state.reason,
+                            failure = state,
                             onOpenAnother = actions::openAnother,
                             onRetry = actions::retry,
                             modifier = Modifier.padding(contentPadding),

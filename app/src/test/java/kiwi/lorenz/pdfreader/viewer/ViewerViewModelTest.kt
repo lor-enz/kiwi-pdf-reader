@@ -160,6 +160,61 @@ class ViewerViewModelTest {
     }
 
     @Test
+    fun `several shared PDFs are merged into one that's kept like a copy`() {
+        viewModel.mergePdfs(listOf(provide("bill.pdf", fixture("table.pdf")), provide("scan.pdf", fixture("no-info.pdf"))))
+
+        val loaded = awaitLoaded()
+        val entry = store.entries.value.single()
+        assertTrue(entry.isCopy)
+        assertEquals(entry.uri, loaded.document.uri.toString())
+        assertTrue(loaded.name, loaded.name.startsWith("Merged ") && loaded.name.endsWith(".pdf"))
+        val merged = PdfMetadataReader(ByteArraySource(File(loaded.document.uri.path!!).readBytes())).read(withOutline = true)
+        assertEquals(3, merged.pageCount)
+        assertEquals(listOf("bill", "scan"), merged.outline.map { it.title })
+        // Offered to be saved, as it exists only in the app.
+        assertEquals(0, viewModel.createdNotice)
+    }
+
+    @Test
+    fun `a protected PDF is merged with the password remembered for its content`() {
+        val protected = fixture("aes-256-password.pdf")
+        val entry = runBlocking { store.importCopy(provide("bill.pdf", protected), "bill.pdf")!! }
+        runBlocking { store.setPassword(entry.id, FakeEncryption.encrypt("kiwi")) }
+
+        viewModel.mergePdfs(listOf(provide("bill (1).pdf", protected), provide("table.pdf", fixture("table.pdf"))))
+
+        val loaded = awaitLoaded()
+        val merged = PdfMetadataReader(ByteArraySource(File(loaded.document.uri.path!!).readBytes())).read()
+        assertEquals(4, merged.pageCount)
+        assertFalse(merged.isLocked)
+    }
+
+    @Test
+    fun `without a remembered password nothing is merged, and the file is named`() {
+        val shared = listOf(
+            provide("table.pdf", fixture("table.pdf")),
+            provide("bill.pdf", fixture("aes-256-password.pdf")),
+            provide("letter.pdf", fixture("rc4-128-password.pdf")),
+        )
+        viewModel.mergePdfs(shared)
+
+        val failed = awaitState(viewModel) { it is DocumentState.Failed }
+        assertEquals(DocumentState.Failed(FailureReason.MERGE_NEEDS_PASSWORD, "bill.pdf", others = 1), failed)
+        assertEquals(emptyList<RecentFile>(), store.entries.value)
+        assertEquals(emptyList<String>(), File(context.cacheDir, "created").list()?.toList().orEmpty())
+        assertNull(viewModel.createdNotice)
+    }
+
+    @Test
+    fun `a file that isn't a PDF fails the merge before a protected one`() {
+        val shared = listOf(provide("bill.pdf", fixture("aes-256-password.pdf")), provide("notes.pdf", "Just some notes"))
+        viewModel.mergePdfs(shared)
+
+        val failed = awaitState(viewModel) { it is DocumentState.Failed }
+        assertEquals(DocumentState.Failed(FailureReason.MERGE_UNREADABLE, "notes.pdf"), failed)
+    }
+
+    @Test
     fun `an entry that's gone can't be opened`() {
         viewModel.openRecent("gone")
 
@@ -336,6 +391,9 @@ class ViewerViewModelTest {
     /** A recent entry for a file handed over by another app. */
     private fun copy(name: String, content: String = PDF): RecentFile =
         runBlocking { store.importCopy(provide(name, content), name)!! }
+
+    /** A PDF of `PdfMetadataReaderTest`'s, see `make-metadata-fixtures.py`. */
+    private fun fixture(name: String) = checkNotNull(javaClass.getResourceAsStream("/metadata/$name")).use { it.readBytes() }
 
     private fun jpeg(): ByteArray {
         val output = ByteArrayOutputStream()

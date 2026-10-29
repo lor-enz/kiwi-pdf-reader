@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,18 +28,31 @@ import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
 /** [onRetry] is offered instead of [onOpenAnother] when the failure is most likely passing. */
 @Composable
 internal fun FailureMessage(
-    reason: FailureReason,
+    failure: DocumentState.Failed,
     onOpenAnother: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val reason = failure.reason
+    val name = failure.fileName.orEmpty()
+    val others = failure.others
     val (title, text) = when (reason) {
-        FailureReason.DAMAGED -> R.string.error_damaged_title to R.string.error_damaged
-        FailureReason.NOT_PDF -> R.string.error_not_pdf_title to R.string.error_not_pdf
-        FailureReason.NO_PERMISSION -> R.string.error_no_permission_title to R.string.error_no_permission
-        FailureReason.UNAVAILABLE -> R.string.error_unavailable_title to R.string.error_unavailable
-        FailureReason.TEMPORARY -> R.string.error_temporary_title to R.string.error_temporary
-        FailureReason.NO_IMAGES -> R.string.error_no_images_title to R.string.error_no_images
+        FailureReason.DAMAGED -> R.string.error_damaged_title to stringResource(R.string.error_damaged)
+        FailureReason.NOT_PDF -> R.string.error_not_pdf_title to stringResource(R.string.error_not_pdf)
+        FailureReason.NO_PERMISSION -> R.string.error_no_permission_title to stringResource(R.string.error_no_permission)
+        FailureReason.UNAVAILABLE -> R.string.error_unavailable_title to stringResource(R.string.error_unavailable)
+        FailureReason.TEMPORARY -> R.string.error_temporary_title to stringResource(R.string.error_temporary)
+        FailureReason.NO_IMAGES -> R.string.error_no_images_title to stringResource(R.string.error_no_images)
+        FailureReason.MERGE_NEEDS_PASSWORD -> R.string.error_merge_title to if (others == 0) {
+            stringResource(R.string.error_merge_password, name)
+        } else {
+            pluralStringResource(R.plurals.error_merge_password_others, others, name, others)
+        }
+        FailureReason.MERGE_UNREADABLE -> R.string.error_merge_title to if (others == 0) {
+            stringResource(R.string.error_merge_unreadable, name)
+        } else {
+            pluralStringResource(R.plurals.error_merge_unreadable_others, others, name, others)
+        }
     }
     Box(
         modifier = modifier
@@ -67,7 +81,7 @@ internal fun FailureMessage(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(text),
+                text = text,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -97,7 +111,7 @@ internal fun FailureMessage(
 @Composable
 private fun FailureMessagePreview() {
     FailureMessage(
-        reason = FailureReason.TEMPORARY,
+        failure = DocumentState.Failed(FailureReason.TEMPORARY),
         onOpenAnother = {},
         onRetry = {},
     )

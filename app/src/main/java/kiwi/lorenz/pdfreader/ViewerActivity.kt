@@ -184,12 +184,13 @@ open class ViewerActivity : ComponentActivity() {
                 IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
             else -> listOfNotNull(intent.data)
         }
-        // Shared images are made into a PDF.
+        // Shared images are made into a PDF, several shared PDFs merged.
         val isImages = intent.type?.startsWith("image/") == true
         when {
             entryId != null -> viewModel.openRecent(entryId)
             uris.isEmpty() -> return false
             isOwnTask && isImages -> viewModel.openImages(uris)
+            isOwnTask && uris.size > 1 -> viewModel.mergePdfs(uris)
             isOwnTask -> viewModel.openFromOtherApp(uris.first())
             else -> viewModel.openPicked(uris.first())
         }

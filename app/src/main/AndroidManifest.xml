@@ -67,6 +67,14 @@
 
                 <data android:mimeType="application/pdf" />
             </intent-filter>
+            <!-- Several PDFs shared to the app are merged into one -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
             <!-- Images shared to the app are made into a PDF -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

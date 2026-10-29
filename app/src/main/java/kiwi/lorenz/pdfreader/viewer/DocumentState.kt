@@ -28,7 +28,8 @@ sealed interface DocumentState {
     ) : DocumentState {
         val isWrongPassword get() = wrongAttempts > 0
     }
-    data class Failed(val reason: FailureReason) : DocumentState
+    /** For a failed merge, [fileName] is the file that couldn't be merged, and [others] how many more couldn't. */
+    data class Failed(val reason: FailureReason, val fileName: String? = null, val others: Int = 0) : DocumentState
 }
 
 enum class FailureReason {
@@ -44,4 +45,8 @@ enum class FailureReason {
     TEMPORARY,
     /** Images were shared to make a PDF of, but none could be read. */
     NO_IMAGES,
+    /** PDFs were shared to merge them, but one is protected and its password isn't remembered. */
+    MERGE_NEEDS_PASSWORD,
+    /** PDFs were shared to merge them, but one couldn't be read. */
+    MERGE_UNREADABLE,
 }

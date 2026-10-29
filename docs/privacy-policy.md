@@ -28,7 +28,7 @@ which other apps cannot access:
   were opened from, and the page you last viewed.
 - **Document copies:** private copies of PDFs opened from other apps, as
   Android allows access to such files only while they are open, and PDFs
-  made from images you share to the app.
+  made from images or PDFs you share to the app.
 - **Filled-in forms:** your entries in PDF forms, saved automatically. Forms
   in password-protected documents stay protected by the same password.
 - **Thumbnails:** preview images of first pages. Password-protected documents
@@ -55,7 +55,7 @@ storage deletes all of its data.
 
 The app requests no permissions. It can only open files you choose, through
 the system file picker, by opening a PDF from another app or by sharing
-images to it.
+images or PDFs to it.
 
 ## Children
 

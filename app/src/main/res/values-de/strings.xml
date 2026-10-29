@@ -138,6 +138,17 @@
     <string name="error_temporary">Versuch es noch einmal. Wenn das immer wieder passiert, ist die Datei vielleicht beschädigt.</string>
     <string name="error_no_images_title">PDF konnte nicht erstellt werden</string>
     <string name="error_no_images">PDF Penguin konnte diese Bilder nicht lesen.</string>
+    <string name="error_merge_title">PDFs konnten nicht zusammengeführt werden</string>
+    <string name="error_merge_password">%1$s ist mit einem Passwort geschützt. Öffne es einmal in PDF Penguin mit „Passwort speichern“ und teile die PDFs dann noch einmal.</string>
+    <plurals name="error_merge_password_others">
+        <item quantity="one">%1$s und %2$d weiteres PDF sind mit Passwörtern geschützt. Öffne sie einmal in PDF Penguin mit „Passwort speichern“ und teile die PDFs dann noch einmal.</item>
+        <item quantity="other">%1$s und %2$d weitere PDFs sind mit Passwörtern geschützt. Öffne sie einmal in PDF Penguin mit „Passwort speichern“ und teile die PDFs dann noch einmal.</item>
+    </plurals>
+    <string name="error_merge_unreadable">%1$s konnte nicht gelesen werden. Es ist vielleicht beschädigt oder kein PDF.</string>
+    <plurals name="error_merge_unreadable_others">
+        <item quantity="one">%1$s und %2$d weitere Datei konnten nicht gelesen werden. Sie sind vielleicht beschädigt oder keine PDFs.</item>
+        <item quantity="other">%1$s und %2$d weitere Dateien konnten nicht gelesen werden. Sie sind vielleicht beschädigt oder keine PDFs.</item>
+    </plurals>
     <string name="open_another">Anderes PDF öffnen</string>
     <string name="try_again">Noch einmal versuchen</string>
 </resources>
