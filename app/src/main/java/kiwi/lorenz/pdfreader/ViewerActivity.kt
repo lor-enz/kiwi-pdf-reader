@@ -69,6 +69,7 @@ open class ViewerActivity : ComponentActivity() {
         override fun clearFilledFields() = viewModel.clearFilledFields()
         override fun goHome() = this@ViewerActivity.goHome()
         override suspend fun documentInfo() = viewModel.documentInfo()
+        override fun createdNoticeShown() = viewModel.createdNoticeShown()
         override fun showMessage(message: Int) = viewModel.message.show(message)
         override fun messageShown() = viewModel.message.shown()
     }
@@ -114,6 +115,7 @@ open class ViewerActivity : ComponentActivity() {
                 pendingRestorePage = viewModel.pendingRestorePage,
                 presentationPage = viewModel.presentationPage,
                 isFilledIn = viewModel.isFilledIn,
+                createdNotice = viewModel.createdNotice,
                 message = viewModel.message.current,
                 actions = actions,
             )
@@ -176,15 +178,20 @@ open class ViewerActivity : ComponentActivity() {
     /** False if the intent has nothing to open. */
     private fun handleIntent(intent: Intent): Boolean {
         val entryId = intent.getStringExtra(EXTRA_ENTRY_ID)
-        val uri = when (intent.action) {
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-            else -> intent.data
+        val uris = when (intent.action) {
+            Intent.ACTION_SEND -> listOfNotNull(IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java))
+            Intent.ACTION_SEND_MULTIPLE ->
+                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
+            else -> listOfNotNull(intent.data)
         }
+        // Shared images are made into a PDF.
+        val isImages = intent.type?.startsWith("image/") == true
         when {
             entryId != null -> viewModel.openRecent(entryId)
-            uri == null -> return false
-            isOwnTask -> viewModel.openFromOtherApp(uri)
-            else -> viewModel.openPicked(uri)
+            uris.isEmpty() -> return false
+            isOwnTask && isImages -> viewModel.openImages(uris)
+            isOwnTask -> viewModel.openFromOtherApp(uris.first())
+            else -> viewModel.openPicked(uris.first())
         }
         return true
     }

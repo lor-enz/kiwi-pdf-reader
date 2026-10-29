@@ -20,6 +20,7 @@ import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.models.FormEditInfo
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.ViewerActivity
+import kiwi.lorenz.pdfreader.create.createPdfFromImages
 import kiwi.lorenz.pdfreader.document.UNSAVED_FORMS_DIR
 import kiwi.lorenz.pdfreader.document.savePdfCopy
 import kiwi.lorenz.pdfreader.pdf.DocumentInfo
@@ -43,6 +44,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /** One open document, see [ViewerActivity]. */
 class ViewerViewModel @VisibleForTesting internal constructor(
@@ -88,6 +91,13 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     /** For the viewer's snackbar. */
     val message = SnackbarMessage()
+
+    /**
+     * Set once a PDF made from shared images has opened, so the viewer offers to save it: it
+     * exists only in the app until then. How many images couldn't be read and were left out.
+     */
+    var createdNotice by mutableStateOf<Int?>(null)
+        private set
 
     /**
      * Another task whose viewer already shows the requested document. A document is open in one
@@ -158,6 +168,40 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         }
     }
 
+    /**
+     * Images shared by another app: they're made into a PDF, which is kept like a copy of a file
+     * from another app.
+     */
+    fun openImages(uris: List<Uri>) {
+        if (uris.any { it.scheme != ContentResolver.SCHEME_CONTENT }) {
+            resetForOpen()
+            documentState = DocumentState.Failed(FailureReason.NO_PERMISSION)
+            return
+        }
+        launchOpen {
+            // Made before, see openFromOtherApp.
+            store.openIn(taskId)?.also { store.touch(it.id) }?.let { return@launchOpen Target(it) }
+            val app = getApplication<Application>()
+            val file = File(File(app.cacheDir, CREATED_DIR).apply { mkdirs() }, "$taskId.pdf")
+            val created = app.createPdfFromImages(uris, file)
+            if (created.pageCount == 0) throw CannotOpen(FailureReason.NO_IMAGES)
+            val name = if (uris.size == 1) {
+                displayName(uris.single()).substringBeforeLast('.') + ".pdf"
+            } else {
+                val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH.mm"))
+                app.getString(R.string.images_pdf_name, time)
+            }
+            val entry = store.importCopy(Uri.fromFile(file), name)
+            // Without an entry (e.g. storage full) it opens from the cache.
+            if (entry != null) file.delete()
+            if (entry == null) {
+                Target(null, Uri.fromFile(file), name, skippedImages = created.skipped)
+            } else {
+                Target(entry, entry.uri.toUri(), entry.name, skippedImages = created.skipped)
+            }
+        }
+    }
+
     /** Opens the document again after a failure that's most likely passing. */
     fun retry() {
         val id = retryEntryId ?: return
@@ -195,6 +239,10 @@ class ViewerViewModel @VisibleForTesting internal constructor(
     fun onReturned() {
         val id = openEntryId ?: return
         viewModelScope.launch { store.touch(id) }
+    }
+
+    fun createdNoticeShown() {
+        createdNotice = null
     }
 
     fun onPageRestored() {
@@ -304,10 +352,22 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     // Loading
 
-    /** What to open: a recent entry, or a bare URI when it couldn't be added to the list. */
-    private class Target(val entry: RecentFile?, val uri: Uri, val name: String, val isFilledIn: Boolean = false) {
+    /**
+     * What to open: a recent entry, or a bare URI when it couldn't be added to the list.
+     * [skippedImages] is set for a PDF just made from images, see [createdNotice].
+     */
+    private class Target(
+        val entry: RecentFile?,
+        val uri: Uri,
+        val name: String,
+        val isFilledIn: Boolean = false,
+        val skippedImages: Int? = null,
+    ) {
         constructor(entry: RecentFile) : this(entry, entry.uri.toUri(), entry.name)
     }
+
+    /** Thrown by [launchOpen]'s resolve when there's nothing to open, for [reason]. */
+    private class CannotOpen(val reason: FailureReason) : Exception()
 
     private fun loadedDocument() = documentState as? DocumentState.Loaded
 
@@ -316,7 +376,12 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         resetForOpen()
         documentState = DocumentState.Loading
         loadJob = viewModelScope.launch {
-            val target = resolve()
+            val target = try {
+                resolve()
+            } catch (e: CannotOpen) {
+                documentState = DocumentState.Failed(e.reason)
+                return@launch
+            }
             if (target == null) {
                 documentState = DocumentState.Failed(FailureReason.UNAVAILABLE)
                 return@launch
@@ -370,6 +435,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
             if (entry != null) onOpened(entry, document, title, password, rememberPassword)
             form = (document as? EditablePdfDocument)?.let { FormAutosave(it, entry?.id, store, viewModelScope) }
             isFilledIn = target.isFilledIn
+            createdNotice = target.skippedImages
             DocumentState.Loaded(
                 document = document,
                 name = target.name,
@@ -442,6 +508,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         passwordTarget = null
         openPassword = null
         retryEntryId = null
+        createdNotice = null
     }
 
     private fun closeDocument() {
@@ -476,5 +543,6 @@ class ViewerViewModel @VisibleForTesting internal constructor(
         const val KEY_OPEN_ENTRY = "openEntryId"
         const val KEY_PRESENTATION_PAGE = "presentationPage"
         const val RETRY_DELAY_MS = 500L
+        const val CREATED_DIR = "created"
     }
 }

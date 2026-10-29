@@ -87,6 +87,15 @@
     <string name="save_copy">Save a copy</string>
     <string name="copy_saved">Copy saved</string>
     <string name="save_failed">The copy couldn\'t be saved.</string>
+    <!-- A PDF made from images shared to the app; exists only in the app until saved -->
+    <string name="pdf_created">PDF created</string>
+    <plurals name="pdf_created_skipped">
+        <item quantity="one">PDF created. %d image couldn\'t be read.</item>
+        <item quantity="other">PDF created. %d images couldn\'t be read.</item>
+    </plurals>
+    <string name="save">Save</string>
+    <!-- File name of a PDF made from several images; %1$s is the date and time -->
+    <string name="images_pdf_name">Images %1$s.pdf</string>
     <string name="with_filled_in_fields">With your filled-in fields</string>
     <string name="clear_filled_in">Clear filled-in fields</string>
     <!-- Leaves the document for the app's home screen with the recent files -->
@@ -144,6 +153,8 @@
     <string name="error_unavailable">It may have been moved or deleted.</string>
     <string name="error_temporary_title">Couldn\'t open this PDF</string>
     <string name="error_temporary">Try again. If it keeps happening, the file may be damaged.</string>
+    <string name="error_no_images_title">Couldn\'t make a PDF</string>
+    <string name="error_no_images">PDF Penguin couldn\'t read these images.</string>
     <string name="open_another">Open another PDF</string>
     <string name="try_again">Try again</string>
 </resources>

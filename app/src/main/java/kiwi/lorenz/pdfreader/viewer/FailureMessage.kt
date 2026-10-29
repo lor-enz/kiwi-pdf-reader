@@ -38,6 +38,7 @@ internal fun FailureMessage(
         FailureReason.NO_PERMISSION -> R.string.error_no_permission_title to R.string.error_no_permission
         FailureReason.UNAVAILABLE -> R.string.error_unavailable_title to R.string.error_unavailable
         FailureReason.TEMPORARY -> R.string.error_temporary_title to R.string.error_temporary
+        FailureReason.NO_IMAGES -> R.string.error_no_images_title to R.string.error_no_images
     }
     Box(
         modifier = modifier

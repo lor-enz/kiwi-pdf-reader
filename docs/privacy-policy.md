@@ -4,7 +4,7 @@ title: PDF Penguin – Privacy Policy
 
 # Privacy Policy
 
-**PDF Penguin** · Last updated: October 25, 2026
+**PDF Penguin** · Last updated: October 29, 2026
 
 This policy describes how PDF Penguin ("the app"), developed by Lorenz
 Burghardt, handles your data. In short: the app collects no personal data,
@@ -27,7 +27,8 @@ which other apps cannot access:
 - **Recent files:** the names and titles of documents you opened, where they
   were opened from, and the page you last viewed.
 - **Document copies:** private copies of PDFs opened from other apps, as
-  Android allows access to such files only while they are open.
+  Android allows access to such files only while they are open, and PDFs
+  made from images you share to the app.
 - **Filled-in forms:** your entries in PDF forms, saved automatically. Forms
   in password-protected documents stay protected by the same password.
 - **Thumbnails:** preview images of first pages. Password-protected documents
@@ -53,7 +54,8 @@ storage deletes all of its data.
 ## Permissions
 
 The app requests no permissions. It can only open files you choose, through
-the system file picker or by opening a PDF from another app.
+the system file picker, by opening a PDF from another app or by sharing
+images to it.
 
 ## Children
 

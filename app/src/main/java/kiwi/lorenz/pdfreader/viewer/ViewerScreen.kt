@@ -35,13 +35,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,6 +102,7 @@ interface ViewerActions {
     fun clearFilledFields()
     fun goHome()
     suspend fun documentInfo(): DocumentInfo
+    fun createdNoticeShown()
     fun showMessage(@StringRes message: Int)
     fun messageShown()
 }
@@ -105,7 +110,8 @@ interface ViewerActions {
 /**
  * [pendingRestorePage] is the page to scroll to once the document shows, [presentationPage] the
  * page presentation mode shows (null outside it), [isFilledIn] whether the document shows
- * filled-in form fields, and [message] a string resource for the snackbar.
+ * filled-in form fields, [createdNotice] set when a PDF was just made from images (see
+ * [ViewerViewModel.createdNotice]), and [message] a string resource for the snackbar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,6 +121,7 @@ fun ViewerScreen(
     pendingRestorePage: Int?,
     presentationPage: Int?,
     isFilledIn: Boolean,
+    createdNotice: Int?,
     message: Int?,
     actions: ViewerActions,
 ) {
@@ -184,6 +191,24 @@ fun ViewerScreen(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    // A PDF made from shared images exists only in the app until it's saved somewhere else.
+    if (createdNotice != null) {
+        val text = if (createdNotice == 0) {
+            stringResource(R.string.pdf_created)
+        } else {
+            pluralStringResource(R.plurals.pdf_created_skipped, createdNotice, createdNotice)
+        }
+        val saveLabel = stringResource(R.string.save)
+        LaunchedEffect(createdNotice) {
+            // Cleared right away, as with MessageEffect, so it's shown once.
+            actions.createdNoticeShown()
+            scope.launch {
+                // With an action, the default duration would be indefinite.
+                val result = snackbarHostState.showSnackbar(text, saveLabel, duration = SnackbarDuration.Long)
+                if (result == SnackbarResult.ActionPerformed) actions.saveCopy()
+            }
+        }
+    }
     var jumpTarget by remember { mutableStateOf<OutlineItem?>(null) }
     val outline = loaded?.outline.orEmpty()
 

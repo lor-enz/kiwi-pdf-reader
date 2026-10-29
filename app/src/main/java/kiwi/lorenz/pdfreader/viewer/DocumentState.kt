@@ -42,4 +42,6 @@ enum class FailureReason {
     UNAVAILABLE,
     /** Opened before and still looks like a PDF, so most likely a passing failure; worth a retry. */
     TEMPORARY,
+    /** Images were shared to make a PDF of, but none could be read. */
+    NO_IMAGES,
 }

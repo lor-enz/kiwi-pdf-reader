@@ -76,6 +76,13 @@
     <string name="save_copy">Kopie speichern</string>
     <string name="copy_saved">Kopie gespeichert</string>
     <string name="save_failed">Die Kopie konnte nicht gespeichert werden.</string>
+    <string name="pdf_created">PDF erstellt</string>
+    <plurals name="pdf_created_skipped">
+        <item quantity="one">PDF erstellt. %d Bild konnte nicht gelesen werden.</item>
+        <item quantity="other">PDF erstellt. %d Bilder konnten nicht gelesen werden.</item>
+    </plurals>
+    <string name="save">Speichern</string>
+    <string name="images_pdf_name">Bilder %1$s.pdf</string>
     <string name="with_filled_in_fields">Mit deinen ausgefüllten Feldern</string>
     <string name="clear_filled_in">Ausgefüllte Felder leeren</string>
     <string name="go_home">Startseite von PDF Penguin</string>
@@ -129,6 +136,8 @@
     <string name="error_unavailable">Es wurde vielleicht verschoben oder gelöscht.</string>
     <string name="error_temporary_title">Dieses PDF konnte nicht geöffnet werden</string>
     <string name="error_temporary">Versuch es noch einmal. Wenn das immer wieder passiert, ist die Datei vielleicht beschädigt.</string>
+    <string name="error_no_images_title">PDF konnte nicht erstellt werden</string>
+    <string name="error_no_images">PDF Penguin konnte diese Bilder nicht lesen.</string>
     <string name="open_another">Anderes PDF öffnen</string>
     <string name="try_again">Noch einmal versuchen</string>
 </resources>

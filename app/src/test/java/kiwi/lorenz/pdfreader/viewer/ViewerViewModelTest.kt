@@ -10,7 +10,9 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfLoader
 import androidx.pdf.PdfPasswordException
 import androidx.pdf.RenderParams
+import kiwi.lorenz.pdfreader.pdf.ByteArraySource
 import kiwi.lorenz.pdfreader.pdf.OutlineItem
+import kiwi.lorenz.pdfreader.pdf.PdfMetadataReader
 import kiwi.lorenz.pdfreader.recent.PasswordEncryption
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.RecentFilesStore
@@ -28,12 +30,16 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowAppTask
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.lang.reflect.Proxy
 import java.time.Duration
+import javax.imageio.ImageIO
 
 /**
  * How the viewer opens documents, with a fake PDF library ([FakeLoader]) and the real store.
@@ -112,6 +118,45 @@ class ViewerViewModelTest {
 
         assertEquals(DocumentState.Failed(FailureReason.NO_PERMISSION), viewModel.documentState)
         assertEquals(emptyList<Uri>(), loader.attempts.map { it.first })
+    }
+
+    @Test
+    fun `shared images are made into a PDF that's kept like a copy`() {
+        viewModel.openImages(listOf(provide("IMG_1.jpg", jpeg()), provide("IMG_2.jpg", jpeg())))
+
+        val loaded = awaitLoaded()
+        val entry = store.entries.value.single()
+        assertTrue(entry.isCopy)
+        assertEquals(entry.uri, loaded.document.uri.toString())
+        assertTrue(loaded.name, loaded.name.startsWith("Images ") && loaded.name.endsWith(".pdf"))
+        assertEquals(2, PdfMetadataReader(ByteArraySource(File(loaded.document.uri.path!!).readBytes())).read().pageCount)
+        // Offered to be saved, as it exists only in the app.
+        assertEquals(0, viewModel.createdNotice)
+    }
+
+    @Test
+    fun `a PDF of one image is named after it`() {
+        viewModel.openImages(listOf(provide("IMG_1.jpg", jpeg())))
+
+        assertEquals("IMG_1.pdf", awaitLoaded().name)
+    }
+
+    // Robolectric's default graphics decode anything.
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test
+    fun `images that can't be read are left out, and without any there's no PDF`() {
+        val notes = provide("notes.jpg", "Just some notes")
+        viewModel.openImages(listOf(provide("IMG_1.jpg", jpeg()), notes))
+        awaitLoaded()
+        assertEquals(1, viewModel.createdNotice)
+
+        // Each share gets a card of its own.
+        runningTasks(TASK, OTHER_TASK)
+        val other = viewModel(SavedStateHandle()).apply { taskId = OTHER_TASK }
+        other.openImages(listOf(notes))
+        assertEquals(DocumentState.Failed(FailureReason.NO_IMAGES), awaitState(other) { it is DocumentState.Failed })
+        assertNull(other.createdNotice)
+        assertEquals(1, store.entries.value.size)
     }
 
     @Test
@@ -291,6 +336,12 @@ class ViewerViewModelTest {
     /** A recent entry for a file handed over by another app. */
     private fun copy(name: String, content: String = PDF): RecentFile =
         runBlocking { store.importCopy(provide(name, content), name)!! }
+
+    private fun jpeg(): ByteArray {
+        val output = ByteArrayOutputStream()
+        ImageIO.write(BufferedImage(40, 30, BufferedImage.TYPE_INT_RGB), "jpg", output)
+        return output.toByteArray()
+    }
 
     /** Stores a filled-in version of [entry]'s form. */
     private fun fillIn(entry: RecentFile) = runBlocking {

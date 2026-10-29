@@ -18,7 +18,7 @@
 - Packages are by feature, each with its screens and logic: `viewer`,
   `home`, `settings`, `defaultapp`, `info`, `recent`, `document` (open,
   print, share), `pdf` (reads what `androidx.pdf` can't: metadata, the
-  table of contents). `ui` holds only what several features share (sheets,
+  table of contents), `create` (makes PDFs of shared images). `ui` holds only what several features share (sheets,
   dialogs, `TestTags`, theme), `util` small helpers. The root holds only
   `PdfPenguinApp` and the activities, which keep their names and package
   (manifest, launcher, pinned shortcuts). Put a new file in the package of
@@ -78,6 +78,9 @@
     the field values of an entry's stored filled-in form, or of a PDF on
     the device, and whether it needs a password.
 - With a text field focused, the first back only closes the keyboard.
+- To share several images, push them to Download, select them in the Files
+  app (long press the first, tap the others) and share from there: `am`
+  can't send `SEND_MULTIPLE`. Files keeps the selection after sharing.
 - Form fields are tapped by coordinates. A document that reopens at its
   last position may sit lower on screen, so take a screenshot first. A tap
   only counts after about 300 ms (the view waits for a double tap), so
@@ -517,6 +520,22 @@
   system's per-app language setting lists both languages
   (`generateLocaleConfig`, default locale in `res/resources.properties`).
   Add every new string to both files; lint fails on a missing translation.
+
+- Images shared to the app (`SEND`/`SEND_MULTIPLE` with `image/*`) are
+  made into a PDF (`create/`), one image per page in the order shared, no
+  reorder screen. It opens in a card of its own and is kept like a copy
+  of a file from another app (cleanup included). A snackbar says "PDF
+  created" (and how many images couldn't be read) with Save, which opens
+  the system's Save to dialog, as the PDF exists only in the app until
+  then. Each page has its image's proportions and A4's width: the viewer
+  fits the widest page, so with a fixed long side a tall screenshot showed
+  narrow beside photos. `ImagePdfWriter` writes the PDF itself: JPEGs are
+  embedded as they are (no quality loss, small files), turned by the
+  page's matrix as EXIF says. Other formats are decoded (at most 4096 px)
+  and PNG, GIF and BMP stay lossless (Flate), others (HEIC, WebP) become
+  JPEGs; transparency becomes white. Images that can't be read are left
+  out; with none left, the viewer shows "Couldn't make a PDF". Two PDFs of
+  the same images differ (creation date), so each gets an entry.
 
 # Known issues
 

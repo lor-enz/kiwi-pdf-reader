@@ -42,8 +42,10 @@ class TestFilesProvider : ContentProvider() {
         lateinit var dir: File
 
         /** Writes [content] to a file of this provider and returns its URI. */
-        fun provide(name: String, content: String): Uri {
-            File(dir, name).writeText(content)
+        fun provide(name: String, content: String): Uri = provide(name, content.toByteArray())
+
+        fun provide(name: String, content: ByteArray): Uri {
+            File(dir, name).writeBytes(content)
             return Uri.parse("content://$AUTHORITY/$name")
         }
     }
