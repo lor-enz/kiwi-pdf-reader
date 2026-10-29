@@ -9,7 +9,6 @@ import kiwi.lorenz.pdfreader.pdf.PdfStream
 import kiwi.lorenz.pdfreader.pdf.PdfString
 import kiwi.lorenz.pdfreader.pdf.decodePdfText
 import java.io.OutputStream
-import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.IdentityHashMap
 
@@ -62,7 +61,10 @@ class PdfMerger(output: OutputStream) {
     /** Writes what refers to all documents, and the file's index. Needs at least one page. */
     fun finish(created: ZonedDateTime) {
         check(pages.isNotEmpty()) { "A PDF needs a page" }
-        writer.writeObject(PAGES, "<< /Type /Pages /Kids [${pages.joinToString(" ") { "$it 0 R" }}] /Count ${pages.size} >>")
+        writer.writeObject(
+            PAGES,
+            mapOf("Type" to PdfName("Pages"), "Kids" to pages.map { PdfRef(it, 0) }, "Count" to pages.size),
+        )
         writeOutline()
 
         val catalog = linkedMapOf<String, Any?>(
@@ -84,9 +86,9 @@ class PdfMerger(output: OutputStream) {
             if (layerRadioGroups.isNotEmpty()) config["RBGroups"] = layerRadioGroups
             catalog["OCProperties"] = mapOf("OCGs" to layers, "D" to config)
         }
-        writer.writeObject(CATALOG, serialize(catalog))
-        writer.writeObject(INFO, "<< /Creator ($APP_NAME) /Producer ($APP_NAME) /CreationDate (${pdfDate(created)}) >>")
-        writer.finish(nextNumber, "/Root $CATALOG 0 R /Info $INFO 0 R")
+        writer.writeObject(CATALOG, catalog)
+        writer.writeInfo(INFO, created)
+        writer.finish(nextNumber, CATALOG, INFO)
     }
 
     // Copying
@@ -110,7 +112,7 @@ class PdfMerger(output: OutputStream) {
                 val dict = page.inherited + page.dict - DROPPED_PAGE_KEYS
                 val copy = convertDict(dict) + ("Parent" to PdfRef(PAGES, 0))
                 val number = numbers.getValue(page.ref.number)
-                writer.writeObject(number, serialize(copy))
+                writer.writeObject(number, copy)
                 pages += number
                 drain()
             }
@@ -137,8 +139,8 @@ class PdfMerger(output: OutputStream) {
                 when (val value = file.resolve(PdfRef(old, 0))) {
                     is PdfStream -> {
                         val data = file.encodedStream(value) ?: throw MergeException(needsPassword = false)
-                        val entries = serialize(convertDict(value.dict - "Length")).removeSurrounding("<<", ">>").trim()
-                        writer.writeStream(number, entries, data.length, data.writeTo)
+                        // The length is written anew; a reference to it would copy an object nothing needs.
+                        writer.writeStream(number, convertDict(value.dict - "Length"), data.length, data.writeTo)
                     }
                     is Map<*, *> -> {
                         @Suppress("UNCHECKED_CAST")
@@ -146,10 +148,10 @@ class PdfMerger(output: OutputStream) {
                         val type = (file.resolve(dict["Type"]) as? PdfName)?.value
                         // What belongs to the whole document isn't copied, as it would bring all of it.
                         val copy = if (type in DOCUMENT_TYPES) null else convertDict(dict + overrides[old].orEmpty())
-                        writer.writeObject(number, serialize(copy))
+                        writer.writeObject(number, copy)
                     }
                     // A reference to an object that isn't there means null.
-                    else -> writer.writeObject(number, serialize(convert(value)))
+                    else -> writer.writeObject(number, convert(value))
                 }
             }
         }
@@ -357,7 +359,7 @@ class PdfMerger(output: OutputStream) {
                 item.destination?.let { dict["Dest"] = it }
                 item.action?.let { dict["A"] = it }
                 dict += item.style
-                writer.writeObject(numbers.getValue(item), serialize(dict))
+                writer.writeObject(numbers.getValue(item), dict)
                 write(item.children, numbers.getValue(item))
             }
         }
@@ -366,8 +368,12 @@ class PdfMerger(output: OutputStream) {
         val shown = outline.sumOf { 1 + if (it.isOpen) it.descendantsShown else 0 }
         writer.writeObject(
             OUTLINES,
-            "<< /Type /Outlines /First ${numbers.getValue(outline.first())} 0 R " +
-                "/Last ${numbers.getValue(outline.last())} 0 R /Count $shown >>",
+            mapOf(
+                "Type" to PdfName("Outlines"),
+                "First" to PdfRef(numbers.getValue(outline.first()), 0),
+                "Last" to PdfRef(numbers.getValue(outline.last()), 0),
+                "Count" to shown,
+            ),
         )
     }
 
@@ -392,62 +398,3 @@ class PdfMerger(output: OutputStream) {
         val PDF_EXTENSION = Regex("""\.pdf$""", RegexOption.IGNORE_CASE)
     }
 }
-
-/** A text string: PDFDocEncoding's ASCII part, or UTF-16 for anything else. */
-private fun textString(text: String): PdfString =
-    if (text.all { it in ' '..'~' }) {
-        PdfString(text.toByteArray(Charsets.US_ASCII))
-    } else {
-        PdfString(byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + text.toByteArray(Charsets.UTF_16BE))
-    }
-
-/** [value] as written in a PDF; strings in hex, which needs no escaping. */
-private fun serialize(value: Any?): String = StringBuilder().also { serialize(value, it) }.toString()
-
-private fun serialize(value: Any?, out: StringBuilder) {
-    when (value) {
-        null -> out.append("null")
-        is Boolean, is Long, is Int -> out.append(value)
-        is Double -> out.append(if (value.isFinite()) BigDecimal.valueOf(value).stripTrailingZeros().toPlainString() else "0")
-        is PdfName -> name(value.value, out)
-        is PdfString -> {
-            out.append('<')
-            value.bytes.forEach { out.append(HEX[(it.toInt() shr 4) and 0xF]).append(HEX[it.toInt() and 0xF]) }
-            out.append('>')
-        }
-        is PdfRef -> out.append(value.number).append(' ').append(value.generation).append(" R")
-        is List<*> -> {
-            out.append('[')
-            value.forEachIndexed { index, item ->
-                if (index > 0) out.append(' ')
-                serialize(item, out)
-            }
-            out.append(']')
-        }
-        is Map<*, *> -> {
-            out.append("<<")
-            value.forEach { (key, item) ->
-                out.append(' ')
-                name(key as String, out)
-                out.append(' ')
-                serialize(item, out)
-            }
-            out.append(" >>")
-        }
-        else -> out.append("null")
-    }
-}
-
-/** Characters that aren't regular, or would end the name, are written as `#xx`. */
-private fun name(value: String, out: StringBuilder) {
-    out.append('/')
-    for (c in value) {
-        if (c in '!'..'~' && c !in "()<>[]{}/%#") {
-            out.append(c)
-        } else {
-            out.append('#').append(HEX[(c.code shr 4) and 0xF]).append(HEX[c.code and 0xF])
-        }
-    }
-}
-
-private const val HEX = "0123456789ABCDEF"

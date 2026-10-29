@@ -1,5 +1,7 @@
 package kiwi.lorenz.pdfreader.create
 
+import kiwi.lorenz.pdfreader.pdf.PdfName
+import kiwi.lorenz.pdfreader.pdf.PdfRef
 import java.io.OutputStream
 import java.time.ZonedDateTime
 import java.util.Locale
@@ -44,30 +46,41 @@ class ImagePdfWriter(output: OutputStream) {
     fun addPage(image: PdfImage) {
         val (shownWidth, shownHeight) = if (image.isTransposed) image.height to image.width else image.width to image.height
         val width = PAGE_WIDTH
-        val height = shownHeight * PAGE_WIDTH / shownWidth
+        val height = round(shownHeight * PAGE_WIDTH / shownWidth)
 
         val imageNumber = nextNumber++
-        val colorSpace = if (image.components == 1) "/DeviceGray" else "/DeviceRGB"
         val filter = when (image.encoding) {
-            PdfImage.Encoding.JPEG -> "/DCTDecode"
-            PdfImage.Encoding.FLATE -> "/FlateDecode"
+            PdfImage.Encoding.JPEG -> "DCTDecode"
+            PdfImage.Encoding.FLATE -> "FlateDecode"
         }
         writer.writeStream(
             imageNumber,
-            "/Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} " +
-                "/ColorSpace $colorSpace /BitsPerComponent 8 /Filter $filter",
+            mapOf(
+                "Type" to PdfName("XObject"),
+                "Subtype" to PdfName("Image"),
+                "Width" to image.width,
+                "Height" to image.height,
+                "ColorSpace" to PdfName(if (image.components == 1) "DeviceGray" else "DeviceRGB"),
+                "BitsPerComponent" to 8,
+                "Filter" to PdfName(filter),
+            ),
             image.data,
         )
 
         val contentsNumber = nextNumber++
         val matrix = placement(image.orientation, width, height).joinToString(" ") { number(it) }
-        writer.writeStream(contentsNumber, "", "q $matrix cm /Im0 Do Q".toByteArray(Charsets.US_ASCII))
+        writer.writeStream(contentsNumber, emptyMap(), "q $matrix cm /Im0 Do Q".toByteArray(Charsets.US_ASCII))
 
         val pageNumber = nextNumber++
         writer.writeObject(
             pageNumber,
-            "<< /Type /Page /Parent $PAGES 0 R /MediaBox [0 0 ${number(width)} ${number(height)}] " +
-                "/Resources << /XObject << /Im0 $imageNumber 0 R >> >> /Contents $contentsNumber 0 R >>",
+            mapOf(
+                "Type" to PdfName("Page"),
+                "Parent" to PdfRef(PAGES, 0),
+                "MediaBox" to listOf(0, 0, width, height),
+                "Resources" to mapOf("XObject" to mapOf("Im0" to PdfRef(imageNumber, 0))),
+                "Contents" to PdfRef(contentsNumber, 0),
+            ),
         )
         pages += pageNumber
     }
@@ -75,10 +88,13 @@ class ImagePdfWriter(output: OutputStream) {
     /** Writes what refers to the pages, and the file's index. Needs at least one page. */
     fun finish(created: ZonedDateTime) {
         check(pages.isNotEmpty()) { "A PDF needs a page" }
-        writer.writeObject(PAGES, "<< /Type /Pages /Kids [${pages.joinToString(" ") { "$it 0 R" }}] /Count ${pages.size} >>")
-        writer.writeObject(CATALOG, "<< /Type /Catalog /Pages $PAGES 0 R >>")
-        writer.writeObject(INFO, "<< /Creator ($APP_NAME) /Producer ($APP_NAME) /CreationDate (${pdfDate(created)}) >>")
-        writer.finish(nextNumber, "/Root $CATALOG 0 R /Info $INFO 0 R")
+        writer.writeObject(
+            PAGES,
+            mapOf("Type" to PdfName("Pages"), "Kids" to pages.map { PdfRef(it, 0) }, "Count" to pages.size),
+        )
+        writer.writeObject(CATALOG, mapOf("Type" to PdfName("Catalog"), "Pages" to PdfRef(PAGES, 0)))
+        writer.writeInfo(INFO, created)
+        writer.finish(nextNumber, CATALOG, INFO)
     }
 
     companion object {
@@ -104,6 +120,9 @@ class ImagePdfWriter(output: OutputStream) {
             8 -> listOf(0.0, height, -width, 0.0, width, 0.0)
             else -> listOf(width, 0.0, 0.0, height, 0.0, 0.0)
         }
+
+        /** To hundredths of a point, which is plenty and keeps the numbers short. */
+        private fun round(value: Double) = Math.round(value * 100) / 100.0
 
         private fun number(value: Double): String =
             "%.2f".format(Locale.ROOT, value).trimEnd('0').trimEnd('.').let { if (it == "-0") "0" else it }
