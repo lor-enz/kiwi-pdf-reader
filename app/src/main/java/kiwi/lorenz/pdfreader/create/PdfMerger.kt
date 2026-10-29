@@ -12,8 +12,11 @@ import java.io.OutputStream
 import java.time.ZonedDateTime
 import java.util.IdentityHashMap
 
-/** A PDF that can't be merged: protected by a password that's missing or wrong, or damaged. */
-class MergeException(val needsPassword: Boolean) : Exception()
+/**
+ * A PDF that can't be merged: protected by a password that's missing or wrong, or damaged.
+ * [mergePdfs] tells the two apart before merging.
+ */
+class MergeException : Exception()
 
 /**
  * Merges PDFs into one, their pages in the order added. Pages are copied with everything they
@@ -54,7 +57,7 @@ class PdfMerger(output: OutputStream) {
     /** Adds the pages of the PDF in [source], decrypted with [password]. Its file [name] stands for it in the outline. */
     fun add(source: ByteSource, password: String?, name: String) {
         val file = PdfFile(source, password)
-        if (file.isLocked) throw MergeException(needsPassword = true)
+        if (file.isLocked) throw MergeException()
         Copy(file).run(name)
     }
 
@@ -102,9 +105,9 @@ class PdfMerger(output: OutputStream) {
         private val overrides = HashMap<Int, Map<String, Any?>>()
 
         fun run(name: String) {
-            val root = file.root ?: throw MergeException(needsPassword = false)
-            val sourcePages = file.pages { throw MergeException(needsPassword = false) }
-            if (sourcePages.isEmpty()) throw MergeException(needsPassword = false)
+            val root = file.root ?: throw MergeException()
+            val sourcePages = file.pages { throw MergeException() }
+            if (sourcePages.isEmpty()) throw MergeException()
             // Numbered first, so whatever refers to a page (links, annotations) gets the copy.
             sourcePages.forEach { numbers[it.ref.number] = nextNumber++ }
             val sourceFields = renameFields(root)
@@ -139,7 +142,7 @@ class PdfMerger(output: OutputStream) {
                 val number = numbers.getValue(old)
                 when (val value = file.resolve(PdfRef(old, 0))) {
                     is PdfStream -> {
-                        val data = file.encodedStream(value) ?: throw MergeException(needsPassword = false)
+                        val data = file.encodedStream(value) ?: throw MergeException()
                         // The length is written anew; a reference to it would copy an object nothing needs.
                         writer.writeStream(number, convertDict(value.dict - "Length"), data.length, data.writeTo)
                     }

@@ -130,10 +130,9 @@ class PdfMergerTest {
     @Test
     fun `protected documents need their password`() {
         for (password in listOf("", ":wrong")) {
-            val error = assertThrows(MergeException::class.java) {
+            assertThrows(MergeException::class.java) {
                 merge("metadata/table.pdf", "metadata/aes-256-password.pdf$password")
             }
-            assertTrue(error.needsPassword)
         }
     }
 
@@ -153,10 +152,9 @@ class PdfMergerTest {
         val noise = ByteArray(5000) { (it * 31 % 251).toByte() }
         val truncated = bytes("metadata/table.pdf").let { it.copyOf(it.size / 3) }
         for (bytes in listOf(noise, ByteArray(0), truncated)) {
-            val error = assertThrows(MergeException::class.java) {
+            assertThrows(MergeException::class.java) {
                 PdfMerger(ByteArrayOutputStream()).add(ByteArraySource(bytes), null, "broken.pdf")
             }
-            assertFalse(error.needsPassword)
         }
     }
 
