@@ -57,6 +57,10 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+    // Robolectric tests read the app's strings
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
