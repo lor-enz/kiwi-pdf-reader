@@ -43,6 +43,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -126,6 +128,19 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     /** The entry that failed to open for now, see [FailureReason.TEMPORARY]. */
     private var retryEntryId: String? = null
+
+    /** The page to store as the entry's last one, see [onPageChanged]. */
+    private val pageToSave = MutableStateFlow<SavedPage?>(null)
+
+    private data class SavedPage(val entryId: String, val page: Int)
+
+    init {
+        // One at a time, so a page saved later never loses against an earlier one that's
+        // still on its way; pages turned while one is saved only leave the latest.
+        viewModelScope.launch {
+            pageToSave.filterNotNull().collect { store.setLastPage(it.entryId, it.page) }
+        }
+    }
 
     // Opening
 
@@ -283,7 +298,7 @@ class ViewerViewModel @VisibleForTesting internal constructor(
 
     fun onPageChanged(page: Int) {
         val id = openEntryId ?: return
-        viewModelScope.launch { store.setLastPage(id, page) }
+        pageToSave.value = SavedPage(id, page)
     }
 
     /** Presentation mode starts at [page], the one being read. */

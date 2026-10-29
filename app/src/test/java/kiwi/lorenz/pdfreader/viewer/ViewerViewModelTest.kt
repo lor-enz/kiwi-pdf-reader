@@ -385,6 +385,20 @@ class ViewerViewModelTest {
         assertNull(viewModel(savedState).presentationPage)
     }
 
+    @Test
+    fun `the page turned to last is stored, however quickly pages turn`() {
+        val entry = copy("slides.pdf")
+        viewModel.openRecent(entry.id)
+        awaitLoaded()
+
+        for (page in 1..PAGES) viewModel.onPageChanged(page)
+        waitUntil { runBlocking { store.get(entry.id) }?.lastPage == PAGES }
+        // Saves that were still on their way don't come after it.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+        Thread.sleep(200)
+        assertEquals(PAGES, runBlocking { store.get(entry.id) }?.lastPage)
+    }
+
     private fun viewModel(savedState: SavedStateHandle) =
         ViewerViewModel(context, savedState, store, loader, FakeEncryption).apply { taskId = TASK }
 
@@ -472,6 +486,7 @@ class ViewerViewModelTest {
 
     private companion object {
         const val TASK = 6
+        const val PAGES = 50
         const val OTHER_TASK = 5
         const val PDF = "%PDF-1.4"
         const val PAGE_COUNT = 10
