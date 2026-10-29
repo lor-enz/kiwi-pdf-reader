@@ -1,9 +1,9 @@
 package kiwi.lorenz.pdfreader.create
 
 import kiwi.lorenz.pdfreader.pdf.ByteSource
-import kiwi.lorenz.pdfreader.pdf.MAX_DEPTH
 import kiwi.lorenz.pdfreader.pdf.PdfFile
 import kiwi.lorenz.pdfreader.pdf.PdfName
+import kiwi.lorenz.pdfreader.pdf.PdfOutlineNode
 import kiwi.lorenz.pdfreader.pdf.PdfRef
 import kiwi.lorenz.pdfreader.pdf.PdfStream
 import kiwi.lorenz.pdfreader.pdf.PdfString
@@ -103,7 +103,8 @@ class PdfMerger(output: OutputStream) {
 
         fun run(name: String) {
             val root = file.root ?: throw MergeException(needsPassword = false)
-            val sourcePages = pages(root)
+            val sourcePages = file.pages { throw MergeException(needsPassword = false) }
+            if (sourcePages.isEmpty()) throw MergeException(needsPassword = false)
             // Numbered first, so whatever refers to a page (links, annotations) gets the copy.
             sourcePages.forEach { numbers[it.ref.number] = nextNumber++ }
             val sourceFields = renameFields(root)
@@ -126,7 +127,7 @@ class PdfMerger(output: OutputStream) {
                 action = null,
                 style = emptyMap(),
                 isOpen = true,
-                children = outlineItems(root),
+                children = outlineItems(file.outline()),
             )
             drain()
         }
@@ -179,51 +180,14 @@ class PdfMerger(output: OutputStream) {
         private fun convertDict(dict: Map<String, Any?>): Map<String, Any?> {
             // Viewers built on androidx.pdf follow only "go to" actions, so a link's bare destination becomes one.
             if ((file.resolve(dict["Subtype"]) as? PdfName)?.value == "Link" && "Dest" in dict && "A" !in dict) {
-                val action = mapOf("S" to PdfName("GoTo"), "D" to convert(explicitDestination(dict["Dest"])))
+                val action = mapOf("S" to PdfName("GoTo"), "D" to convert(file.explicitDestination(dict["Dest"])))
                 return convertDict(dict - "Dest") + ("A" to action)
             }
             val isGoTo = (file.resolve(dict["S"]) as? PdfName)?.value == "GoTo"
             return dict.mapValues { (key, value) ->
                 // Links and outline items lead to destinations; a "go to" action's is D.
-                if (key == "Dest" || (key == "D" && isGoTo)) convert(explicitDestination(value)) else convert(value)
+                if (key == "Dest" || (key == "D" && isGoTo)) convert(file.explicitDestination(value)) else convert(value)
             }
-        }
-
-        /** A named destination becomes what it names: an array of the page and where on it. */
-        private fun explicitDestination(value: Any?): Any? {
-            val resolved = file.resolve(value)
-            if (resolved !is PdfName && resolved !is PdfString) return value
-            val named = file.resolve(file.namedDestination(resolved))
-            return if (named is Map<*, *>) named["D"] else named
-        }
-
-        // Pages
-
-        /** [inherited] holds what the page tree's nodes give it, unless the page sets it itself. */
-        private inner class SourcePage(val ref: PdfRef, val dict: Map<String, Any?>, val inherited: Map<String, Any?>)
-
-        private fun pages(root: Map<String, Any?>): List<SourcePage> {
-            val tree = file.resolveDict(root["Pages"]) ?: throw MergeException(needsPassword = false)
-            val found = mutableListOf<SourcePage>()
-            val visited = HashSet<Int>()
-
-            fun walk(node: Map<String, Any?>, inherited: Map<String, Any?>, depth: Int) {
-                val here = inherited + INHERITED.mapNotNull { key -> node[key]?.let { key to it } }
-                val kids = file.resolve(node["Kids"]) as? List<*> ?: return
-                for (kid in kids) {
-                    if (kid !is PdfRef || !visited.add(kid.number)) continue
-                    val dict = file.resolveDict(kid) ?: throw MergeException(needsPassword = false)
-                    val isPage = (file.resolve(dict["Type"]) as? PdfName)?.value == "Page" || dict["Kids"] == null
-                    if (isPage) {
-                        found += SourcePage(kid, dict, here)
-                    } else if (depth < MAX_DEPTH) {
-                        walk(dict, here, depth + 1)
-                    }
-                }
-            }
-            walk(tree, emptyMap(), 0)
-            if (found.isEmpty()) throw MergeException(needsPassword = false)
-            return found
         }
 
         // Forms
@@ -293,31 +257,16 @@ class PdfMerger(output: OutputStream) {
 
         // Outline
 
-        private fun outlineItems(root: Map<String, Any?>): List<OutlineItem> {
-            val first = file.resolveDict(root["Outlines"])?.get("First") ?: return emptyList()
-            val visited = HashSet<Int>()
-            var budget = MAX_OUTLINE_ITEMS
-
-            fun items(first: Any?, depth: Int): List<OutlineItem> {
-                if (depth > MAX_DEPTH) return emptyList()
-                val items = ArrayList<OutlineItem>()
-                // Items are linked from first to last; a loop or a broken link ends the list.
-                var ref = first
-                while (ref is PdfRef && visited.add(ref.number) && budget-- > 0) {
-                    val dict = file.resolveDict(ref) ?: break
-                    items += OutlineItem(
-                        title = file.resolve(dict["Title"]) as? PdfString ?: PdfString(ByteArray(0)),
-                        destination = dict["Dest"]?.let { convert(explicitDestination(it)) },
-                        action = dict["A"]?.let(::convert),
-                        style = STYLE.mapNotNull { key -> dict[key]?.let { key to convert(it) } }.toMap(),
-                        isOpen = ((file.resolve(dict["Count"]) as? Number)?.toInt() ?: 0) > 0,
-                        children = items(dict["First"], depth + 1),
-                    )
-                    ref = dict["Next"]
-                }
-                return items
-            }
-            return items(first, 0)
+        private fun outlineItems(nodes: List<PdfOutlineNode>): List<OutlineItem> = nodes.map { node ->
+            val dict = node.dict
+            OutlineItem(
+                title = file.resolve(dict["Title"]) as? PdfString ?: PdfString(ByteArray(0)),
+                destination = dict["Dest"]?.let { convert(file.explicitDestination(it)) },
+                action = dict["A"]?.let(::convert),
+                style = STYLE.mapNotNull { key -> dict[key]?.let { key to convert(it) } }.toMap(),
+                isOpen = node.isOpen,
+                children = outlineItems(node.children),
+            )
         }
     }
 
@@ -383,10 +332,6 @@ class PdfMerger(output: OutputStream) {
         const val OUTLINES = 3
         const val INFO = 4
         const val FIRST_OBJECT = 5
-        const val MAX_OUTLINE_ITEMS = 10_000
-
-        /** What a page inherits from the page tree's nodes. */
-        val INHERITED = listOf("Resources", "MediaBox", "CropBox", "Rotate")
 
         /** The page tree is written anew; article threads belong to the whole document. */
         val DROPPED_PAGE_KEYS = setOf("Parent", "B")

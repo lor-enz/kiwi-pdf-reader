@@ -190,7 +190,81 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         return null
     }
 
-    // Named destinations
+    // Pages
+
+    /**
+     * The pages in order, at most [limit]. A kid of the page tree that can't be read is left
+     * out, after telling [onBroken], which may throw to stop.
+     */
+    fun pages(limit: Int = Int.MAX_VALUE, onBroken: () -> Unit = {}): List<PdfPage> {
+        val tree = resolveDict(root?.get("Pages")) ?: return emptyList()
+        val found = ArrayList<PdfPage>()
+        val visited = HashSet<Int>()
+
+        fun walk(node: Map<String, Any?>, inherited: Map<String, Any?>, depth: Int) {
+            val here = inherited + PdfPage.INHERITED.mapNotNull { key -> node[key]?.let { key to it } }
+            val kids = resolve(node["Kids"]) as? List<*> ?: return
+            for (kid in kids) {
+                if (found.size >= limit) return
+                if (kid !is PdfRef || !visited.add(kid.number)) continue
+                val dict = resolveDict(kid)
+                if (dict == null) {
+                    onBroken()
+                    continue
+                }
+                val isPage = (resolve(dict["Type"]) as? PdfName)?.value == "Page" || dict["Kids"] == null
+                if (isPage) {
+                    found += PdfPage(kid, dict, here)
+                } else if (depth < MAX_DEPTH) {
+                    walk(dict, here, depth + 1)
+                }
+            }
+        }
+        walk(tree, emptyMap(), 0)
+        return found
+    }
+
+    // Outline
+
+    /** The outline's items as stored, each with the items below it. */
+    fun outline(): List<PdfOutlineNode> {
+        val first = resolveDict(root?.get("Outlines"))?.get("First") ?: return emptyList()
+        val visited = HashSet<Int>()
+        var budget = MAX_OUTLINE_ITEMS
+
+        fun items(first: Any?, depth: Int): List<PdfOutlineNode> {
+            if (depth > MAX_DEPTH) return emptyList()
+            val items = ArrayList<PdfOutlineNode>()
+            // Items are linked from first to last; a loop or a broken link ends the list.
+            var ref = first
+            while (ref is PdfRef && visited.add(ref.number) && budget-- > 0) {
+                val dict = resolveDict(ref) ?: break
+                items += PdfOutlineNode(
+                    dict = dict,
+                    // Positive when the author left it open, negative when closed.
+                    isOpen = ((resolve(dict["Count"]) as? Number)?.toInt() ?: 0) > 0,
+                    children = items(dict["First"], depth + 1),
+                )
+                ref = dict["Next"]
+            }
+            return items
+        }
+        return items(first, 0)
+    }
+
+    // Destinations
+
+    /**
+     * Where [destination] leads: an array of the page and where on it, maybe as a reference. A
+     * named destination becomes what it names; anything else is returned as it is.
+     */
+    fun explicitDestination(destination: Any?): Any? {
+        val resolved = resolve(destination)
+        if (resolved !is PdfName && resolved !is PdfString) return destination
+        val named = resolve(namedDestination(resolved))
+        // A named destination may be a dictionary that holds it.
+        return if (named is Map<*, *>) named["D"] else named
+    }
 
     /** Named destinations: a dictionary in older files, a name tree in newer ones. */
     private val destinationTree by lazy {
@@ -199,11 +273,11 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         }
     }
 
-    /** What the destination named by [name] (a name or a string) stores: an array, or a dictionary holding it as `D`. */
-    fun namedDestination(name: Any?): Any? {
-        val key = when (val value = resolve(name)) {
-            is PdfName -> value.value
-            is PdfString -> String(value.bytes, Charsets.ISO_8859_1)
+    /** What the destination named by [name] stores: an array, or a dictionary holding it as `D`. */
+    private fun namedDestination(name: Any?): Any? {
+        val key = when (name) {
+            is PdfName -> name.value
+            is PdfString -> String(name.bytes, Charsets.ISO_8859_1)
             else -> return null
         }
         return attempt { resolveDict(root?.get("Dests"))?.get(key) } ?: destinationTree[key]
@@ -380,6 +454,7 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         const val MAX_DECODED = 64L * 1024 * 1024
         const val MAX_DECRYPTED = 256L * 1024 * 1024
         const val MAX_NAMES = 100_000
+        const val MAX_OUTLINE_ITEMS = 10_000
         const val COPY_CHUNK = 256 * 1024
         const val TAIL_BYTES = 4096
         const val SCAN_CHUNK = 1024 * 1024
@@ -390,6 +465,22 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         const val ENDSTREAM = "endstream"
     }
 }
+
+/**
+ * A page as the page tree has it, [ref] referring to it. [inherited] holds what the tree's nodes
+ * above it give it; the page's own [dict] wins over it, see [attribute].
+ */
+internal class PdfPage(val ref: PdfRef, val dict: Map<String, Any?>, val inherited: Map<String, Any?>) {
+    fun attribute(key: String): Any? = dict[key] ?: inherited[key]
+
+    companion object {
+        /** What a page inherits from the page tree's nodes. */
+        val INHERITED = listOf("Resources", "MediaBox", "CropBox", "Rotate")
+    }
+}
+
+/** An item of the outline as stored, see [PdfFile.outline]. */
+internal class PdfOutlineNode(val dict: Map<String, Any?>, val isOpen: Boolean, val children: List<PdfOutlineNode>)
 
 /** How deep references and nested structures are followed, so loops in a damaged file end. */
 internal const val MAX_DEPTH = 64

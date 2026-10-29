@@ -55,12 +55,10 @@ class PdfMergerTest {
     private fun read(pdf: ByteArray, password: String? = null): PdfMetadata =
         PdfMetadataReader(ByteArraySource(pdf), password).read(withOutline = true)
 
-    /** The merged file's pages, in order. */
-    private fun PdfFile.pages(): List<Map<String, Any?>> =
-        (resolve(resolveDict(root?.get("Pages"))?.get("Kids")) as List<*>).map { checkNotNull(resolveDict(it)) }
+    /** The merged file's pages, in order, as written: its page tree is flat, so they inherit nothing. */
+    private fun PdfFile.pageDicts(): List<Map<String, Any?>> = pages().map { it.dict }
 
-    private fun PdfFile.pageRefs(): List<PdfRef> =
-        (resolve(resolveDict(root?.get("Pages"))?.get("Kids")) as List<*>).map { it as PdfRef }
+    private fun PdfFile.pageRefs(): List<PdfRef> = pages().map { it.ref }
 
     private fun PdfFile.text(value: Any?) = String((resolve(value) as PdfString).bytes, Charsets.ISO_8859_1)
 
@@ -100,7 +98,7 @@ class PdfMergerTest {
     @Test
     fun `pages get what they inherited from the page tree`() {
         val file = PdfFile(ByteArraySource(merge("merge/inherited.pdf", "metadata/unicode.pdf")))
-        val pages = file.pages()
+        val pages = file.pageDicts()
 
         assertEquals(5, pages.size)
         for (page in pages.take(3)) {
@@ -124,7 +122,7 @@ class PdfMergerTest {
         assertFalse(merged.isLocked)
         assertEquals(6, merged.pageCount)
         assertEquals(listOf("aes-256-password", "rc4-128-password", "aes-128"), merged.outline.map { it.title })
-        val texts = file.pages().map { file.contents(it) }
+        val texts = file.pageDicts().map { file.contents(it) }
         assertTrue(texts[0].contains("Page 1 of 2"))
         assertTrue(texts[3].contains("Page 2 of 2"))
     }
@@ -147,7 +145,7 @@ class PdfMergerTest {
 
         assertEquals(8, merged.pageCount)
         assertEquals(listOf("streams", "aes-256", "broken-xref", "updated"), merged.outline.map { it.title })
-        assertTrue(file.pages().all { file.contents(it).contains("Page") })
+        assertTrue(file.pageDicts().all { file.contents(it).contains("Page") })
     }
 
     @Test
@@ -167,7 +165,7 @@ class PdfMergerTest {
         val pdf = merge("merge/form.pdf", "merge/named-links.pdf")
         val file = PdfFile(ByteArraySource(pdf))
         val pages = file.pageRefs()
-        val links = file.resolve(file.pages()[1]["Annots"]) as List<*>
+        val links = file.resolve(file.pageDicts()[1]["Annots"]) as List<*>
 
         // A bare destination becomes a "go to" action, which androidx.pdf follows.
         val link = checkNotNull(file.resolveDict(links[0]))
@@ -192,7 +190,7 @@ class PdfMergerTest {
         assertEquals(listOf("name", "agree", "name_2", "agree_2", "name_3", "agree_3"), fields.map { file.text(it["T"]) })
         assertEquals(List(3) { "Pingu" }, fields.filter { it["FT"] == PdfName("Tx") }.map { file.text(it["V"]) })
         // The second page's widgets belong to the renamed fields.
-        val widgets = (file.resolve(file.pages()[1]["Annots"]) as List<*>).map { checkNotNull(file.resolveDict(it)) }
+        val widgets = (file.resolve(file.pageDicts()[1]["Annots"]) as List<*>).map { checkNotNull(file.resolveDict(it)) }
         assertEquals("name_2", file.text(widgets[0]["T"]))
         assertEquals("agree_2", file.text(file.resolveDict(widgets[1]["Parent"])?.get("T")))
         assertEquals(file.pageRefs()[1], widgets[1]["P"])
@@ -215,7 +213,7 @@ class PdfMergerTest {
         assertEquals(listOf("Shown", "Hidden", "Shown", "Hidden"), names(config["Order"]))
         // Each page's layers are the copies listed.
         val ocgs = file.resolve(properties["OCGs"]) as List<*>
-        val used = file.pages().flatMap { page ->
+        val used = file.pageDicts().flatMap { page ->
             file.resolveDict(file.resolveDict(page["Resources"])?.get("Properties"))!!.values
         }
         assertEquals(ocgs.toSet(), used.toSet())

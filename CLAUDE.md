@@ -17,8 +17,8 @@
   that adds them, so they can be driven by adb (see Testing).
 - Packages are by feature, each with its screens and logic: `viewer`,
   `home`, `settings`, `defaultapp`, `info`, `recent`, `document` (open,
-  print, share), `pdf` (reads what `androidx.pdf` can't: metadata, the
-  table of contents), `create` (makes PDFs of shared images, merges shared PDFs). `ui` holds only what several features share (sheets,
+  print, share), `pdf` (reads what `androidx.pdf` can't: a file's objects, its
+  metadata, the table of contents; `create` builds on it), `create` (makes PDFs of shared images, merges shared PDFs). `ui` holds only what several features share (sheets,
   dialogs, `TestTags`, theme), `util` small helpers. The root holds only
   `PdfPenguinApp` and the activities, which keep their names and package
   (manifest, launcher, pinned shortcuts). Put a new file in the package of
@@ -434,8 +434,11 @@
   password" when it can't be read without the password, both grey and
   italic, set apart from the document's data. `androidx.pdf` reads no metadata, so
   `PdfMetadataReader` reads the info dictionary and the first page's size
-  itself: xref tables and streams, updates, object streams, Flate with PNG
-  predictors, and a scan for objects when the offsets are wrong.
+  itself, through `PdfFile`: xref tables and streams, updates, object
+  streams, Flate with PNG predictors, and a scan for objects when the offsets
+  are wrong. `PdfFile` also walks the page tree (with what pages inherit),
+  the outline and named destinations, for the metadata reader and the
+  merger alike.
   `PdfSecurity` decrypts the standard encryption (RC4, AES-128, AES-256).
   Files with only a permissions password open without asking and decrypt
   with the empty password, so they show everything. Files that need a
