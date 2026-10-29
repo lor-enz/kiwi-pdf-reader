@@ -2,12 +2,9 @@ package kiwi.lorenz.pdfreader.pdf
 
 import android.content.Context
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
 
 /** What the document info sheet shows. [sizeBytes] is null if the file couldn't be read. */
 data class DocumentInfo(val metadata: PdfMetadata, val sizeBytes: Long?)
@@ -28,23 +25,5 @@ suspend fun Context.readDocumentInfo(
         throw e
     } catch (_: Exception) {
         DocumentInfo(PdfMetadata(), null)
-    }
-}
-
-/** Runs [block] with random access to the file at [uri]; throws if it can't be opened. */
-internal fun <T> Context.readSource(uri: Uri, block: (ByteSource) -> T): T {
-    val descriptor = checkNotNull(contentResolver.openFileDescriptor(uri, "r"))
-    return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
-        block(ChannelSource(stream.channel, stream.channel.size()))
-    }
-}
-
-private class ChannelSource(private val channel: FileChannel, override val size: Long) : ByteSource {
-    override fun read(offset: Long, length: Int): ByteArray {
-        val buffer = ByteBuffer.allocate(minOf(length.toLong(), maxOf(0, size - offset)).toInt())
-        while (buffer.hasRemaining()) {
-            if (channel.read(buffer, offset + buffer.position()) < 0) break
-        }
-        return buffer.array().copyOf(buffer.position())
     }
 }

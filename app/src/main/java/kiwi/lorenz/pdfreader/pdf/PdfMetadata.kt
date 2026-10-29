@@ -42,22 +42,6 @@ data class OutlineItem(
 
 data class PageSize(val width: Double, val height: Double)
 
-/** Random access to a file's bytes. */
-interface ByteSource {
-    val size: Long
-
-    /** Reads up to [length] bytes at [offset]; fewer only at the end of the file. */
-    fun read(offset: Long, length: Int): ByteArray
-}
-
-class ByteArraySource(private val bytes: ByteArray) : ByteSource {
-    override val size get() = bytes.size.toLong()
-    override fun read(offset: Long, length: Int): ByteArray {
-        val start = offset.coerceIn(0, size).toInt()
-        return bytes.copyOfRange(start, minOf(bytes.size, start + length))
-    }
-}
-
 /** Parses a PDF date, `D:YYYYMMDDHHmmSSOHH'mm'`, where everything after the year is optional. */
 fun parsePdfDate(value: String, zone: ZoneId = ZoneId.systemDefault()): Instant? {
     val match = PDF_DATE.matchEntire(value.trim()) ?: return null
