@@ -2,7 +2,6 @@ package kiwi.lorenz.pdfreader.create
 
 import java.io.OutputStream
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** An image as a PDF embeds it: 8 bits per component, gray or RGB. */
@@ -34,18 +33,11 @@ class PdfImage(
  * [finish] once all pages are added.
  */
 class ImagePdfWriter(output: OutputStream) {
-    private val out = CountingOutputStream(output)
+    private val writer = PdfObjectWriter(output, "1.4")
 
-    /** Byte offsets by object number; 1 to 3 are written last, as they refer to all pages. */
-    private val offsets = mutableMapOf<Int, Long>()
+    /** 1 to 3 are written last, as they refer to all pages. */
     private var nextNumber = FIRST_PAGE_OBJECT
     private val pages = mutableListOf<Int>()
-
-    init {
-        // The comment with bytes above 127 marks the file as binary for tools that guess.
-        out.write("%PDF-1.4\n%".toByteArray(Charsets.US_ASCII))
-        out.write(byteArrayOf(0xE2.toByte(), 0xE3.toByte(), 0xCF.toByte(), 0xD3.toByte(), '\n'.code.toByte()))
-    }
 
     val pageCount get() = pages.size
 
@@ -60,7 +52,7 @@ class ImagePdfWriter(output: OutputStream) {
             PdfImage.Encoding.JPEG -> "/DCTDecode"
             PdfImage.Encoding.FLATE -> "/FlateDecode"
         }
-        writeStream(
+        writer.writeStream(
             imageNumber,
             "/Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} " +
                 "/ColorSpace $colorSpace /BitsPerComponent 8 /Filter $filter",
@@ -69,10 +61,10 @@ class ImagePdfWriter(output: OutputStream) {
 
         val contentsNumber = nextNumber++
         val matrix = placement(image.orientation, width, height).joinToString(" ") { number(it) }
-        writeStream(contentsNumber, "", "q $matrix cm /Im0 Do Q".toByteArray(Charsets.US_ASCII))
+        writer.writeStream(contentsNumber, "", "q $matrix cm /Im0 Do Q".toByteArray(Charsets.US_ASCII))
 
         val pageNumber = nextNumber++
-        writeObject(
+        writer.writeObject(
             pageNumber,
             "<< /Type /Page /Parent $PAGES 0 R /MediaBox [0 0 ${number(width)} ${number(height)}] " +
                 "/Resources << /XObject << /Im0 $imageNumber 0 R >> >> /Contents $contentsNumber 0 R >>",
@@ -83,47 +75,10 @@ class ImagePdfWriter(output: OutputStream) {
     /** Writes what refers to the pages, and the file's index. Needs at least one page. */
     fun finish(created: ZonedDateTime) {
         check(pages.isNotEmpty()) { "A PDF needs a page" }
-        writeObject(PAGES, "<< /Type /Pages /Kids [${pages.joinToString(" ") { "$it 0 R" }}] /Count ${pages.size} >>")
-        writeObject(CATALOG, "<< /Type /Catalog /Pages $PAGES 0 R >>")
-        writeObject(INFO, "<< /Creator ($APP_NAME) /Producer ($APP_NAME) /CreationDate (${pdfDate(created)}) >>")
-
-        val xref = out.count
-        val size = nextNumber
-        val table = StringBuilder("xref\n0 $size\n0000000000 65535 f \n")
-        for (number in 1 until size) table.append("%010d 00000 n \n".format(Locale.ROOT, offsets.getValue(number)))
-        table.append("trailer\n<< /Size $size /Root $CATALOG 0 R /Info $INFO 0 R >>\nstartxref\n$xref\n%%EOF\n")
-        out.write(table.toString().toByteArray(Charsets.US_ASCII))
-        out.flush()
-    }
-
-    private fun writeObject(number: Int, value: String) {
-        offsets[number] = out.count
-        out.write("$number 0 obj\n$value\nendobj\n".toByteArray(Charsets.US_ASCII))
-    }
-
-    private fun writeStream(number: Int, entries: String, data: ByteArray) {
-        offsets[number] = out.count
-        val dictionary = listOf(entries, "/Length ${data.size}").filter { it.isNotEmpty() }.joinToString(" ")
-        out.write("$number 0 obj\n<< $dictionary >>\nstream\n".toByteArray(Charsets.US_ASCII))
-        out.write(data)
-        out.write("\nendstream\nendobj\n".toByteArray(Charsets.US_ASCII))
-    }
-
-    private class CountingOutputStream(private val output: OutputStream) : OutputStream() {
-        var count = 0L
-            private set
-
-        override fun write(b: Int) {
-            output.write(b)
-            count++
-        }
-
-        override fun write(b: ByteArray, off: Int, len: Int) {
-            output.write(b, off, len)
-            count += len
-        }
-
-        override fun flush() = output.flush()
+        writer.writeObject(PAGES, "<< /Type /Pages /Kids [${pages.joinToString(" ") { "$it 0 R" }}] /Count ${pages.size} >>")
+        writer.writeObject(CATALOG, "<< /Type /Catalog /Pages $PAGES 0 R >>")
+        writer.writeObject(INFO, "<< /Creator ($APP_NAME) /Producer ($APP_NAME) /CreationDate (${pdfDate(created)}) >>")
+        writer.finish(nextNumber, "/Root $CATALOG 0 R /Info $INFO 0 R")
     }
 
     companion object {
@@ -131,7 +86,6 @@ class ImagePdfWriter(output: OutputStream) {
         private const val PAGES = 2
         private const val INFO = 3
         private const val FIRST_PAGE_OBJECT = 4
-        private const val APP_NAME = "PDF Penguin"
 
         /** A4's width, in points. */
         private const val PAGE_WIDTH = 595.28
@@ -153,16 +107,5 @@ class ImagePdfWriter(output: OutputStream) {
 
         private fun number(value: Double): String =
             "%.2f".format(Locale.ROOT, value).trimEnd('0').trimEnd('.').let { if (it == "-0") "0" else it }
-
-        private fun pdfDate(time: ZonedDateTime): String {
-            val offset = time.offset.totalSeconds
-            val zone = if (offset == 0) {
-                "Z"
-            } else {
-                val sign = if (offset < 0) "-" else "+"
-                "%s%02d'%02d'".format(Locale.ROOT, sign, Math.abs(offset) / 3600, Math.abs(offset) % 3600 / 60)
-            }
-            return "D:" + time.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT)) + zone
-        }
     }
 }
