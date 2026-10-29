@@ -237,7 +237,6 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         }
     }
 
-    /** Forgets every remembered password, see [setPassword]. Also those of [hide]den entries. */
     /**
      * The remembered password (encrypted) of an entry with the same content as the file at [uri],
      * e.g. a protected PDF shared to be merged. Null if there's none, or the file can't be read.
@@ -247,6 +246,7 @@ class RecentFilesStore @VisibleForTesting internal constructor(private val conte
         return edit { entries -> entries.firstOrNull { it.contentHash == hash && it.encryptedPassword != null }?.encryptedPassword }
     }
 
+    /** Forgets every remembered password, see [setPassword]. Also those of [hide]den entries. */
     suspend fun forgetAllPasswords() = edit { entries ->
         fun forget(entry: RecentFile): RecentFile {
             if (entry.encryptedPassword == null) return entry
