@@ -78,7 +78,6 @@ class PdfMetadataReader(private val source: ByteSource, private val password: St
     private fun outline(root: Map<String, Any?>, pages: Map<String, Any?>): List<OutlineItem> {
         val first = resolveDict(root["Outlines"])?.get("First") ?: return emptyList()
         val spots = pageSpots(pages)
-        val destinations = Destinations(root)
         val visited = HashSet<Int>()
         var budget = MAX_OUTLINE_ITEMS
 
@@ -89,7 +88,7 @@ class PdfMetadataReader(private val source: ByteSource, private val password: St
             var ref = first
             while (ref is PdfRef && visited.add(ref.number) && budget-- > 0) {
                 val dict = resolveDict(ref) ?: break
-                val target = attempt { target(dict, spots, destinations) }
+                val target = attempt { target(dict, spots) }
                 items += OutlineItem(
                     title = text(dict["Title"]).orEmpty(),
                     page = target?.page,
@@ -108,13 +107,12 @@ class PdfMetadataReader(private val source: ByteSource, private val password: St
     private class Target(val page: Int, val top: Float?)
 
     /** Where an outline item leads: its destination, or a "go to" action's. */
-    private fun target(item: Map<String, Any?>, spots: Map<Int, PageSpot>, destinations: Destinations): Target? {
+    private fun target(item: Map<String, Any?>, spots: Map<Int, PageSpot>): Target? {
         val destination = item["Dest"] ?: resolveDict(item["A"])
             ?.takeIf { (resolve(it["S"]) as? PdfName)?.value == "GoTo" }
             ?.get("D")
         val explicit = when (val value = resolve(destination)) {
-            is PdfName -> destinations.find(value.value)
-            is PdfString -> destinations.find(String(value.bytes, Charsets.ISO_8859_1))
+            is PdfName, is PdfString -> file.namedDestination(value)
             else -> value
         }
         // A named destination may be a dictionary that holds it.
@@ -134,28 +132,6 @@ class PdfMetadataReader(private val source: ByteSource, private val password: St
         }?.let { resolve(it) as? Number }?.toDouble()
         val fromTop = if (top != null && spot.top != null) (spot.top - top).coerceAtLeast(0.0).toFloat() else null
         return Target(spot.index, fromTop)
-    }
-
-    /** Named destinations: a dictionary in older files, a name tree in newer ones. */
-    private inner class Destinations(private val root: Map<String, Any?>) {
-        private val tree by lazy {
-            HashMap<String, Any?>().also { names ->
-                resolveDict(resolveDict(root["Names"])?.get("Dests"))?.let { collect(it, names, 0) }
-            }
-        }
-
-        fun find(name: String): Any? = resolveDict(root["Dests"])?.get(name) ?: tree[name]
-
-        private fun collect(node: Map<String, Any?>, names: MutableMap<String, Any?>, depth: Int) {
-            if (depth > MAX_DEPTH || names.size > MAX_NAMES) return
-            (resolve(node["Names"]) as? List<*>)?.chunked(2)?.forEach { pair ->
-                val key = resolve(pair[0]) as? PdfString ?: return@forEach
-                names.putIfAbsent(String(key.bytes, Charsets.ISO_8859_1), pair.getOrNull(1))
-            }
-            (resolve(node["Kids"]) as? List<*>)?.forEach { kid ->
-                resolveDict(kid)?.let { collect(it, names, depth + 1) }
-            }
-        }
     }
 
     /**
@@ -199,7 +175,6 @@ class PdfMetadataReader(private val source: ByteSource, private val password: St
 
     private companion object {
         const val MAX_OUTLINE_ITEMS = 10_000
-        const val MAX_NAMES = 100_000
         const val MAX_PAGES = 100_000
     }
 }

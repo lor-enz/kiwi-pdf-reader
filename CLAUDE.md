@@ -51,6 +51,11 @@
   - `make-metadata-fixtures.py` writes the committed PDFs for
     `PdfMetadataReaderTest` (`src/test/resources/metadata/`), one per way a
     PDF can store its metadata. Run it again after changing it.
+  - `make-merge-fixtures.py` does the same for `PdfMergerTest`
+    (`src/test/resources/merge/`): what a merge has to carry over (inherited
+    page attributes, named links, forms, layers). To check merged files
+    beyond the tests, `qpdf --check` them and compare pages rendered by
+    `pdftoppm` with the sources'.
   - `prepare-device.sh` turns animations off, which keeps screenshots
     stable. Run it before testing; an emulator booted from an older
     snapshot has them on again.

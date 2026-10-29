@@ -1,6 +1,8 @@
 package kiwi.lorenz.pdfreader.pdf
 
 import java.io.ByteArrayOutputStream
+import java.io.EOFException
+import java.io.OutputStream
 import java.util.zip.Inflater
 import kotlin.math.abs
 
@@ -132,6 +134,90 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         if (filters != listOf("FlateDecode") && filters != listOf("Fl")) return null
         val params = resolve(stream.dict["DecodeParms"]).let { if (it is List<*>) resolve(it.firstOrNull()) else it }
         return unpredict(inflate(raw), params as? Map<*, *>)
+    }
+
+    /**
+     * The stream's data as stored, still encoded by its filters but decrypted, for copying it
+     * as it is. Null if it can't be found. If its length is wrong, it ends where `endstream`
+     * does, as PDF readers do. Unencrypted data is copied in chunks, so a large image needn't
+     * fit in memory.
+     */
+    fun encodedStream(stream: PdfStream): EncodedStream? {
+        val stated = (resolve(stream.dict["Length"]) as? Number)?.toLong()
+        val length = stated?.takeIf { it >= 0 && endsStream(stream.dataOffset + it) }
+            ?: findStreamEnd(stream.dataOffset)?.let { it - stream.dataOffset }
+            ?: return null
+        // Cross-reference streams are never encrypted, and never copied.
+        val security = security ?: return EncodedStream(length) { out ->
+            var copied = 0L
+            while (copied < length) {
+                val chunk = source.read(stream.dataOffset + copied, minOf(COPY_CHUNK.toLong(), length - copied).toInt())
+                if (chunk.isEmpty()) throw EOFException()
+                out.write(chunk)
+                copied += chunk.size
+            }
+        }
+        if (length > MAX_DECRYPTED) return null
+        val data = security.decryptStream(source.read(stream.dataOffset, length.toInt()), stream.number, stream.generation)
+        return EncodedStream(data.size.toLong()) { it.write(data) }
+    }
+
+    /** Data of [length] bytes, written to a stream by [writeTo]. */
+    class EncodedStream(val length: Long, val writeTo: (OutputStream) -> Unit)
+
+    /** Whether `endstream` follows at [offset], after an optional line end. */
+    private fun endsStream(offset: Long): Boolean {
+        val text = String(source.read(offset, ENDSTREAM.length + 2), Charsets.ISO_8859_1)
+        return text.trimStart('\r', '\n').startsWith(ENDSTREAM)
+    }
+
+    /** Where the data starting at [dataOffset] ends: before the line end ahead of `endstream`. */
+    private fun findStreamEnd(dataOffset: Long): Long? {
+        var chunkStart = dataOffset
+        while (chunkStart < source.size) {
+            val text = String(source.read(chunkStart, SCAN_CHUNK), Charsets.ISO_8859_1)
+            val found = text.indexOf(ENDSTREAM)
+            if (found >= 0) {
+                var end = chunkStart + found
+                // The line end before it isn't part of the data.
+                val before = String(source.read(maxOf(dataOffset, end - 2), minOf(2L, end - dataOffset).toInt()), Charsets.ISO_8859_1)
+                end -= before.length - before.trimEnd('\r', '\n').length
+                return end
+            }
+            if (text.length < SCAN_CHUNK) return null
+            chunkStart += SCAN_CHUNK - ENDSTREAM.length
+        }
+        return null
+    }
+
+    // Named destinations
+
+    /** Named destinations: a dictionary in older files, a name tree in newer ones. */
+    private val destinationTree by lazy {
+        HashMap<String, Any?>().also { names ->
+            resolveDict(resolveDict(root?.get("Names"))?.get("Dests"))?.let { collectNames(it, names, 0) }
+        }
+    }
+
+    /** What the destination named by [name] (a name or a string) stores: an array, or a dictionary holding it as `D`. */
+    fun namedDestination(name: Any?): Any? {
+        val key = when (val value = resolve(name)) {
+            is PdfName -> value.value
+            is PdfString -> String(value.bytes, Charsets.ISO_8859_1)
+            else -> return null
+        }
+        return attempt { resolveDict(root?.get("Dests"))?.get(key) } ?: destinationTree[key]
+    }
+
+    private fun collectNames(node: Map<String, Any?>, names: MutableMap<String, Any?>, depth: Int) {
+        if (depth > MAX_DEPTH || names.size > MAX_NAMES) return
+        (resolve(node["Names"]) as? List<*>)?.chunked(2)?.forEach { pair ->
+            val key = resolve(pair[0]) as? PdfString ?: return@forEach
+            names.putIfAbsent(String(key.bytes, Charsets.ISO_8859_1), pair.getOrNull(1))
+        }
+        (resolve(node["Kids"]) as? List<*>)?.forEach { kid ->
+            resolveDict(kid)?.let { collectNames(it, names, depth + 1) }
+        }
     }
 
     private fun objectStream(number: Int): ObjectStream? = objectStreams.getOrPut(number) {
@@ -292,12 +378,16 @@ internal class PdfFile(private val source: ByteSource, private val password: Str
         const val INITIAL_WINDOW = 16 * 1024
         const val MAX_WINDOW = 16 * 1024 * 1024
         const val MAX_DECODED = 64L * 1024 * 1024
+        const val MAX_DECRYPTED = 256L * 1024 * 1024
+        const val MAX_NAMES = 100_000
+        const val COPY_CHUNK = 256 * 1024
         const val TAIL_BYTES = 4096
         const val SCAN_CHUNK = 1024 * 1024
         const val SCAN_OVERLAP = 64
         val STARTXREF = Regex("""startxref\s+(\d+)""")
         val OBJECT_HEADER = Regex("""(?<![0-9])(\d{1,10})\s+\d{1,5}\s+obj\b""")
         val TRAILER = Regex("""trailer\b""")
+        const val ENDSTREAM = "endstream"
     }
 }
 

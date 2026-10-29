@@ -1,0 +1,44 @@
+%PDF-1.3
+%¿÷¢þ
+1 0 obj
+<< /OCProperties << /D << /BaseState /OFF /ON [ 3 0 R ] /Order [ 3 0 R 4 0 R ] >> /OCGs [ 3 0 R 4 0 R ] >> /Pages 5 0 R /Type /Catalog >>
+endobj
+2 0 obj
+<< /Title (Layers) >>
+endobj
+3 0 obj
+<< /Name (Shown) /Type /OCG >>
+endobj
+4 0 obj
+<< /Name (Hidden) /Type /OCG >>
+endobj
+5 0 obj
+<< /Count 1 /Kids [ 6 0 R ] /Type /Pages >>
+endobj
+6 0 obj
+<< /Contents 7 0 R /MediaBox [ 0 0 419.528 595.276 ] /Parent 5 0 R /Resources << /Font << /F1 8 0 R >> /Properties << /L1 3 0 R /L2 4 0 R >> >> /Type /Page >>
+endobj
+7 0 obj
+<< /Length 211 >>
+stream
+BT /F1 14 Tf 40 520 Td (layers-base-off.pdf) Tj 0 -22 Td ET /OC /L1 BDC BT /F1 14 Tf 40 470 Td (This layer shows.) Tj 0 -22 Td ET EMC /OC /L2 BDC BT /F1 14 Tf 40 440 Td (This layer is hidden.) Tj 0 -22 Td ET EMC
+endstream
+endobj
+8 0 obj
+<< /BaseFont /Helvetica /Encoding /WinAnsiEncoding /Subtype /Type1 /Type /Font >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000168 00000 n 
+0000000205 00000 n 
+0000000251 00000 n 
+0000000298 00000 n 
+0000000357 00000 n 
+0000000531 00000 n 
+0000000793 00000 n 
+trailer << /Info 2 0 R /Root 1 0 R /Size 9 /ID [<c4c556918e54a672a9ecd2d44be41832><c4c556918e54a672a9ecd2d44be41832>] >>
+startxref
+890
+%%EOF
