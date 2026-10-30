@@ -549,7 +549,8 @@
   shows no error.
 
 - The app is in English and German (`values-de`). The German addresses
-  the user with "du", as Android does, and says "Smartphone". "Remember" is
+  the user with "du", as Android does. The device is "device" ("Gerät"),
+  never "phone", as the app runs on tablets too. "Remember" is
   "speichern" (forgetting a password is "entfernen", since "Passwort
   vergessen" reads as "forgot password"), the recent files list is "Zuletzt
   geöffnet". Prefer short words over long compounds ("Document info" is
@@ -633,9 +634,6 @@ Found on a tablet emulator (`Medium_Tablet`, 1280×800 dp, October 2026):
 - Password screen in landscape: the lock and file name stay centered
   (not moved by the keyboard, on purpose), so while typing the tablet's
   keyboard hides them; only the shackle's top shows.
-- Texts say "phone" (`stored_on_phone`, `privacy_policy_summary`,
-  `link_failed`, `error_no_permission`; "Smartphone" in German), which
-  is wrong on a tablet. Android says "device" ("Gerät").
 
 # Planned changes
 

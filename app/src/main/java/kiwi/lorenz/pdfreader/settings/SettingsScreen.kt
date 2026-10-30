@@ -163,7 +163,7 @@ fun SettingsScreen(
             )
         }
 
-        SectionHeader(R.string.stored_on_phone)
+        SectionHeader(R.string.stored_on_device)
         // The pending choice shows until it's undone.
         val limits = pendingLimits?.limits ?: cleanupLimits
         SettingsRow(R.drawable.ic_history, R.string.keep_unused, stringResource(R.string.keep_unused_text))

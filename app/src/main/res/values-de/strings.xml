@@ -22,7 +22,7 @@
     <string name="shortcut_removed">Diese Datei ist nicht mehr in der Liste „Zuletzt geöffnet“.</string>
 
     <string name="settings">Einstellungen</string>
-    <string name="stored_on_phone">Auf diesem Smartphone gespeichert</string>
+    <string name="stored_on_device">Auf diesem Gerät gespeichert</string>
     <string name="forget_all_passwords">Alle Passwörter entfernen</string>
     <plurals name="passwords_remembered">
         <item quantity="one">%d Passwort gespeichert</item>
@@ -63,7 +63,7 @@
     <string name="report_problem">Problem melden</string>
     <string name="report_problem_summary">Auf GitHub</string>
     <string name="privacy_policy">Datenschutzerklärung</string>
-    <string name="privacy_policy_summary">PDF Penguin sammelt keine Daten. Deine Dokumente bleiben auf deinem Smartphone.</string>
+    <string name="privacy_policy_summary">PDF Penguin sammelt keine Daten. Deine Dokumente bleiben auf deinem Gerät.</string>
     <string name="licenses">Open-Source-Lizenzen</string>
     <string name="licenses_intro">PDF Penguin basiert auf diesen Open-Source-Komponenten, alle unter der Apache License 2.0:</string>
 
@@ -116,7 +116,7 @@
     <string name="match_counter">%1$d / %2$d</string>
     <string name="no_matches">0 / 0</string>
     <string name="no_text_to_search">Dieses Dokument enthält keinen durchsuchbaren Text. Vielleicht ist es eingescannt.</string>
-    <string name="link_failed">Keine App auf diesem Smartphone kann diesen Link öffnen.</string>
+    <string name="link_failed">Keine App auf diesem Gerät kann diesen Link öffnen.</string>
 
     <string name="password_title">Dieses PDF ist mit einem Passwort geschützt.</string>
     <string name="password">Passwort</string>
@@ -134,7 +134,7 @@
     <string name="error_not_pdf_title">Diese Datei ist kein PDF</string>
     <string name="error_not_pdf">Versuch, sie mit einer anderen App zu öffnen.</string>
     <string name="error_no_permission_title">Kein Zugriff auf diese Datei</string>
-    <string name="error_no_permission">Die App, aus der sie kommt, hat sie nicht so geteilt, dass PDF Penguin sie lesen kann. Speichere sie zuerst auf deinem Smartphone und öffne sie dann von dort.</string>
+    <string name="error_no_permission">Die App, aus der sie kommt, hat sie nicht so geteilt, dass PDF Penguin sie lesen kann. Speichere sie zuerst auf deinem Gerät und öffne sie dann von dort.</string>
     <string name="error_unavailable_title">Dieses PDF ist nicht mehr verfügbar</string>
     <string name="error_unavailable">Es wurde vielleicht verschoben oder gelöscht.</string>
     <string name="error_temporary_title">Dieses PDF konnte nicht geöffnet werden</string>
