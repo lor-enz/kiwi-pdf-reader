@@ -41,8 +41,15 @@
   cards) with the real store, a fake `PdfLoader` and fake password encryption
   (Robolectric has no Android Keystore); add a test there when changing that.
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
+  There are two: `Emu_Pixel_9a_No_Google` (Android 16) for everyday
+  testing, and `Medium_Phone` (Android 14 without Google Play, SDK extension
+  7, which it never gets past) for devices without the system update `androidx.pdf` needs (see
+  minSdk below). Test changes to that warning, or to anything that may
+  behave differently there, on the second too.
 - Helpers in `scripts/test/` use the running emulator, never a connected
-  phone unless `ANDROID_SERIAL` names it. Install with `install.sh`, not
+  phone unless `ANDROID_SERIAL` names it. With both emulators running,
+  pick one with `ANDROID_SERIAL` (`adb devices`; `adb -s <serial> emu avd
+  name` tells which is which). Install with `install.sh`, not
   `./gradlew installDebug`, which installs on every connected device.
   - `make-test-pdfs.py` writes test files to `build/test-pdfs/` (the
     protected ones use password `kiwi`). `heavy.pdf` (about 200 MB, a
@@ -119,9 +126,21 @@
 - `androidx.pdf` is beta, and the Compose `PdfViewer` is still
   `@ExperimentalPdfApi`. Fallback if it misbehaves: host
   `PdfViewerFragment` via `fragment-compose`.
-- minSdk is 35 (Android 15), so every feature is always available: don't
-  add feature checks. A reduced mode for older phones would need a second
-  code path for every feature.
+- minSdk is 34 (Android 14), so the app installs on the user's OnePlus Pad
+  Go. `androidx.pdf` doesn't need Android 15 but SDK extension 13, which
+  Android 14 gets through Google Play system updates. Without it (a device
+  behind on those updates, or one without Google Play) the library falls
+  back to the old `PdfRenderer`: pages show (after the cover's 3 s safety
+  net, as they never report ready), but links, search and form fields do
+  nothing, and no password opens a protected file. Nothing crashes, and the
+  app doesn't try to make up for it: `isSystemUpdateMissing`
+  (`util/SystemUpdate.kt`) is the only feature check. Home shows a warning
+  banner every time, without "Not now", and the viewer a snackbar each time
+  a document opens (files from other apps never pass Home); the password
+  screen says the update is needed instead of "wrong password". Shown
+  often on purpose: it's rare, and otherwise the app just seems broken.
+  Don't add other feature checks: with the update, Android 14 behaves like
+  15.
 - `PdfViewer` applies `contentPadding` only when its view is created,
   which is why the top bar is laid over the document.
 - `PdfView` keeps the fast scroller always visible whenever any

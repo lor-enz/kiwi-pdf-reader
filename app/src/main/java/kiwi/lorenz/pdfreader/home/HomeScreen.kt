@@ -81,6 +81,7 @@ import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PenguinBlue
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
+import kiwi.lorenz.pdfreader.util.isSystemUpdateMissing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -341,6 +342,7 @@ private fun Header(
         ) {
             Text(stringResource(R.string.open_pdf))
         }
+        if (isSystemUpdateMissing) SystemUpdateWarning(Modifier.padding(top = 24.dp))
         DefaultHint(
             pdfDefault = pdfDefault,
             isVisible = pdfDefault != PdfDefault.ThisApp && !isHintPaused,
@@ -348,6 +350,27 @@ private fun Header(
             onChangeDefault = onChangeDefault,
             onNotNow = onPauseHint,
             modifier = Modifier.padding(top = 24.dp),
+        )
+    }
+}
+
+/** Shown every time, without a way to dismiss it: much of the app doesn't work without the update. */
+@Composable
+private fun SystemUpdateWarning(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .testTag(TestTags.SYSTEM_UPDATE_WARNING)
+            .padding(16.dp),
+    ) {
+        Icon(painterResource(R.drawable.ic_error), contentDescription = null, tint = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = stringResource(R.string.system_update_missing),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

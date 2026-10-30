@@ -73,6 +73,7 @@ import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.Charcoal
 import kiwi.lorenz.pdfreader.ui.theme.NightText
 import kiwi.lorenz.pdfreader.ui.theme.OceanBlue
+import kiwi.lorenz.pdfreader.util.isSystemUpdateMissing
 import kotlinx.coroutines.launch
 
 /** Material 3 small top app bar height. */
@@ -208,6 +209,13 @@ fun ViewerScreen(
                 val result = snackbarHostState.showSnackbar(text, saveLabel, duration = SnackbarDuration.Long)
                 if (result == SnackbarResult.ActionPerformed) actions.saveCopy()
             }
+        }
+    }
+    // Every time a document opens, as files opened from other apps never pass Home's warning.
+    if (isSystemUpdateMissing && loaded != null) {
+        val text = stringResource(R.string.system_update_missing_short)
+        LaunchedEffect(loaded.document) {
+            snackbarHostState.showSnackbar(text, withDismissAction = true, duration = SnackbarDuration.Long)
         }
     }
     var jumpTarget by remember { mutableStateOf<OutlineItem?>(null) }

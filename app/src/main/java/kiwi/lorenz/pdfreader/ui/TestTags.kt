@@ -22,6 +22,7 @@ object TestTags {
     const val CLEAR_OTHER_DEFAULT = "clear_other_default"
     const val NOT_NOW = "not_now"
     const val IS_DEFAULT = "is_default"
+    const val SYSTEM_UPDATE_WARNING = "system_update_warning"
     const val RECENT_FILE = "recent_file"
     const val RECENT_TITLE = "recent_title"
     const val RECENT_FILE_NAME = "recent_file_name"

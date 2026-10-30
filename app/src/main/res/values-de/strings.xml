@@ -2,6 +2,8 @@
     <string name="home_tagline">Nimm einfach die Blaue.</string>
     <string name="open_pdf">PDF öffnen</string>
     <string name="not_default_pdf_app">PDF Penguin ist nicht deine Standard-App für PDFs.</string>
+    <string name="system_update_missing">Auf diesem Gerät fehlt ein Systemupdate. Links, Suche, Formulare und PDFs mit Passwort funktionieren erst, wenn du in den Einstellungen das neueste Google Play-Systemupdate installierst.</string>
+    <string name="system_update_missing_short">Systemupdate fehlt: Links, Suche, Formulare und PDFs mit Passwort funktionieren nicht.</string>
     <string name="make_default">Als Standard festlegen</string>
     <string name="other_default_pdf_app">Eine andere App ist als Standard-App für PDFs festgelegt.</string>
     <string name="clear_other_default">Anderen Standard aufheben</string>
@@ -119,6 +121,7 @@
     <string name="password_title">Dieses PDF ist mit einem Passwort geschützt.</string>
     <string name="password">Passwort</string>
     <string name="wrong_password">Falsches Passwort. Bitte versuch es noch einmal.</string>
+    <string name="password_needs_update">PDFs mit Passwort brauchen auf diesem Gerät ein Systemupdate.</string>
     <string name="show_password">Passwort anzeigen</string>
     <string name="hide_password">Passwort ausblenden</string>
     <string name="remember_password">Passwort speichern</string>

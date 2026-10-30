@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PrimaryButton
+import kiwi.lorenz.pdfreader.util.isSystemUpdateMissing
 
 @Composable
 internal fun PasswordPrompt(
@@ -145,7 +146,9 @@ internal fun PasswordPrompt(
             isError = state.isWrongPassword && !isUnlocking,
             // While the lock opens, the message's line stays empty, so the layout doesn't jump.
             supportingText = if (state.isWrongPassword) {
-                { Text(if (isUnlocking) "" else stringResource(R.string.wrong_password)) }
+                // Without the update no password works, so "wrong password" would mislead.
+                val error = if (isSystemUpdateMissing) R.string.password_needs_update else R.string.wrong_password
+                { Text(if (isUnlocking) "" else stringResource(error)) }
             } else {
                 null
             },

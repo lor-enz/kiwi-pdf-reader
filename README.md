@@ -12,6 +12,9 @@ Oh, and no ads. No subscriptions. No Paid Features. Just a clean, simple PDF rea
 Install it for someone you love and tell them: "Just use the blue one."
 They will.
 
+## Requirements
+Android 14 or later. On Android 14 the app needs a recent Google Play system update (SDK extension 13): without it, PDFs still open, but links, search, forms and password-protected files don't work, and the app says so.
+
 ## Play Store Listing Information:
 Images
 

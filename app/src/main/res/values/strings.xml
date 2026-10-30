@@ -4,6 +4,8 @@
     <string name="home_tagline">Just use the blue one.</string>
     <string name="open_pdf">Open PDF</string>
     <string name="not_default_pdf_app">PDF Penguin isn\'t your default PDF app.</string>
+    <string name="system_update_missing">This device is missing a system update. Links, search, forms and protected PDFs won\'t work until you install the latest Google Play system update in Settings.</string>
+    <string name="system_update_missing_short">Missing system update: links, search, forms and protected PDFs won\'t work.</string>
     <string name="make_default">Make default</string>
     <string name="other_default_pdf_app">A different app is set as the default PDF app.</string>
     <string name="clear_other_default">Clear other default</string>
@@ -139,6 +141,7 @@
     <string name="password_title">This PDF is protected with a password.</string>
     <string name="password">Password</string>
     <string name="wrong_password">Wrong password. Please try again.</string>
+    <string name="password_needs_update">Protected PDFs need a system update on this device.</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
     <string name="remember_password">Remember password</string>
