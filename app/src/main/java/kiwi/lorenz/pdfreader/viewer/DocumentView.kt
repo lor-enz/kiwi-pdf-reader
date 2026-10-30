@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -91,6 +92,12 @@ private const val READING_LINE = 1 / 3f
 /** How far the user has to scroll in one direction before the top bar hides or shows. */
 private val BarToggleDistance = 32.dp
 
+/**
+ * How tall a window wider than tall has to be for the whole page to fit: a tablet in landscape.
+ * A phone in landscape is less tall, and a whole page would be too small to read there.
+ */
+private val FitPageMinHeight = 480.dp
+
 @OptIn(ExperimentalPdfApi::class)
 @Composable
 internal fun DocumentView(
@@ -117,15 +124,50 @@ internal fun DocumentView(
     val density = LocalDensity.current
     val topPaddingPx = with(density) { contentPadding.calculateTopPadding().toPx() }
     val toggleDistancePx = with(density) { BarToggleDistance.toPx() }
+    // Saved, as the window changes size by recreating the activity.
+    var isZoomedByUser by rememberSaveable { mutableStateOf(false) }
+    var isPageFitted by rememberSaveable { mutableStateOf(false) }
+    var isZoomChecked by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewerState, searchState.matches, searchState.currentIndex) {
         showMatches(viewerState, searchState)
     }
 
+    LaunchedEffect(viewerState) {
+        snapshotFlow { viewerState.zoom }.collect {
+            // Pinching and double-tapping; the app's own zoom and the view's after a size change
+            // happen while idle.
+            if (viewerState.gestureState != PdfViewerState.GESTURE_STATE_IDLE) {
+                isZoomedByUser = true
+                isPageFitted = false
+            }
+        }
+    }
+
     LaunchedEffect(viewerState, isContentLoaded, pendingRestorePage) {
         if (!isContentLoaded) return@LaunchedEffect
+        if (!isZoomChecked && !isZoomedByUser) {
+            isZoomChecked = true
+            // Before the jump to the saved page, so the cover waits for the pages at this zoom.
+            val page = pendingRestorePage ?: readingPosition.page()
+            val bottomPaddingPx = with(density) { contentPadding.calculateBottomPadding().toPx() }
+            val height = viewportHeight - topPaddingPx - bottomPaddingPx
+            val wasPageFitted = isPageFitted
+            isPageFitted = viewportWidth > viewportHeight &&
+                with(density) { viewportHeight.toDp() } >= FitPageMinHeight &&
+                fitPage(viewerState, documentState, page, viewportWidth, height)
+            // Otherwise the view fills the width, but after a whole page it keeps the page's share
+            // of the width: a tablet turned to portrait would show it small. Its own jump to a
+            // page fills the width again.
+            if (wasPageFitted && !isPageFitted) viewerState.scrollToPage(page)
+        }
         if (pendingRestorePage != null) {
-            viewerState.scrollToPage(pendingRestorePage)
+            // The view's own jump would fill the width again.
+            if (isPageFitted) {
+                showWholePage(viewerState, documentState, pendingRestorePage)
+            } else {
+                viewerState.scrollToPage(pendingRestorePage)
+            }
             // The view may scroll later (it needs the page sizes first) and reports its visible
             // pages after that. Until then they're still the first pages, which have rendered,
             // and the document would show before the saved page has.
@@ -309,6 +351,36 @@ internal class ReadingPosition {
 
     /** The page being read: the one at that point, or between pages the one in the middle. */
     var page: () -> Int = { 0 }
+}
+
+/**
+ * Zooms out until the whole [page] fits [width] and [height] (in pixels) and shows it, as filling
+ * the width of a tablet in landscape shows only the top third of a page, in large text. Returns
+ * false when the page's size can't be read.
+ */
+@OptIn(ExperimentalPdfApi::class)
+private suspend fun fitPage(
+    viewerState: PdfViewerState,
+    documentState: DocumentState.Loaded,
+    page: Int,
+    width: Int,
+    height: Float,
+): Boolean {
+    val info = runCatchingCancellable { documentState.document.getPageInfo(page) }.getOrNull()
+    if (info == null || info.width <= 0 || info.height <= 0) return false
+    viewerState.zoomScroll { zoomTo(minOf(width.toFloat() / info.width, height / info.height)) }
+    showWholePage(viewerState, documentState, page)
+    return true
+}
+
+/**
+ * Centers [page] between the bars, keeping the zoom. [PdfViewerState.scrollToPage] would zoom to
+ * fill the width.
+ */
+@OptIn(ExperimentalPdfApi::class)
+private suspend fun showWholePage(viewerState: PdfViewerState, documentState: DocumentState.Loaded, page: Int) {
+    val info = runCatchingCancellable { documentState.document.getPageInfo(page) }.getOrNull() ?: return
+    viewerState.scrollToPosition(PdfPoint(page, info.width / 2f, info.height / 2f))
 }
 
 @OptIn(ExperimentalPdfApi::class)

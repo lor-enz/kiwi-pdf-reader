@@ -143,6 +143,17 @@
   15.
 - `PdfViewer` applies `contentPadding` only when its view is created,
   which is why the top bar is laid over the document.
+- The viewer fills the width, except in a window wider than tall and at
+  least 480 dp tall (a tablet in landscape): there it zooms out until the
+  page being read fits between the bars, as filling the width showed only
+  a third of a page, in large text. A phone in landscape is less tall, and
+  a whole page would be too small there. Checked when the document opens
+  and when the window changes size; once the user pinches or double-taps
+  (zoom changes while a gesture runs), their zoom stays. Turned back to
+  portrait, the width is filled again. `PdfViewerState.scrollToPage`
+  zooms to fill the width, so a whole page is shown with
+  `scrollToPosition` at its center instead (saved page, back from
+  presentation mode). A double tap goes from the whole page to the width.
 - `PdfView` keeps the fast scroller always visible whenever any
   accessibility service runs (password managers etc.), not only screen
   readers. `FastScrollAutoHide` switches it back to fading out (library
@@ -610,9 +621,6 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
 
 Found on a tablet emulator (`Medium_Tablet`, 1280×800 dp, October 2026):
 
-- The viewer opens at fit-to-width, so in landscape an A4 page shows
-  only its top third, with large text. Pinching out to whole pages works
-  (`PdfView.minZoom` is 0.5), but the default doesn't adapt.
 - After rotating (the activity is recreated), the document sits about a
   status bar's height higher: its pages start under the top bar. Likely
   the view is created before the status bar inset is known, and
