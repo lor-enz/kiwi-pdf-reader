@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -76,6 +77,7 @@ import kiwi.lorenz.pdfreader.pdf.DocumentInfo
 import kiwi.lorenz.pdfreader.pdf.PdfMetadata
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.ActionSheet
+import kiwi.lorenz.pdfreader.ui.ContentMaxWidth
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PenguinBlue
@@ -321,7 +323,7 @@ private fun Header(
     isHintPaused: Boolean,
     onPauseHint: () -> Unit,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.widthIn(max = ContentMaxWidth).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Logo()
         Spacer(Modifier.height(16.dp))
         Text(

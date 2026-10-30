@@ -242,6 +242,10 @@
   The Undo stays in Settings, not on Home: there it would come out of
   context, and it's easily missed. A dialog with a choice that applied on
   tapping was dropped as it deleted without any way back.
+- In wide windows, Settings' content and Home's header (with the default
+  app hint) are at most 640 dp wide (`ContentMaxWidth`, as wide as the
+  sheets) and centered: across a tablet in landscape a line of text ran
+  to about 150 characters. Settings still scrolls beside its content.
 - Settings (cog on Home, `SettingsActivity`) shows what the app stores and
   information, in this order: the default PDF app hint at the top (it
   matters most), how long recent files are kept and the storage limit, then
@@ -610,10 +614,6 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
 - Home without recent files ignores side cutouts: in landscape the
   default app hint reaches under the camera (the side-by-side layout with
   recent files keeps clear of it).
-- Wide windows stretch content to the full width: the Settings texts
-  (about 150 characters a line) and sliders, and the default app hint
-  on Home. Capping it at about 600 dp, as the sheets do (640 dp), would
-  read better.
 - Viewer in landscape: the status and top bars take about 28% of the
   height. Hiding the top bar while scrolling down would leave more room
   for the document.

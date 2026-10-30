@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -67,6 +68,7 @@ import kiwi.lorenz.pdfreader.recent.KeepUnused
 import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.recent.StorageLimit
 import kiwi.lorenz.pdfreader.ui.ConfirmDialog
+import kiwi.lorenz.pdfreader.ui.ContentMaxWidth
 import kiwi.lorenz.pdfreader.ui.MessageEffect
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
@@ -276,14 +278,18 @@ private fun SubScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) { innerPadding ->
+        // Scrolls across the whole width, also beside the content.
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
                 .padding(PaddingValues(bottom = 16.dp)),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            content()
+            Column(Modifier.widthIn(max = ContentMaxWidth).fillMaxWidth()) {
+                content()
+            }
         }
     }
 }
