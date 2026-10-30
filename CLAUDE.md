@@ -608,6 +608,27 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
 - The viewer's ⋮ sheet doesn't fit in landscape: "Document info" and
   "PDF Penguin home" need scrolling.
 
+Found on a tablet emulator (`Medium_Tablet`, 1280×800 dp, October 2026):
+
+- The viewer opens at fit-to-width, so in landscape an A4 page shows
+  only its top third, with large text. Pinching out to whole pages works
+  (`PdfView.minZoom` is 0.5), but the default doesn't adapt.
+- After rotating (the activity is recreated), the document sits about a
+  status bar's height higher: its pages start under the top bar. Likely
+  the view is created before the status bar inset is known, and
+  `PdfViewer` applies `contentPadding` only then. Seen with fit-to-width
+  too, so not from fitting the page.
+- The scroll view never gets keyboard focus: arrow keys move focus to the
+  top bar (Space then presses Back and closes the viewer), Page Down and
+  Space don't scroll, and Ctrl+F doesn't open search. `PdfView` handles
+  arrows, Ctrl +/−/0, Ctrl+A and Ctrl+C itself once it's focused.
+- Password screen in landscape: the lock and file name stay centered
+  (not moved by the keyboard, on purpose), so while typing the tablet's
+  keyboard hides them; only the shackle's top shows.
+- Texts say "phone" (`stored_on_phone`, `privacy_policy_summary`,
+  `link_failed`, `error_no_permission`; "Smartphone" in German), which
+  is wrong on a tablet. Android says "device" ("Gerät").
+
 # Planned changes
 
 - Search the recent files list: only matters once it gets long (no count
@@ -615,5 +636,4 @@ Found in a review of the app in landscape (October 2026), not yet fixed:
   appear only then.
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
-- Tablets: two pages side by side (`pagesPerRow`), or a thumbnail
-  side panel
+- Tablets: a thumbnail side panel
