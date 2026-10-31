@@ -9,27 +9,29 @@ They all open PDFs. Most work fine. They're all red.
 This one is blue. It has a penguin.
 
 Oh, and no ads. No subscriptions. No Paid Features. Just a clean, simple PDF reader that happens to be blue.
-Install it for someone you love and tell them: "Just use the blue one."
-They will.
+
+## Design philosophy
+- Simple means nothing new to learn, not few features.
+- Good defaults beat settings.
+- Nothing jumps, pops in or flickers.
+- Every slip can be undone.
+- The app tells the truth, even when it's "this won't work here".
+- The same thing works the same way everywhere.
+- It speaks your language, not the computer's.
+- Feedback appears where you're looking.
+- It does Android properly, down to the details most apps skip.
+- Your PDFs stay on your device: the app doesn't even have internet access.
 
 ## Requirements
 Android 14 or later. On Android 14 the app needs a recent Google Play system update (SDK extension 13): without it, PDFs still open, but links, search, forms and password-protected files don't work, and the app says so.
 
-## Play Store Listing Information:
-Images
+## Development
 
-"Yes, another PDF reader."
-Screenshot of a clean PDF open in the app — [Suspiciously simple. Suspiciously blue.]
-"No ads. No subscriptions. No red."
-Screenshot of the app UI — [Just a PDF. Just blue. Just works.]
-"Just use the blue one."
-Screenshot of a happy parent successfully opening a PDF — [Finally.]
-
-## Checks
+### Checks
 
 Every push to `main` and every pull request runs the unit tests and lint and builds the release version ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Dependabot opens a pull request each month that updates the dependencies ([`.github/dependabot.yml`](.github/dependabot.yml)). Run the same locally with `./gradlew testDebugUnitTest lintDebug assembleRelease`. When a run fails, its test and lint reports are attached to it.
 
-## Releasing
+### Releasing
 
 Releases to Google Play are published by a GitHub Action ([`.github/workflows/release.yml`](.github/workflows/release.yml)).
 
@@ -39,16 +41,6 @@ Releases to Google Play are published by a GitHub Action ([`.github/workflows/re
 4. In the Play Console, review the draft and roll it out, or promote it to closed testing or production.
 
 The action only runs when `version.properties` changes on `main`, and skips a `versionCode` that already has a tag, so every version is released once. Releases run one at a time; a second push waits for the first. Play rejects a `versionCode` that isn't higher than the last upload; the action then fails without publishing anything.
-
-It needs these repository secrets:
-
-| Secret | Content |
-| --- | --- |
-| `UPLOAD_KEYSTORE_BASE64` | The upload keystore, base64-encoded (`base64 -w0 upload.jks`) |
-| `UPLOAD_KEYSTORE_PASSWORD` | The keystore password |
-| `UPLOAD_KEY_ALIAS` | The key alias, e.g. `upload` |
-| `UPLOAD_KEY_PASSWORD` | The key password (the same as the keystore password for PKCS12 keystores) |
-| `PLAY_SERVICE_ACCOUNT_JSON` | The JSON key of a Google service account with permission to release PDF Penguin to testing tracks |
 
 To build a release locally, create `keystore.properties` in the project root (git ignores it) and run `./gradlew :app:bundleRelease`:
 
