@@ -237,7 +237,11 @@
 - The cleanup limits are chosen on the Settings screen itself, no dialog:
   a heading row explains each, a full-width Material `Slider` with three
   stops (`StopSlider`) sits below it, and the stops' labels below that
-  (tappable too, the selected one in the accent color). The choice counts
+  (tappable too, the selected one in the accent color). With a large font
+  the labels would overlap, so `StopLabels` measures them: they show on one
+  line where they fit (the default font size), else with the number above the
+  unit ("3" above "months"), else only the selected one, following the thumb.
+  The choice counts
   when the thumb is let go, so dragging past "1 week" deletes nothing. The
   thumb slides to a stop (200 ms) instead of jumping; that needs a
   `SliderState` with `shouldAutoSnap` off, as the plain `Slider(value, …)`

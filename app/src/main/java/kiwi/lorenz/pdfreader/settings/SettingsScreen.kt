@@ -8,7 +8,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,11 +42,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -58,6 +58,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
@@ -365,32 +366,72 @@ private fun <T> StopSlider(
                 .semantics { this.stateDescription = stateDescription }
                 .testTag(tag),
         )
-        Box(Modifier.fillMaxWidth()) {
-            options.forEachIndexed { index, option ->
-                val isSelected = index == target
-                Text(
-                    text = stringResource(label(option)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        // The ends sit at the track's ends, the others centered below their stop.
-                        .align(
-                            when (index) {
-                                0 -> Alignment.CenterStart
-                                options.lastIndex -> Alignment.CenterEnd
-                                else -> BiasAlignment(-1f + 2f * index / options.lastIndex, 0f)
-                            },
-                        )
-                        .clip(MaterialTheme.shapes.small)
-                        .selectable(selected = isSelected, role = Role.RadioButton) {
-                            moveTo(index)
-                            onSelect(option)
-                        }
-                        .padding(horizontal = 8.dp, vertical = 12.dp)
-                        .testTag(TestTags.SLIDER_STOP),
-                )
+        StopLabels(count = options.size, selected = target, thumb = { state.value }) { index, form ->
+            val isSelected = index == target
+            val text = stringResource(label(options[index]))
+            Text(
+                // "3 months" as "3" above "months".
+                text = if (form == LabelForm.STACKED) text.replaceFirst(' ', '\n') else text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                softWrap = false,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.small)
+                    .selectable(selected = isSelected, role = Role.RadioButton) {
+                        moveTo(index)
+                        onSelect(options[index])
+                    }
+                    .padding(horizontal = 8.dp, vertical = 12.dp)
+                    .testTag(TestTags.SLIDER_STOP),
+            )
+        }
+    }
+}
+
+/** How a [StopSlider]'s labels are shown, the first form whose labels don't overlap. */
+private enum class LabelForm {
+    /** Each label on one line. */
+    LINE,
+
+    /** The number above the unit, for large fonts. */
+    STACKED,
+
+    /** Only the selected stop's label, following the thumb, when even stacked labels overlap. */
+    SELECTED,
+}
+
+/**
+ * Lays out a [StopSlider]'s labels: the ends at the track's ends, the others centered below their
+ * stop. [thumb] is the thumb's position in stops, which the label of the [SELECTED][LabelForm.SELECTED]
+ * form follows.
+ */
+@Composable
+private fun StopLabels(
+    count: Int,
+    selected: Int,
+    thumb: () -> Float,
+    label: @Composable (index: Int, form: LabelForm) -> Unit,
+) {
+    SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
+        val width = constraints.maxWidth
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        fun x(stop: Float, labelWidth: Int) = ((width - labelWidth) * stop / (count - 1)).roundToInt()
+        fun measure(form: LabelForm) =
+            subcompose(form) { repeat(count) { label(it, form) } }.map { it.measure(loose) }
+        fun fits(labels: List<Placeable>) = (0 until count - 1).all {
+            x(it.toFloat(), labels[it].width) + labels[it].width <= x(it + 1f, labels[it + 1].width)
+        }
+        val all = measure(LabelForm.LINE).takeIf(::fits) ?: measure(LabelForm.STACKED).takeIf(::fits)
+        if (all != null) {
+            val height = all.maxOf { it.height }
+            layout(width, height) {
+                all.forEachIndexed { index, it -> it.place(x(index.toFloat(), it.width), (height - it.height) / 2) }
             }
+        } else {
+            val one = subcompose(LabelForm.SELECTED) { label(selected, LabelForm.SELECTED) }.single().measure(loose)
+            layout(width, one.height) { one.place(x(thumb(), one.width), 0) }
         }
     }
 }
