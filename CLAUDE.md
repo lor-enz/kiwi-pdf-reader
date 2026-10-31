@@ -41,13 +41,18 @@
   cards) with the real store, a fake `PdfLoader` and fake password encryption
   (Robolectric has no Android Keystore); add a test there when changing that.
 - Use only already running emulators. If none are running or they are misbehaving, tell the user.
-  There are two: `Emu_Pixel_9a_No_Google` (Android 16) for everyday
+  There are three: `Emu_Pixel_9a_No_Google` (Android 16) for everyday
   testing, and `Medium_Phone` (Android 14 without Google Play, SDK extension
   7, which it never gets past) for devices without the system update `androidx.pdf` needs (see
   minSdk below). Test changes to that warning, or to anything that may
-  behave differently there, on the second too.
+  behave differently there, on the second too. `Emu_Pixel_9_Pro_with_Google`
+  (Android 16) has Google Play services, for what needs Google's apps (the
+  assistant, Drive's PDF viewer); its assistant has no account.
+- Only one emulator runs at a time, and RAM and storage are limited. If a
+  test needs another configuration, ask the user for it instead of working
+  around it, and keep such requests few.
 - Helpers in `scripts/test/` use the running emulator, never a connected
-  phone unless `ANDROID_SERIAL` names it. With both emulators running,
+  phone unless `ANDROID_SERIAL` names it. With several devices connected,
   pick one with `ANDROID_SERIAL` (`adb devices`; `adb -s <serial> emu avd
   name` tells which is which). Install with `install.sh`, not
   `./gradlew installDebug`, which installs on every connected device.
@@ -439,6 +444,17 @@
   `ocrProvider`, should a suitable engine turn up.) Searching a document
   without any text says so instead of "0 / 0"; the check reads pages until
   the first one with text and runs once per document.
+- No `onProvideAssistContent`. Tried (October 2026) handing the assistant
+  the document as `clipData` with a read grant, so it could answer about
+  the whole file. Tested on a Pixel 9 Pro (Android 17, Gemini): the system
+  asks the viewer for it (Gemini, Circle to Search, the app switcher), but
+  nothing uses it; the system never granted the URI, and Gemini's "+" →
+  "Screen" attaches a screenshot. Over Drive's PDF viewer Gemini attaches
+  the PDF itself, but Drive grants it to Gemini directly
+  (`grantUriPermission`, `global` in `dumpsys activity permissions`), a
+  private path between Google's apps. Web links (`setWebUri`) are the only
+  other thing these use, and the app has none. The assistant works from the
+  screenshot, which already includes our viewer, protected documents too.
 - Web, mail and phone links go through `onUrlLinkClicked`: only http(s),
   mailto and tel are opened (the library's default would open any scheme).
   In-document links are
