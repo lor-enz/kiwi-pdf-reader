@@ -87,18 +87,7 @@ fun ComponentActivity.launchSharePdf(name: String, message: SnackbarMessage, fil
 
 /** Hands the PDF to the share sheet. Throws if it can't be read anymore. */
 suspend fun Context.sharePdf(uri: Uri, name: String) {
-    // A copy under the real name, so the recipient doesn't see a cryptic one.
-    val file = withContext(Dispatchers.IO) {
-        deleteOldSharedCopies()
-        val dir = File(cacheDir, SHARED_DIR).apply { mkdirs() }
-        // A folder per share, so files with the same name don't overwrite each other.
-        val target = File(File(dir, System.nanoTime().toString()).apply { mkdirs() }, pdfFileName(name))
-        contentResolver.openInputStream(uri)!!.use { input ->
-            target.outputStream().use { input.copyTo(it) }
-        }
-        target
-    }
-    val shared = providedUri(file)
+    val shared = providedUri(sharedCopy(uri, name))
     val send = Intent(Intent.ACTION_SEND)
         .setType(PDF_MIME_TYPE)
         .putExtra(Intent.EXTRA_STREAM, shared)
@@ -109,6 +98,18 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
         // Sharing it back into this app would only open it a second time.
         .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ExternalViewerActivity::class.java)))
     startActivity(chooser)
+}
+
+/** A copy of the PDF at [uri] under the real name, so the other app doesn't see a cryptic one. */
+private suspend fun Context.sharedCopy(uri: Uri, name: String): File = withContext(Dispatchers.IO) {
+    deleteOldSharedCopies()
+    val dir = File(cacheDir, SHARED_DIR).apply { mkdirs() }
+    // A folder per copy, so files with the same name don't overwrite each other.
+    val target = File(File(dir, System.nanoTime().toString()).apply { mkdirs() }, pdfFileName(name))
+    contentResolver.openInputStream(uri)!!.use { input ->
+        target.outputStream().use { input.copyTo(it) }
+    }
+    target
 }
 
 /** A URI that other apps can read [file] through, with a grant; see the provider in the manifest. */
