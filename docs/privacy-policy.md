@@ -46,7 +46,7 @@ Stored data is deleted automatically: documents leave the recent files list,
 with their copies and filled-in forms, once they haven't been opened for
 3 months, and copies and filled-in forms are deleted once they take up more
 than 500 MB in total, the least recently opened first. You can choose other
-limits in the app's settings (1 week or 1 year, 100 MB or 2 GB). You can
+limits in the app's settings (1 week, 1 month, 6 months or 1 year, 100 MB or 2 GB). You can
 remove single documents from the list, or use "Clear recent files" and
 "Forget all passwords" in the app's settings. Uninstalling the app or clearing its
 storage deletes all of its data.

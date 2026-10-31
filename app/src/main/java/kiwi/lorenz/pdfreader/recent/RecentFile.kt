@@ -61,7 +61,9 @@ data class Cleanup(val removeEntries: Set<String>, val dropFilled: Set<String>)
 /** How long an entry stays in the list without being opened. Chosen in Settings. */
 enum class KeepUnused(val millis: Long) {
     WEEK(7 * DAY_MILLIS),
+    MONTH(30 * DAY_MILLIS),
     THREE_MONTHS(91 * DAY_MILLIS),
+    SIX_MONTHS(182 * DAY_MILLIS),
     YEAR(365 * DAY_MILLIS),
 }
 

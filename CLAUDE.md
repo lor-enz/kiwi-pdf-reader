@@ -167,11 +167,12 @@
   To reproduce on the emulator, install a dummy accessibility service.
 - Files opened from other apps lose their permission once closed, so the
   app keeps private copies for the recent files list. Cleanup (`CleanupRules`)
-  has two limits, each chosen in Settings from three presets, as no single
+  has two limits, each chosen in Settings from a few presets, as no single
   default suits both short-lived files (tickets, documents to sign) and
   reference material (manuals, contracts). Age: an entry not opened for
-  1 week, 3 months (default) or 1 year leaves the list, picked files too
-  (their permission is released), or the list would only grow. Storage: the
+  1 week, 1 month, 3 months (default), 6 months or 1 year leaves the list,
+  picked files too (their permission is released), or the list would only
+  grow. Storage: the
   copies and filled-in forms may take 100 MB, 500 MB (default, about a
   hundred everyday PDFs) or 2 GB (decimal, as Android shows sizes); above it
   the least recently opened go first, a copy with its entry, a picked file
@@ -235,14 +236,15 @@
   left corner, level with "Recent" (24 dp from the left edge): beside
   "Recent" it looked like an option of the list, and it scrolled away with it.
 - The cleanup limits are chosen on the Settings screen itself, no dialog:
-  a heading row explains each, a full-width Material `Slider` with three
-  stops (`StopSlider`) sits below it, and the stops' labels below that
+  a heading row explains each, a full-width Material `Slider` with a stop
+  per preset (`StopSlider`) sits below it, and the stops' labels below that
   (tappable too, the selected one in the accent color). With a large font
   the labels would overlap, so `StopLabels` measures them: they show on one
   line where they fit (the default font size), else with the number above the
   unit ("3" above "months"), else only the selected one, following the thumb.
-  The choice counts
-  when the thumb is let go, so dragging past "1 week" deletes nothing. The
+  On a Pixel 9 Pro the five age labels are stacked at 1.15× and only the
+  selected one shows from 1.3×. The choice counts when the thumb is let go,
+  so dragging past "1 week" deletes nothing. The
   thumb slides to a stop (200 ms) instead of jumping; that needs a
   `SliderState` with `shouldAutoSnap` off, as the plain `Slider(value, …)`
   snaps every value of the animation to the nearest stop. To check

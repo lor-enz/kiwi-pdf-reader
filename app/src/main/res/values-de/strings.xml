@@ -43,7 +43,9 @@
     <string name="keep_unused">In der Liste behalten</string>
     <string name="keep_unused_text">Wie lange eine Datei nach dem letzten Öffnen in der Liste bleibt. Deine eigenen Dateien bleiben, wo sie sind.</string>
     <string name="keep_week">1 Woche</string>
+    <string name="keep_month">1 Monat</string>
     <string name="keep_three_months">3 Monate</string>
+    <string name="keep_six_months">6 Monate</string>
     <string name="keep_year">1 Jahr</string>
     <plurals name="limits_removed_entries">
         <item quantity="one">%d Datei aus der Liste entfernt</item>

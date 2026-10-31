@@ -50,7 +50,9 @@
     <string name="keep_unused">Keep recent files</string>
     <string name="keep_unused_text">How long a file stays in the list after you last opened it. Your own files stay where they are.</string>
     <string name="keep_week">1 week</string>
+    <string name="keep_month">1 month</string>
     <string name="keep_three_months">3 months</string>
+    <string name="keep_six_months">6 months</string>
     <string name="keep_year">1 year</string>
     <string name="storage_limit">Storage limit</string>
     <string name="storage_limit_text">Files from other apps and your filled-in forms are stored as copies. Above the limit, the ones opened longest ago are deleted first.</string>

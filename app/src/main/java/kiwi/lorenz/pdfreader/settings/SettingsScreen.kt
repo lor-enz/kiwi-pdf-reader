@@ -467,7 +467,9 @@ private fun SettingsRow(
 private val KeepUnused.label
     get() = when (this) {
         KeepUnused.WEEK -> R.string.keep_week
+        KeepUnused.MONTH -> R.string.keep_month
         KeepUnused.THREE_MONTHS -> R.string.keep_three_months
+        KeepUnused.SIX_MONTHS -> R.string.keep_six_months
         KeepUnused.YEAR -> R.string.keep_year
     }
 
