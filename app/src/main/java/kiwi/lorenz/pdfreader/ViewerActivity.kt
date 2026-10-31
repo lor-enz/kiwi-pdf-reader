@@ -10,6 +10,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.IntentCompat
 import androidx.pdf.models.FormEditInfo
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +29,7 @@ import kiwi.lorenz.pdfreader.viewer.DocumentState
 import kiwi.lorenz.pdfreader.viewer.ViewerActions
 import kiwi.lorenz.pdfreader.viewer.ViewerScreen
 import kiwi.lorenz.pdfreader.viewer.ViewerViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -37,8 +42,18 @@ open class ViewerActivity : ComponentActivity() {
     private val isOwnTask get() = this is ExternalViewerActivity
 
     private val pickPdf = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { viewModel.openPicked(it) }
+        uri?.let {
+            greetsWithAppIcon = false
+            viewModel.openPicked(it)
+        }
     }
+
+    /**
+     * A card of its own opens after the system's splash screen, which the cover continues with the
+     * app icon. Only then: anything after it (a password, another document) shows the PDF symbol,
+     * or the icon would look like the app starting anew.
+     */
+    private var greetsWithAppIcon by mutableStateOf(false)
 
     private val saveCopy = registerForActivityResult(ActivityResultContracts.CreateDocument(PDF_MIME_TYPE)) { uri ->
         uri?.let { viewModel.saveCopy(it) }
@@ -78,6 +93,17 @@ open class ViewerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         viewModel.taskId = taskId
+        // A new card or one restored after process death, not a rotation once the document shows.
+        greetsWithAppIcon = isOwnTask && viewModel.documentState.let { it == DocumentState.Empty || it == DocumentState.Loading }
+        if (greetsWithAppIcon) {
+            // The cover shows the icon just like the splash screen, so it's removed at once. The
+            // system's exit animation faded the icon out and the cover in, as if it started anew.
+            splashScreen.setOnExitAnimationListener { it.remove() }
+            lifecycleScope.launch {
+                snapshotFlow { viewModel.documentState }.first { it is DocumentState.NeedsPassword || it is DocumentState.Failed }
+                greetsWithAppIcon = false
+            }
+        }
 
         // Only opened to show the "Open with" dialog; Home sees what was chosen.
         if (isDefaultCheck(intent.data)) {
@@ -118,6 +144,7 @@ open class ViewerActivity : ComponentActivity() {
                 createdNotice = viewModel.createdNotice,
                 message = viewModel.message.current,
                 actions = actions,
+                coverShowsAppIcon = greetsWithAppIcon,
             )
         }
     }

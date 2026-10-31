@@ -9,6 +9,11 @@
     <style name="Theme.PdfPenguin" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowBackground">@color/off_white</item>
         <!--
+          The splash screen shows the icon also when another app opens a file, not only from the
+          launcher: the viewer's cover continues it with the icon, which otherwise popped up late.
+        -->
+        <item name="android:windowSplashScreenBehavior">icon_preferred</item>
+        <!--
           The PDF viewer's fast scroller (page number pill and scroll thumb) reads
           these Material attributes. Without them the page number is black on a
           transparent background and invisible on dark pages.

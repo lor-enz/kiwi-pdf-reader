@@ -389,6 +389,25 @@
   beat a hidden document. The jump only counts once the view reports the
   saved page as visible: it may scroll later, and until then its visible
   pages are the first ones, which have rendered.
+- The splash screen is the system's default (the launcher icon on
+  `windowBackground`), shown when the app starts and for every file from
+  another app, as each opens a card of its own. There the cover continues
+  it: the app icon at the splash's size (160 dp) and position (centered in
+  the window), so the penguin greets the user until the document shows. Only
+  then (`greetsWithAppIcon`): a password, a failure or another document ends
+  it, and the viewer in the main task (from Home) always shows the PDF
+  symbol. The penguin on every document from Home looked like the app
+  restarting; the PDF symbol after the splash jumped in size and position.
+  The theme sets `windowSplashScreenBehavior` to `icon_preferred`: by
+  default only the launcher gets the icon, and a file opened from another
+  app (a file manager) showed an empty screen until the cover drew it.
+  `am start` from the shell does show the icon, so test that through an app
+  (e.g. Files, Downloads). While the cover greets, the viewer removes the
+  splash at once (`setOnExitAnimationListener`): the system's exit
+  animation faded the icon out and the cover's in, so it seemed to reset.
+  Home keeps the system's animation. To see such animations, set the three
+  animation scales to 5 and record with `screenrecord --size 720x1606` (the
+  full size fails), then run `prepare-device.sh` again.
 - Print renders password-protected documents as images, as the print
   system can't open them.
 - Shared copies are deleted after a day, not right away, because

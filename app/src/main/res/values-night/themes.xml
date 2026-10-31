@@ -4,6 +4,7 @@
     <!-- See values/themes.xml -->
     <style name="Theme.PdfPenguin" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/night_background</item>
+        <item name="android:windowSplashScreenBehavior">icon_preferred</item>
         <item name="colorSurfaceContainerHigh">@color/deep_blue</item>
         <item name="colorOnSurface">@color/off_white</item>
         <item name="colorOnSurfaceVariant">@color/off_white</item>

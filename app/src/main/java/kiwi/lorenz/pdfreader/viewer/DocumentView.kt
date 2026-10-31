@@ -3,12 +3,14 @@ package kiwi.lorenz.pdfreader.viewer
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,7 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -44,17 +48,18 @@ import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import androidx.pdf.compose.rememberPdfViewerState
 import androidx.pdf.models.FormEditInfo
-import kiwi.lorenz.pdfreader.R
-import kiwi.lorenz.pdfreader.document.openLink
-import kiwi.lorenz.pdfreader.pdf.OutlineItem
-import kiwi.lorenz.pdfreader.ui.TestTags
-import kiwi.lorenz.pdfreader.util.runCatchingCancellable
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.abs
+import kiwi.lorenz.pdfreader.R
+import kiwi.lorenz.pdfreader.document.openLink
+import kiwi.lorenz.pdfreader.pdf.OutlineItem
+import kiwi.lorenz.pdfreader.ui.TestTags
+import kiwi.lorenz.pdfreader.ui.theme.PenguinBlue
+import kiwi.lorenz.pdfreader.util.runCatchingCancellable
 
 // PdfView draws highlights with a MULTIPLY blend, so these must be opaque and light:
 // a pale tint of Penguin Blue, and the emperor penguin's yellow-orange for the current match, that
@@ -81,6 +86,9 @@ private const val REVEAL_EDGE = 0.4f
 private const val REVEAL_TIMEOUT_MS = 3000L
 
 private val PlaceholderIconSize = 96.dp
+
+/** As large as the system's splash screen shows the app icon. */
+private val SplashIconSize = 160.dp
 
 /**
  * Where the reader is, as a share of the visible area below the bar: a heading in the top part
@@ -110,6 +118,7 @@ internal fun DocumentView(
     onJumped: () -> Unit,
     readingPosition: ReadingPosition,
     contentPadding: PaddingValues,
+    showsAppIcon: Boolean,
     onBarHiddenChange: (Boolean) -> Unit,
     onFormEdit: (FormEditInfo) -> Unit,
     onLinkFailed: () -> Unit,
@@ -289,6 +298,7 @@ internal fun DocumentView(
         if (revealProgress < 1f) {
             DocumentPlaceholder(
                 contentPadding = contentPadding,
+                showsAppIcon = showsAppIcon,
                 modifier = Modifier
                     .wipeAway { revealProgress }
                     .background(MaterialTheme.colorScheme.background),
@@ -320,10 +330,33 @@ private fun Modifier.wipeAway(progress: () -> Float): Modifier = this
 
 /**
  * Shown while a document opens, until its first pages are rendered. Opening takes a moment at
- * most, too short for a spinner to read as progress, so it's a calm PDF symbol instead.
+ * most, too short for a spinner to read as progress, so it's a calm PDF symbol instead. Right
+ * after the system's splash screen (a file from another app), it's the app icon, where the splash
+ * showed it and at its size, so the greeting stays put until the document shows.
  */
 @Composable
-internal fun DocumentPlaceholder(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
+internal fun DocumentPlaceholder(
+    contentPadding: PaddingValues,
+    showsAppIcon: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (showsAppIcon) {
+        // The splash centers it in the window, not below the bars.
+        Box(modifier.fillMaxSize().testTag(TestTags.DOCUMENT_LOADING), contentAlignment = Alignment.Center) {
+            // Decorative: the top bar names the document.
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(SplashIconSize)
+                    .clip(CircleShape)
+                    .background(PenguinBlue)
+                    // Icon masks show the middle 72 dp of the launcher icon's 108.
+                    .scale(108 / 72f),
+            )
+        }
+        return
+    }
     Box(
         modifier = modifier
             .fillMaxSize()

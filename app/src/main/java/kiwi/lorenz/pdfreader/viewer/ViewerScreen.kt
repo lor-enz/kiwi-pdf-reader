@@ -125,6 +125,7 @@ fun ViewerScreen(
     createdNotice: CreatedNotice?,
     message: Int?,
     actions: ViewerActions,
+    coverShowsAppIcon: Boolean,
 ) {
     // Otherwise the system closes the viewer itself, so the back gesture shows what's behind it.
     BackHandler(enabled = searchState.isActive, onBack = actions::closeSearch)
@@ -274,6 +275,7 @@ fun ViewerScreen(
                             onJumped = { jumpTarget = null },
                             readingPosition = readingPosition,
                             contentPadding = contentPadding,
+                            showsAppIcon = coverShowsAppIcon,
                             onBarHiddenChange = { isBarHiddenByScroll = it },
                             onFormEdit = actions::formEdited,
                             onLinkFailed = { actions.showMessage(R.string.link_failed) },
@@ -296,7 +298,8 @@ fun ViewerScreen(
                             modifier = Modifier.padding(contentPadding),
                         )
 
-                        DocumentState.Loading, DocumentState.Empty -> DocumentPlaceholder(contentPadding)
+                        DocumentState.Loading, DocumentState.Empty ->
+                            DocumentPlaceholder(contentPadding, showsAppIcon = coverShowsAppIcon)
                     }
                 }
 
