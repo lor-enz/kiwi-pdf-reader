@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kiwi.lorenz.pdfreader.defaultapp.openDefaultSettings
 import kiwi.lorenz.pdfreader.document.PDF_MIME_TYPE
+import kiwi.lorenz.pdfreader.document.launchOpenPdfWith
 import kiwi.lorenz.pdfreader.document.launchSharePdf
 import kiwi.lorenz.pdfreader.home.HomeScreen
 import kiwi.lorenz.pdfreader.home.HomeViewModel
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
                 onOpenRecent = { startActivity(ViewerActivity.recentIntent(this@MainActivity, it.id)) },
                 pendingRemoval = viewModel.pendingRemoval,
                 onShareRecent = { entry -> launchSharePdf(entry.name, viewModel.message) { entry.uri.toUri() } },
+                onOpenRecentWith = { entry ->
+                    launchOpenPdfWith(entry.name, viewModel.message) { viewModel.currentFile(entry) }
+                },
                 documentInfo = viewModel::documentInfo,
                 onForgetPassword = viewModel::forgetPassword,
                 onRemoveRecent = viewModel::removeRecent,

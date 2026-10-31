@@ -100,6 +100,41 @@ suspend fun Context.sharePdf(uri: Uri, name: String) {
     startActivity(chooser)
 }
 
+/**
+ * Opens the PDF that [file] returns in another app the user picks; a failure shows in the
+ * screen's snackbar. Read-only: edits made there stay in that app.
+ */
+fun ComponentActivity.launchOpenPdfWith(name: String, message: SnackbarMessage, file: suspend () -> Uri) {
+    lifecycleScope.launch {
+        // Otherwise the chooser opens empty.
+        if (!hasOtherPdfApp()) {
+            message.show(R.string.no_other_pdf_app)
+            return@launch
+        }
+        runCatchingCancellable { openPdfWith(file(), name) }.onFailure { message.show(R.string.open_with_failed) }
+    }
+}
+
+/** Whether an app other than this one views PDFs; seeing them needs the manifest's `<queries>`. */
+private fun Context.hasOtherPdfApp(): Boolean {
+    val view = Intent(Intent.ACTION_VIEW).setDataAndType("content://$packageName.files/x.pdf".toUri(), PDF_MIME_TYPE)
+    return packageManager.queryIntentActivities(view, 0).any { it.activityInfo.packageName != packageName }
+}
+
+/** Hands the PDF to the chooser of apps that view PDFs. Throws if it can't be read anymore. */
+private suspend fun Context.openPdfWith(uri: Uri, name: String) {
+    // A copy, as for sharing: the app sees the real name, and the file can't be written to.
+    val shared = providedUri(sharedCopy(uri, name))
+    val view = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(shared, PDF_MIME_TYPE)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    view.clipData = ClipData.newRawUri(null, shared)
+    // Always a chooser: as the default PDF app, this one would open it again.
+    val chooser = Intent.createChooser(view, getString(R.string.open_with))
+        .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ExternalViewerActivity::class.java)))
+    startActivity(chooser)
+}
+
 /** A copy of the PDF at [uri] under the real name, so the other app doesn't see a cryptic one. */
 private suspend fun Context.sharedCopy(uri: Uri, name: String): File = withContext(Dispatchers.IO) {
     deleteOldSharedCopies()

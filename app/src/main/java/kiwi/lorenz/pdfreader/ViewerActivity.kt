@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import kiwi.lorenz.pdfreader.defaultapp.isDefaultCheck
 import kiwi.lorenz.pdfreader.document.PDF_MIME_TYPE
+import kiwi.lorenz.pdfreader.document.launchOpenPdfWith
 import kiwi.lorenz.pdfreader.document.launchSharePdf
 import kiwi.lorenz.pdfreader.document.pdfFileName
 import kiwi.lorenz.pdfreader.document.printPdf
@@ -78,6 +79,7 @@ open class ViewerActivity : ComponentActivity() {
         override fun previousMatch() = viewModel.search.previous()
         override fun print() = this@ViewerActivity.print()
         override fun share() = this@ViewerActivity.share()
+        override fun openWith() = this@ViewerActivity.openWith()
         override fun saveCopy() {
             loadedDocument()?.let { saveCopy.launch(pdfFileName(it.name)) }
         }
@@ -192,6 +194,12 @@ open class ViewerActivity : ComponentActivity() {
     private fun share() {
         val name = loadedDocument()?.name ?: return
         launchSharePdf(name, viewModel.message) { checkNotNull(viewModel.currentFile()) }
+    }
+
+    /** Filled-in form fields included, as with share. */
+    private fun openWith() {
+        val name = loadedDocument()?.name ?: return
+        launchOpenPdfWith(name, viewModel.message) { checkNotNull(viewModel.currentFile()) }
     }
 
     private fun print() {

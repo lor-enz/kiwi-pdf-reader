@@ -101,6 +101,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenRecent: (RecentFile) -> Unit,
     onShareRecent: (RecentFile) -> Unit,
+    onOpenRecentWith: (RecentFile) -> Unit,
     documentInfo: suspend (RecentFile) -> DocumentInfo,
     onForgetPassword: (RecentFile) -> Unit,
     pendingRemoval: RecentFile?,
@@ -118,6 +119,7 @@ fun HomeScreen(
             entry = entry,
             onDismiss = { sheetEntryId = null },
             onShare = { onShareRecent(entry) },
+            onOpenWith = { onOpenRecentWith(entry) },
             onInfo = { infoEntryId = entry.id },
             onForgetPassword = { onForgetPassword(entry) },
             onRemove = { onRemoveRecent(entry) },
@@ -450,6 +452,7 @@ private fun RecentFileSheet(
     entry: RecentFile,
     onDismiss: () -> Unit,
     onShare: () -> Unit,
+    onOpenWith: () -> Unit,
     onInfo: () -> Unit,
     onForgetPassword: () -> Unit,
     onRemove: () -> Unit,
@@ -457,6 +460,7 @@ private fun RecentFileSheet(
     ActionSheet(onDismiss) {
         Heading(entry.name, entry.title, TestTags.RECENT_SHEET_TITLE)
         Action(R.drawable.ic_share, R.string.share, TestTags.SHARE_RECENT, onClick = onShare)
+        Action(R.drawable.ic_open_in_new, R.string.open_with, TestTags.OPEN_WITH_RECENT, onClick = onOpenWith)
         Action(R.drawable.ic_info, R.string.document_info, TestTags.RECENT_INFO, onClick = onInfo)
         if (entry.encryptedPassword != null) {
             Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onClick = onForgetPassword)
@@ -536,6 +540,7 @@ private fun HomeScreenEmptyPreview() {
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
+            onOpenRecentWith = {},
             documentInfo = { DocumentInfo(PdfMetadata(), null) },
             onForgetPassword = {},
             pendingRemoval = null,
@@ -568,6 +573,7 @@ private fun HomeScreenRecentPreview() {
             onOpenSettings = {},
             onOpenRecent = {},
             onShareRecent = {},
+            onOpenRecentWith = {},
             documentInfo = { DocumentInfo(PdfMetadata(), null) },
             onForgetPassword = {},
             pendingRemoval = null,

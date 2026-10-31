@@ -99,6 +99,7 @@ interface ViewerActions {
     fun previousMatch()
     fun print()
     fun share()
+    fun openWith()
     fun saveCopy()
     fun clearFilledFields()
     fun goHome()
@@ -154,6 +155,7 @@ fun ViewerScreen(
             onPresent = { actions.startPresentation(readingPosition.page()) },
             onPrint = actions::print,
             onShare = actions::share,
+            onOpenWith = actions::openWith,
             onSaveCopy = actions::saveCopy,
             onInfo = { isInfoSheetOpen = true },
             isFilledIn = isFilledIn,
@@ -431,6 +433,7 @@ private fun ToolsSheet(
     onPresent: () -> Unit,
     onPrint: () -> Unit,
     onShare: () -> Unit,
+    onOpenWith: () -> Unit,
     onSaveCopy: () -> Unit,
     onInfo: () -> Unit,
     isFilledIn: Boolean,
@@ -445,6 +448,7 @@ private fun ToolsSheet(
         Action(R.drawable.ic_slideshow, R.string.present, TestTags.TOOL_PRESENT, onClick = onPresent)
         Action(R.drawable.ic_print, R.string.print, TestTags.TOOL_PRINT, note, onPrint)
         Action(R.drawable.ic_share, R.string.share, TestTags.TOOL_SHARE, note, onShare)
+        Action(R.drawable.ic_open_in_new, R.string.open_with, TestTags.TOOL_OPEN_WITH, note, onOpenWith)
         Action(R.drawable.ic_save, R.string.save_copy, TestTags.TOOL_SAVE_COPY, note, onSaveCopy)
         Action(R.drawable.ic_info, R.string.document_info, TestTags.TOOL_INFO, onClick = onInfo)
         if (isFilledIn) {

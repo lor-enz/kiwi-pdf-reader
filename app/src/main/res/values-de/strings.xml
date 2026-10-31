@@ -75,6 +75,9 @@
     <string name="print">Drucken</string>
     <string name="share">Teilen</string>
     <string name="share_failed">Dieses PDF konnte nicht geteilt werden.</string>
+    <string name="open_with">Öffnen mit</string>
+    <string name="open_with_failed">Dieses PDF konnte nicht in einer anderen App geöffnet werden.</string>
+    <string name="no_other_pdf_app">Keine andere App auf diesem Gerät öffnet PDFs.</string>
     <string name="save_copy">Kopie speichern</string>
     <string name="copy_saved">Kopie gespeichert</string>
     <string name="save_failed">Die Kopie konnte nicht gespeichert werden.</string>

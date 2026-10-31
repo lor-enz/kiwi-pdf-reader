@@ -1,6 +1,7 @@
 package kiwi.lorenz.pdfreader.home
 
 import android.app.Application
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -52,6 +53,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val password = entry.encryptedPassword?.let { PasswordCipher.decrypt(it) }
         return getApplication<Application>().readDocumentInfo(entry.uri.toUri(), password)
     }
+
+    /** The entry's filled-in version if it has one, as the viewer would open it. */
+    suspend fun currentFile(entry: RecentFile): Uri =
+        store.filledVersion(entry.id)?.let(Uri::fromFile) ?: entry.uri.toUri()
 
     fun removeRecent(entry: RecentFile) {
         // One undo at a time: an earlier removal becomes final.
