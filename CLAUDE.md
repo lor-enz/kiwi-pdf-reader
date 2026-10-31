@@ -515,6 +515,14 @@
   private path between Google's apps. Web links (`setWebUri`) are the only
   other thing these use, and the app has none. The assistant works from the
   screenshot, which already includes our viewer, protected documents too.
+- No special effort for screen readers (TalkBack): use standard
+  components, label icon buttons, and don't break what works, but don't
+  build workarounds for them. Tried (October 2026) opening the choice
+  sheet from TalkBack's click by wrapping `PdfView`'s accessibility
+  delegate, then dropped it: on a phone, form fields couldn't be filled
+  with TalkBack at all, and it can't be tested
+  through adb (`input` taps and keys bypass TalkBack and reach the app
+  as plain touches), only by hand.
 - Web, mail and phone links go through `onUrlLinkClicked`: only http(s),
   mailto and tel are opened (the library's default would open any scheme).
   In-document links are
