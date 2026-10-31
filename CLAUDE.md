@@ -566,8 +566,16 @@
   in landscape; `ModalBottomSheet` would cut it off). The navigation bar's
   inset is inside the scrolling content, or it would be a strip hiding what
   scrolls past it, and the content fills the width, so the sheet scrolls
-  beside narrow content too. Page
-  sizes are named (A4, Letter, …) or given in mm, or inches in the US.
+  beside narrow content too. An action closes its sheet at once by default
+  (`SheetClosing.Instant`): most bring up something else (a chooser,
+  another sheet), which covers the cut. Those whose result shows behind the
+  sheet slide it away like a swipe down (`SheetClosing.Slide`), and run
+  once it's gone: "Remove from list" (the entry is seen leaving; it would
+  also take its sheet with it), "Forget password" (its only feedback is the
+  entry's padlock closing, and its thumbnail and title going) and the
+  choices of form fields (which apply
+  right away, so the field shows the new value as the sheet slides off).
+  Page sizes are named (A4, Letter, …) or given in mm, or inches in the US.
 
 - The table of contents (the PDF's outline) opens in a drawer from the left
   (`viewer/ContentsDrawer.kt`, Material's `ModalNavigationDrawer`), by a
@@ -714,6 +722,14 @@ Found on a tablet emulator (`Medium_Tablet`, 1280×800 dp, October 2026):
   (not moved by the keyboard, on purpose), so while typing the tablet's
   keyboard hides them; only the shackle's top shows.
 
+Found while making sheets slide away (October 2026):
+
+- Share and Open with copy the document before the chooser appears
+  (`sharedCopy`). With a large file (`heavy.pdf`) the sheet is gone and the
+  viewer or Home sits there without any sign of progress until the chooser
+  comes up. Sliding the sheet away wouldn't help: it would only add its
+  animation to the wait.
+
 # Planned changes
 
 - Search the recent files list: only matters once it gets long (no count
@@ -722,3 +738,6 @@ Found on a tablet emulator (`Medium_Tablet`, 1280×800 dp, October 2026):
 - Dark pages in dark mode: `PdfViewer` always draws them white, which
   glares at night. Inverting would also shift images and form colors
 - Tablets: a thumbnail side panel
+- A sign of progress while Share or Open with prepare a large file (see
+  Known issues), e.g. a progress indicator that only shows if preparing
+  takes longer than a moment, so everyday files stay instant.

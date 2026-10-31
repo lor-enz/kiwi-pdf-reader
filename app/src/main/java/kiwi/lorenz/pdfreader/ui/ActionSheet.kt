@@ -27,6 +27,11 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +41,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kiwi.lorenz.pdfreader.R
+import kotlinx.coroutines.launch
+
+/** How a sheet closes when one of its actions is tapped. */
+enum class SheetClosing {
+    /** Gone at once: for actions that bring up something else (a chooser, another sheet). */
+    Instant,
+
+    /** Slides away like a sheet swiped down: for actions whose result shows behind it. */
+    Slide,
+}
 
 /** A bottom sheet with a list of actions; each one closes the sheet before it runs. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,9 +58,23 @@ import kiwi.lorenz.pdfreader.R
 fun ActionSheet(onDismiss: () -> Unit, content: @Composable ActionSheetScope.() -> Unit) {
     // Fully open right away: the half-open state is what it would return to after recreation
     // (e.g. switching to dark mode), even after being dragged up.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val isClosing = remember { mutableStateOf(false) }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    val slideAway: (() -> Unit) -> Unit = { then ->
+        // Once only: a second tap while it slides would run another action.
+        if (!isClosing.value) {
+            isClosing.value = true
+            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                currentOnDismiss()
+                then()
+            }
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = sheetState,
         // The sheet is a window of its own, so it doesn't inherit exposed test tags from the root.
         modifier = Modifier.exposeTestTags(),
         // The navigation bar's inset goes inside the scrolling content (below), or it would be a
@@ -61,13 +90,20 @@ fun ActionSheet(onDismiss: () -> Unit, content: @Composable ActionSheetScope.() 
                 .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
         ) {
-            ActionSheetScope(this, onDismiss).content()
+            ActionSheetScope(this, onDismiss, slideAway).content()
             Spacer(Modifier.height(8.dp))
         }
     }
 }
 
-class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) : ColumnScope by column {
+class ActionSheetScope(
+    column: ColumnScope,
+    private val onDismiss: () -> Unit,
+    private val slideAway: (then: () -> Unit) -> Unit,
+) : ColumnScope by column {
+    /** Slides the sheet away like a swipe down would, then runs [then]. */
+    fun close(then: () -> Unit = {}) = slideAway(then)
+
     /**
      * The document the actions are for: its [title], if it has one, above its file [name]. Icon
      * and name line up with the actions' icons and labels.
@@ -112,6 +148,7 @@ class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) :
         @StringRes label: Int,
         tag: String,
         @StringRes note: Int? = null,
+        closing: SheetClosing = SheetClosing.Instant,
         onClick: () -> Unit,
     ) = ListItem(
         headlineContent = { Text(stringResource(label)) },
@@ -120,8 +157,13 @@ class ActionSheetScope(column: ColumnScope, private val onDismiss: () -> Unit) :
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier
             .clickable {
-                onDismiss()
-                onClick()
+                when (closing) {
+                    SheetClosing.Instant -> {
+                        onDismiss()
+                        onClick()
+                    }
+                    SheetClosing.Slide -> close(onClick)
+                }
             }
             .testTag(tag)
             // 24 dp from the edges with the list item's own 16 dp; the ripple still spans the sheet.

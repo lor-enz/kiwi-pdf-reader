@@ -255,8 +255,9 @@ private fun ChoiceSheet(page: Int, field: FormWidgetInfo, onEdit: (FormEditInfo)
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = rowModifier
                         .selectable(selected = isSelected, role = Role.RadioButton) {
+                            // Applied right away, so the field shows it as the sheet slides off it.
                             if (!isSelected) onEdit(FormEditInfo.createSetIndices(page, field.widgetIndex, intArrayOf(index)))
-                            onDismiss()
+                            close()
                         }
                         .testTag(TestTags.CHOICE_OPTION)
                         .padding(horizontal = 8.dp),
@@ -269,7 +270,7 @@ private fun ChoiceSheet(page: Int, field: FormWidgetInfo, onEdit: (FormEditInfo)
                 initial = field.textValue?.takeIf { text -> items.none { it.label == text } }.orEmpty(),
                 onDone = { text ->
                     if (text.isNotBlank()) onEdit(FormEditInfo.createSetText(page, field.widgetIndex, text))
-                    onDismiss()
+                    close()
                 },
             )
         }

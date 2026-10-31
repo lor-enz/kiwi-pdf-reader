@@ -79,6 +79,7 @@ import kiwi.lorenz.pdfreader.recent.RecentFile
 import kiwi.lorenz.pdfreader.ui.ActionSheet
 import kiwi.lorenz.pdfreader.ui.ContentMaxWidth
 import kiwi.lorenz.pdfreader.ui.MessageEffect
+import kiwi.lorenz.pdfreader.ui.SheetClosing
 import kiwi.lorenz.pdfreader.ui.TestTags
 import kiwi.lorenz.pdfreader.ui.theme.PenguinBlue
 import kiwi.lorenz.pdfreader.ui.theme.PdfPenguinTheme
@@ -463,9 +464,23 @@ private fun RecentFileSheet(
         Action(R.drawable.ic_open_in_new, R.string.open_with, TestTags.OPEN_WITH_RECENT, onClick = onOpenWith)
         Action(R.drawable.ic_info, R.string.document_info, TestTags.RECENT_INFO, onClick = onInfo)
         if (entry.encryptedPassword != null) {
-            Action(R.drawable.ic_key_off, R.string.forget_password, TestTags.FORGET_PASSWORD, onClick = onForgetPassword)
+            // Slides away first, so the padlock is seen closing (and the thumbnail and title going).
+            Action(
+                R.drawable.ic_key_off,
+                R.string.forget_password,
+                TestTags.FORGET_PASSWORD,
+                closing = SheetClosing.Slide,
+                onClick = onForgetPassword,
+            )
         }
-        Action(R.drawable.ic_playlist_remove, R.string.remove_from_list, TestTags.REMOVE_RECENT, onClick = onRemove)
+        // Slides away first, so the entry is seen leaving the list (it would also take the sheet with it).
+        Action(
+            R.drawable.ic_playlist_remove,
+            R.string.remove_from_list,
+            TestTags.REMOVE_RECENT,
+            closing = SheetClosing.Slide,
+            onClick = onRemove,
+        )
     }
 }
 
