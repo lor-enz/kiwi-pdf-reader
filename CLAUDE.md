@@ -259,6 +259,15 @@
   (`res/raw/apache_license.txt`); check the list when adding a dependency
   (`./gradlew :app:dependencies --configuration releaseRuntimeClasspath`).
   Google's `oss-licenses` plugin needs Play Services.
+- Back is left to the system wherever the app would just close the
+  activity, so the back gesture's preview (predictive back) shows what's
+  behind: Home behind a viewer, the other app behind a card of its own
+  (`autoRemoveFromRecents` removes the card, no `finishAndRemoveTask`
+  needed). A `BackHandler` is only enabled while it has something to close
+  (search, presentation mode); one that's always on hides the preview.
+  `enableOnBackInvokedCallback` is set, as only Android 16 opts in through
+  `targetSdk`. On Android 14 the preview is behind a developer option
+  ("Predictive back animations"), and it needs gesture navigation.
 - The viewer's tools live in a bottom sheet behind the ⋮ button, so the
   top bar stays calm as tools are added. Its last item leads to Home: the
   app's own viewer just closes (Home is behind it), a card from another app

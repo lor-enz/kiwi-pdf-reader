@@ -126,7 +126,8 @@ fun ViewerScreen(
     message: Int?,
     actions: ViewerActions,
 ) {
-    BackHandler(onBack = if (searchState.isActive) actions::closeSearch else actions::back)
+    // Otherwise the system closes the viewer itself, so the back gesture shows what's behind it.
+    BackHandler(enabled = searchState.isActive, onBack = actions::closeSearch)
 
     val loaded = documentState as? DocumentState.Loaded
     val title = when (documentState) {
