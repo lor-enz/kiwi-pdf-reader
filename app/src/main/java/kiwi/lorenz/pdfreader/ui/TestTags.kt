@@ -73,6 +73,10 @@ object TestTags {
     const val TOOL_HOME = "tool_home"
     const val CONFIRM_CLEAR_FILLED = "confirm_clear_filled"
 
+    const val CHOICE_SHEET_TITLE = "choice_sheet_title"
+    const val CHOICE_OPTION = "choice_option"
+    const val CHOICE_OTHER = "choice_other"
+
     const val INFO_SHEET_TITLE = "info_sheet_title"
     /** The file name below a sheet's heading, when the document has a title. */
     const val HEADING_FILE_NAME = "heading_file_name"

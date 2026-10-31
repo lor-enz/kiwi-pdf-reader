@@ -130,6 +130,12 @@
     <string name="page_size_landscape">%s, landscape</string>
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="page_size_inches">%1$s × %2$s in</string>
+    <!-- Heading of the options of a form field that has no name -->
+    <string name="choice_untitled">Choose</string>
+    <!-- Below the heading of a list in a form where several options can be ticked -->
+    <string name="choice_multiple">Choose as many as apply</string>
+    <!-- Label of the field for an answer that isn't among a drop-down's options -->
+    <string name="choice_other">Other</string>
     <string name="search">Search</string>
     <string name="present">Present</string>
     <string name="search_hint">Search in document</string>

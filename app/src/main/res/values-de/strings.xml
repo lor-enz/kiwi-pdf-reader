@@ -110,6 +110,9 @@
     <string name="page_size_landscape">%s, Querformat</string>
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="page_size_inches">%1$s × %2$s Zoll</string>
+    <string name="choice_untitled">Auswählen</string>
+    <string name="choice_multiple">Mehrere möglich</string>
+    <string name="choice_other">Eigene Angabe</string>
     <string name="search">Suchen</string>
     <string name="present">Präsentieren</string>
     <string name="search_hint">Im Dokument suchen</string>

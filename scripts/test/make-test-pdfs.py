@@ -163,6 +163,40 @@ def form(path, encrypt=None):
     c.save()
 
 
+COUNTRIES = [
+    "Argentina", "Australia", "Austria", "Belgium", "Brazil", "Canada", "Chile", "China",
+    "Denmark", "Egypt", "Finland", "France", "Germany", "Greece", "India", "Ireland", "Italy",
+    "Japan", "Kenya", "Mexico", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal",
+    "South Africa", "Spain", "Sweden", "Switzerland", "United Kingdom", "United States",
+]
+
+
+def choices(path):
+    """Every kind of choice field: drop-downs short, long and editable, and list boxes."""
+    c = canvas.Canvas(path, pagesize=A4)
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(60, H - 60, "Choices")
+    c.setFont("Helvetica", 16)
+    f = c.acroForm
+    c.drawString(60, H - 130, "Colour")
+    f.choice(name="colour", options=["Green", "Brown", "Yellow"], value="Green", x=200, y=H - 140, width=200, height=28)
+    # A tooltip (/TU) names the field for screen readers; a generated name like this is all others have.
+    c.drawString(60, H - 190, "Country")
+    f.choice(name="form1[0].page1[0].country[0]", tooltip="Country of residence", options=COUNTRIES,
+             value="Germany", x=200, y=H - 200, width=200, height=28)
+    c.drawString(60, H - 250, "Pet")
+    f.choice(name="pet", options=["Cat", "Dog", "Penguin"], value="Cat", x=200, y=H - 260, width=200, height=28,
+             fieldFlags="combo edit")
+    c.drawString(60, H - 310, "Fruit")
+    f.listbox(name="fruit", options=["Apple", "Banana", "Cherry", "Plum"], value="Banana",
+              x=200, y=H - 400, width=200, height=100)
+    c.drawString(60, H - 450, "Toppings")
+    f.listbox(name="toppings", options=["Cheese", "Ham", "Mushrooms", "Olives", "Pineapple"],
+              value=["Cheese", "Olives"], x=200, y=H - 560, width=200, height=120, fieldFlags="multiSelect")
+    c.showPage()
+    c.save()
+
+
 def titled(path, title, about):
     """A short document with [title] in its metadata, saying what it tests."""
     c = canvas.Canvas(path, pagesize=A4)
@@ -255,6 +289,7 @@ def main():
     heavy(os.path.join(out, "heavy.pdf"))
     form(os.path.join(out, "form.pdf"))
     form(os.path.join(out, "form-protected.pdf"), encrypt=StandardEncryption(PASSWORD, canPrint=1, canModify=1))
+    choices(os.path.join(out, "choices.pdf"))
     titled(os.path.join(out, "long-title.pdf"),
            "Annual report on the development of electricity prices for private households "
            "in Bavaria and Baden-Württemberg, 2019 to 2024, with forecasts",

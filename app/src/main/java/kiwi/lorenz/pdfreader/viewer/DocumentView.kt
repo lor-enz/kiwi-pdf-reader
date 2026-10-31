@@ -262,6 +262,8 @@ internal fun DocumentView(
     }
 
     FastScrollAutoHide(contentLoaded = isContentLoaded)
+    // Like the view's form filling, which is only enabled once the first pages have loaded.
+    ChoiceFields(documentState.document, viewerState, isEnabled = isContentLoaded, onEdit = onFormEdit)
 
     Box(Modifier.fillMaxSize()) {
         PdfViewer(
