@@ -217,7 +217,11 @@
   foreground (`ic_launcher_foreground`, scaled back up from the 70% that fits
   the icon masks) on a Penguin Blue circle, as the white page would vanish on
   the light background. It gives the tagline ("the blue one") its meaning.
-  The logo sources are in `logos-and-marketing-images/`.
+  The logo sources are in `logos-and-marketing-images/`. The themed icon's
+  glyph (`ic_launcher_monochrome`) is scaled to 62%, the size of Google's
+  own themed glyphs; at 70% (as the foreground) it looked heavier beside them.
+  To check it, `Emu_Pixel_9_Pro_with_Google`'s Pixel Launcher themes the
+  home screen (Wallpaper & style → Icons), not the app drawer.
 - Home has no top bar, so scrolling shows only the list (a strip in the
   background color covers the status bar). The settings cog sits in the
   top right corner, just below the status bar, and scrolls away with the
